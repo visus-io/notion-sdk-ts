@@ -1,5 +1,12 @@
 # @visus-io/notion-sdk-ts
 
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/visus-io/notion-sdk-ts/ci.yml?style=for-the-badge&logo=github)](https://github.com/visus-io/notion-sdk-ts/actions/workflows/ci.yaml)
+
+[![Sonar Quality Gate](https://img.shields.io/sonar/quality_gate/visus%3Anotion-sdk-ts?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white)](https://sonarcloud.io/summary/overall?id=visus%3Anotion-sdk-ts)
+[![Sonar Coverage](https://img.shields.io/sonar/coverage/visus%3Anotion-sdk-ts?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white)](https://sonarcloud.io/summary/overall?id=visus%3Anotion-sdk-ts)
+
+![GitHub](https://img.shields.io/github/license/visus-io/notion-sdk-ts?style=for-the-badge)
+
 A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, and ergonomic helpers.
 
 ## Table of Contents
