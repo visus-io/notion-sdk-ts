@@ -52,7 +52,7 @@ export interface CreateCommentOptions {
  * Comments API client for working with Notion comments.
  */
 export class CommentsAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Retrieve all comments from a page or block (paginated).

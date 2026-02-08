@@ -121,7 +121,7 @@ export interface QueryDataSourceOptions extends PaginationParameters {
  * As of API version 2025-09-03, data sources have their own API endpoints.
  */
 export class DataSourcesAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Retrieve a data source by ID.

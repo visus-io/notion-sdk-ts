@@ -25,7 +25,7 @@ export type FileData = Buffer | ArrayBuffer | Blob | ReadableStream;
  * FileUploads API client for uploading files to Notion.
  */
 export class FileUploadsAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Initiate a file upload and get the upload URL.

@@ -121,7 +121,7 @@ export interface UpdateDatabaseOptions {
  * Databases API client for working with Notion databases.
  */
 export class DatabasesAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Retrieve a database by ID.

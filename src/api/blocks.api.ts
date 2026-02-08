@@ -57,7 +57,7 @@ export interface UpdateBlockOptions {
  * Blocks API client for working with Notion blocks.
  */
 export class BlocksAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Retrieve a block by ID.

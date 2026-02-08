@@ -59,7 +59,7 @@ export type SearchResult = Page | Database;
  * Search API client for searching across the workspace.
  */
 export class SearchAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Search across all pages and databases in the workspace.
