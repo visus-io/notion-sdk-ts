@@ -12,7 +12,7 @@ import { User } from '../models';
  * Users API client for working with Notion users.
  */
 export class UsersAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Retrieve a user by ID.

@@ -82,7 +82,7 @@ export interface UpdatePageOptions {
  * Pages API client for working with Notion pages.
  */
 export class PagesAPI {
-  constructor(private client: NotionClient) {}
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Retrieve a page by ID.
