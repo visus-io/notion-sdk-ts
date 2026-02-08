@@ -32,6 +32,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
+    "lint:html": "eslint . -f html -o reports/lint-report.html",
+    "lint:json": "eslint . -f json -o reports/lint-report.json",
     "prepare": "husky",
     "prepublishOnly": "npm run build",
     "test": "vitest",
