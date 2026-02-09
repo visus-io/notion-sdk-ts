@@ -1,6 +1,6 @@
 {
   "name": "@visus-io/notion-sdk-ts",
-  "version": "1.0.0",
+  "version": "0.0.0-dev",
   "private": false,
   "description": "TypeScript SDK for the Notion API",
   "keywords": [
