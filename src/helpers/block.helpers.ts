@@ -152,9 +152,9 @@ function numberedListItem(text: RichTextInput, options?: NumberedListOptions): B
     numbered_list_item: {
       rich_text: resolveRichText(text),
       color: options?.color ?? 'default',
-      ...(options?.listStartIndex !== undefined
-        ? { list_start_index: options.listStartIndex }
-        : {}),
+      ...(options?.listStartIndex === undefined
+        ? {}
+        : { list_start_index: options.listStartIndex }),
       ...(options?.listFormat ? { list_format: options.listFormat } : {}),
       ...(options?.children ? { children: options.children } : {}),
     },

@@ -108,7 +108,7 @@ export class FileUploadsAPI {
     } else if (fileData instanceof Blob) {
       contentLength = fileData.size;
     } else {
-      throw new Error(
+      throw new TypeError(
         'Cannot determine content length for ReadableStream. Use initiate/upload/complete separately.',
       );
     }

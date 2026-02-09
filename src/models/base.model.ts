@@ -15,7 +15,7 @@ export abstract class BaseModel<T> {
    * Returns the raw validated data as a plain object.
    */
   toJSON(): T {
-    return JSON.parse(JSON.stringify(this.data)) as T;
+    return structuredClone(this.data);
   }
 
   /**
