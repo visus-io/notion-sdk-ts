@@ -43,13 +43,13 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 
 ## Features
 
-- **Type-safe** -- Zod v4 runtime validation on every API response; full TypeScript declarations
-- **Complete API coverage** -- Pages, Blocks, Databases, Data Sources, Comments, Search, Users, File Uploads
-- **Ergonomic helpers** -- `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover` factories eliminate verbose JSON
-- **OOP models** -- `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText` with convenience methods
-- **Automatic rate limiting** -- Respects `Retry-After` header with exponential backoff fallback (configurable)
-- **Client-side size validation** -- Enforces Notion API size limits before sending requests
-- **Zero bloat** -- Single runtime dependency (`zod`); uses built-in `fetch` (Node 18+)
+- **Type-safe** Zod v4 runtime validation on every API response; full TypeScript declarations
+- **Complete API coverage** Pages, Blocks, Databases, Data Sources, Comments, Search, Users, File Uploads
+- **Ergonomic helpers** `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover` factories eliminate verbose JSON
+- **OOP models** `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText` with convenience methods
+- **Automatic rate limiting** Respects `Retry-After` header with exponential backoff fallback (configurable)
+- **Client-side size validation** Enforces Notion API size limits before sending requests
+- **Zero bloat** Single runtime dependency (`zod`); uses built-in `fetch` (Node 18+)
 
 ## Installation
 
