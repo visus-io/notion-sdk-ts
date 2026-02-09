@@ -29,7 +29,7 @@ const personUserSchema = z.object({
   name: z.string().optional(),
   avatar_url: z.union([z.url(), z.null()]).optional(),
   person: z.object({
-    email: z.string().email(),
+    email: z.email(),
   }),
 });
 

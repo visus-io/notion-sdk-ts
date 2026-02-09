@@ -97,15 +97,15 @@ export class RichText {
    * Get the raw validated data.
    */
   toJSON(): NotionRichText {
-    return JSON.parse(JSON.stringify(this.data)) as NotionRichText;
+    return structuredClone(this.data);
   }
 
   private escapeHTML(text: string): string {
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 }

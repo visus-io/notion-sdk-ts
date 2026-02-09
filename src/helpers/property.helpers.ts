@@ -101,7 +101,7 @@ function checkbox(checked: boolean): { checkbox: boolean } {
  * ```
  */
 function select(name: string | null): { select: { name: string } | null } {
-  return { select: name !== null ? { name } : null };
+  return { select: name === null ? null : { name } };
 }
 
 /**
@@ -127,7 +127,7 @@ function multiSelect(names: string[]): { multi_select: Array<{ name: string }> }
  * ```
  */
 function status(name: string | null): { status: { name: string } | null } {
-  return { status: name !== null ? { name } : null };
+  return { status: name === null ? null : { name } };
 }
 
 /** Options for date properties. */
