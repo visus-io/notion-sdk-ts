@@ -45,8 +45,9 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 
 - **Type-safe** Zod v4 runtime validation on every API response; full TypeScript declarations
 - **Complete API coverage** Pages, Blocks, Databases, Data Sources, Comments, Search, Users, File Uploads
-- **Ergonomic helpers** `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover` factories eliminate verbose JSON
+- **Ergonomic helpers** `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `paginate` factories eliminate verbose JSON
 - **OOP models** `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText` with convenience methods
+- **Automatic pagination** `paginate()` and `paginateIterator()` helpers automatically fetch all pages
 - **Automatic rate limiting** Respects `Retry-After` header with exponential backoff fallback (configurable)
 - **Client-side size validation** Enforces Notion API size limits before sending requests
 - **Zero bloat** Single runtime dependency (`zod`); uses built-in `fetch` (Node 18+)
@@ -60,7 +61,16 @@ npm install @visus-io/notion-sdk-ts
 ## Quick Start
 
 ```typescript
-import { Notion, block, richText, filter, sort, prop, parent } from '@visus-io/notion-sdk-ts';
+import {
+  Notion,
+  block,
+  richText,
+  filter,
+  sort,
+  prop,
+  parent,
+  paginate,
+} from '@visus-io/notion-sdk-ts';
 
 const notion = new Notion({ auth: process.env.NOTION_TOKEN });
 
@@ -554,37 +564,88 @@ interface PaginatedList<T> {
 }
 ```
 
-**Collecting all results:**
+The SDK provides helper utilities to automatically collect all results:
+
+### `paginate()` - Collect all results
+
+Automatically fetches all pages and returns a single array:
 
 ```typescript
-async function fetchAll<T>(
-  fetchPage: (cursor?: string) => Promise<PaginatedList<T>>,
-): Promise<T[]> {
-  const all: T[] = [];
-  let cursor: string | undefined;
-
-  do {
-    const response = await fetchPage(cursor);
-    all.push(...response.results);
-    cursor = response.next_cursor ?? undefined;
-  } while (cursor);
-
-  return all;
-}
+import { paginate } from '@visus-io/notion-sdk-ts';
 
 // All blocks from a page
-const blocks = await fetchAll((cursor) =>
+const blocks = await paginate((cursor) =>
   notion.blocks.children.list('page-id', { start_cursor: cursor, page_size: 100 }),
 );
 
 // All pages from a database query
-const pages = await fetchAll((cursor) =>
+const pages = await paginate((cursor) =>
   notion.databases.query('database-id', {
     start_cursor: cursor,
     page_size: 100,
     filter: filter.status('Status').equals('Active'),
   }),
 );
+
+// All comments on a page
+const comments = await paginate((cursor) =>
+  notion.comments.list('page-id', { start_cursor: cursor }),
+);
+
+// All users in workspace
+const users = await paginate((cursor) => notion.users.list({ start_cursor: cursor }));
+
+// All search results
+const searchResults = await paginate((cursor) =>
+  notion.search.query({
+    query: 'project',
+    filter: { property: 'object', value: 'page' },
+    start_cursor: cursor,
+  }),
+);
+```
+
+### `paginateIterator()` - Memory-efficient iteration
+
+Process results one at a time without loading everything into memory:
+
+```typescript
+import { paginateIterator } from '@visus-io/notion-sdk-ts';
+
+// Process blocks one at a time
+for await (const block of paginateIterator((cursor) =>
+  notion.blocks.children.list('page-id', { start_cursor: cursor }),
+)) {
+  console.log(block.type, block.id);
+  if (block.isTextBlock()) {
+    console.log(block.getPlainText());
+  }
+}
+
+// Process database pages one at a time
+for await (const page of paginateIterator((cursor) =>
+  notion.databases.query('database-id', {
+    start_cursor: cursor,
+    filter: filter.status('Status').equals('Active'),
+  }),
+)) {
+  console.log(page.getTitle());
+  // Process without loading all pages into memory
+}
+```
+
+### `paginateWithMetadata()` - Get results with pagination stats
+
+Useful for tracking API usage and performance:
+
+```typescript
+import { paginateWithMetadata } from '@visus-io/notion-sdk-ts';
+
+const { items, pageCount, totalCount } = await paginateWithMetadata((cursor) =>
+  notion.blocks.children.list('page-id', { start_cursor: cursor }),
+);
+
+console.log(`Fetched ${totalCount} blocks across ${pageCount} API calls`);
 ```
 
 **Paginated endpoints:** `blocks.children.list()`, `comments.list()`, `databases.query()`, `dataSources.query()`, `search.query()`, `users.list()`
