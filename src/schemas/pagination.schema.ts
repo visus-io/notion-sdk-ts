@@ -13,13 +13,17 @@ import { z } from 'zod';
 
 /**
  * Paginated list response type.
+ * As of API version 2025-09-03, 'data_source' and 'page_or_data_source' are used
+ * instead of 'database' and 'page_or_database' in search results.
  */
 export type PaginatedListType =
   | 'block'
   | 'comment'
   | 'database'
+  | 'data_source'
   | 'page'
   | 'page_or_database'
+  | 'page_or_data_source'
   | 'property_item'
   | 'user';
 
@@ -37,8 +41,10 @@ export const paginatedListSchema = <T extends z.ZodTypeAny>(resultSchema: T) => 
       'block',
       'comment',
       'database',
+      'data_source',
       'page',
       'page_or_database',
+      'page_or_data_source',
       'property_item',
       'user',
     ]),

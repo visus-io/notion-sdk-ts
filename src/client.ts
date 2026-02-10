@@ -15,7 +15,7 @@ export interface NotionClientOptions {
   /** Base URL for API requests (default: https://api.notion.com) */
   baseUrl?: string;
 
-  /** Notion API version (default: 2022-06-28) */
+  /** Notion API version (default: 2025-09-03) */
   notionVersion?: string;
 
   /** Request timeout in milliseconds (default: 60000) */
@@ -56,7 +56,7 @@ export class NotionClient {
   constructor(options: NotionClientOptions) {
     this.auth = options.auth;
     this.baseUrl = options.baseUrl ?? 'https://api.notion.com';
-    this.notionVersion = options.notionVersion ?? '2022-06-28';
+    this.notionVersion = options.notionVersion ?? '2025-09-03';
     this.timeoutMs = options.timeoutMs ?? 60000;
     this.fetchImpl = options.fetch ?? fetch;
     this.maxRetries = options.maxRetries ?? 3;

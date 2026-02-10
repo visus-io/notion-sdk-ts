@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SearchAPI } from './search.api';
 import type { NotionClient } from '../client';
-import { Database, Page } from '../models';
+import { DataSource, Page } from '../models';
 
 describe('SearchAPI', () => {
   const mockClient = {
@@ -48,10 +48,9 @@ describe('SearchAPI', () => {
     public_url: null,
   };
 
-  const mockDatabaseResponse = {
-    object: 'database',
+  const mockDataSourceResponse = {
+    object: 'data_source',
     id: '223e4567-e89b-12d3-a456-426614174000',
-    data_sources: [],
     created_time: '2023-01-01T00:00:00.000Z',
     created_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
     last_edited_time: '2023-01-02T00:00:00.000Z',
@@ -59,7 +58,7 @@ describe('SearchAPI', () => {
     title: [
       {
         type: 'text',
-        text: { content: 'Test Database', link: null },
+        text: { content: 'Test Data Source', link: null },
         annotations: {
           bold: false,
           italic: false,
@@ -68,7 +67,7 @@ describe('SearchAPI', () => {
           code: false,
           color: 'default',
         },
-        plain_text: 'Test Database',
+        plain_text: 'Test Data Source',
         href: null,
       },
     ],
@@ -78,8 +77,9 @@ describe('SearchAPI', () => {
     properties: {
       Name: { id: 'title', name: 'Name', type: 'title', title: {} },
     },
-    parent: { type: 'page_id', page_id: '523e4567-e89b-12d3-a456-426614174000' },
-    url: 'https://notion.so/test-database',
+    parent: { type: 'database_id', database_id: '523e4567-e89b-12d3-a456-426614174000' },
+    database_parent: { type: 'page_id', page_id: '623e4567-e89b-12d3-a456-426614174000' },
+    url: 'https://notion.so/test-datasource',
     archived: false,
     in_trash: false,
     is_inline: false,
@@ -110,7 +110,7 @@ describe('SearchAPI', () => {
       expect(result.object).toBe('list');
       expect(result.results).toHaveLength(1);
       expect(result.results[0]).toBeInstanceOf(Page);
-      expect(result.type).toBe('page_or_database');
+      expect(result.type).toBe('page_or_data_source');
     });
 
     it('should search with query string', async () => {
@@ -161,10 +161,10 @@ describe('SearchAPI', () => {
       });
     });
 
-    it('should search with filter for databases only', async () => {
+    it('should search with filter for data sources only', async () => {
       const mockResponse = {
         object: 'list',
-        results: [mockDatabaseResponse],
+        results: [mockDataSourceResponse],
         next_cursor: null,
         has_more: false,
       };
@@ -172,7 +172,7 @@ describe('SearchAPI', () => {
 
       const result = await searchAPI.query({
         filter: {
-          value: 'database',
+          value: 'data_source',
           property: 'object',
         },
       });
@@ -182,12 +182,12 @@ describe('SearchAPI', () => {
         path: '/search',
         body: {
           filter: {
-            value: 'database',
+            value: 'data_source',
             property: 'object',
           },
         },
       });
-      expect(result.results[0]).toBeInstanceOf(Database);
+      expect(result.results[0]).toBeInstanceOf(DataSource);
     });
 
     it('should search with sort configuration', async () => {
@@ -272,10 +272,10 @@ describe('SearchAPI', () => {
       });
     });
 
-    it('should handle mixed page and database results', async () => {
+    it('should handle mixed page and data source results', async () => {
       const mockResponse = {
         object: 'list',
-        results: [mockPageResponse, mockDatabaseResponse],
+        results: [mockPageResponse, mockDataSourceResponse],
         next_cursor: null,
         has_more: false,
       };
@@ -285,7 +285,7 @@ describe('SearchAPI', () => {
 
       expect(result.results).toHaveLength(2);
       expect(result.results[0]).toBeInstanceOf(Page);
-      expect(result.results[1]).toBeInstanceOf(Database);
+      expect(result.results[1]).toBeInstanceOf(DataSource);
     });
 
     it('should handle pagination response', async () => {
@@ -306,7 +306,7 @@ describe('SearchAPI', () => {
     it('should parse each result by its object type', async () => {
       const mockResponse = {
         object: 'list',
-        results: [mockDatabaseResponse, mockPageResponse, mockDatabaseResponse],
+        results: [mockDataSourceResponse, mockPageResponse, mockDataSourceResponse],
         next_cursor: null,
         has_more: false,
       };
@@ -315,9 +315,9 @@ describe('SearchAPI', () => {
       const result = await searchAPI.query();
 
       expect(result.results).toHaveLength(3);
-      expect(result.results[0]).toBeInstanceOf(Database);
+      expect(result.results[0]).toBeInstanceOf(DataSource);
       expect(result.results[1]).toBeInstanceOf(Page);
-      expect(result.results[2]).toBeInstanceOf(Database);
+      expect(result.results[2]).toBeInstanceOf(DataSource);
     });
   });
 });

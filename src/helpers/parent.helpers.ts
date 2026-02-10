@@ -28,14 +28,24 @@ function database(databaseId: string): { database_id: string } {
 
 /**
  * Create a data source parent object.
+ * In API version 2025-09-03, both data_source_id and database_id are required
+ * when creating a page with a data source parent.
  *
  * @example
  * ```ts
- * parent.dataSource('data-source-id')
+ * // Get database info first
+ * const db = await notion.databases.retrieve('database-id');
+ * const dsId = db.dataSources[0].id;
+ *
+ * // Create page with data source parent
+ * parent.dataSource(dsId, db.id)
  * ```
  */
-function dataSource(dataSourceId: string): { data_source_id: string } {
-  return { data_source_id: dataSourceId };
+function dataSource(
+  dataSourceId: string,
+  databaseId: string,
+): { data_source_id: string; database_id: string } {
+  return { data_source_id: dataSourceId, database_id: databaseId };
 }
 
 /**

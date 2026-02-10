@@ -4,11 +4,13 @@
 
 We actively support the latest version of `@visus-io/notion-sdk-ts`. Security updates are provided for the following versions:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
+| Version | Supported          | Notes                                    |
+| ------- | ------------------ | ---------------------------------------- |
+| 2.x.x   | :white_check_mark: | Current major version (API v2025-09-03)  |
+| 1.x.x   | :white_check_mark: | Previous major version (API v2022-06-28) |
+| < 1.0   | :x:                | No longer supported                      |
 
-We maintain security support for the current major version and one previous major version.
+We maintain security support for the current major version and one previous major version. Users are encouraged to upgrade to 2.x.x for the latest features and security updates.
 
 ## Reporting a Vulnerability
 
@@ -76,8 +78,11 @@ Always validate and sanitize user-provided data before using it with the SDK:
 ```typescript
 // ✅ Good: Validate before use
 if (userInput && userInput.length <= 2000) {
+  const db = await notion.databases.retrieve(dbId);
+  const dataSourceId = db.dataSources[0].id;
+
   await notion.pages.create({
-    parent: parent.database(dbId),
+    parent: parent.dataSource(dataSourceId, db.id),
     properties: {
       Name: prop.title(userInput),
     },
@@ -86,7 +91,7 @@ if (userInput && userInput.length <= 2000) {
 
 // ❌ Bad: Direct use of unvalidated input
 await notion.pages.create({
-  parent: parent.database(userInput), // Could be malicious
+  parent: parent.dataSource(untrustedDataSourceId, untrustedDbId), // Could be malicious
   properties: {
     Name: prop.title(untrustedData),
   },
@@ -187,7 +192,15 @@ We actively monitor these dependencies for security vulnerabilities.
 
 ## Security Updates
 
-Security updates will be released as patch versions (e.g., 0.1.1 → 0.1.2) whenever possible to allow for easy adoption. Critical security fixes may be backported to previous minor versions.
+Security updates will be released as patch versions (e.g., 2.0.1 → 2.0.2 or 1.0.1 → 1.0.2) whenever possible to allow for easy adoption. Critical security fixes may be backported to the previous major version (1.x.x) during its support period.
+
+### Version 2.0.0 Release Notes
+
+Version 2.0.0 introduces support for Notion API version 2025-09-03. While this is primarily a feature upgrade, note the following security considerations:
+
+- **Breaking Changes:** Database and search APIs have been restructured. Review the migration guide to ensure secure handling of data source IDs.
+- **New Parent Types:** Page creation now requires both data source ID and database ID. Validate both parameters to prevent unauthorized access.
+- **API Version:** Users can temporarily revert to API version 2022-06-28 by setting `notionVersion` in client options, but this may not support multi-source databases.
 
 Security advisories will be published via:
 
