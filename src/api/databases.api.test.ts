@@ -246,8 +246,10 @@ describe('DatabasesAPI', () => {
 
       const result = await databasesAPI.create({
         parent: { page_id: 'parent-page-id' },
-        properties: {
-          Name: { title: {} },
+        initial_data_source: {
+          properties: {
+            Name: { title: {} },
+          },
         },
       });
 
@@ -256,8 +258,10 @@ describe('DatabasesAPI', () => {
         path: '/databases',
         body: {
           parent: { page_id: 'parent-page-id' },
-          properties: {
-            Name: { title: {} },
+          initial_data_source: {
+            properties: {
+              Name: { title: {} },
+            },
           },
         },
       });
@@ -268,13 +272,15 @@ describe('DatabasesAPI', () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
 
       const title = [{ type: 'text', text: { content: 'My Database' } }];
-      const description = [{ type: 'text', text: { content: 'A test database' } }];
+      const dsTitle = [{ type: 'text', text: { content: 'A test database' } }];
 
       await databasesAPI.create({
         parent: { page_id: 'parent-page-id' },
-        properties: { Name: { title: {} } },
+        initial_data_source: {
+          properties: { Name: { title: {} } },
+          title: dsTitle,
+        },
         title,
-        description,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
@@ -282,9 +288,11 @@ describe('DatabasesAPI', () => {
         path: '/databases',
         body: {
           parent: { page_id: 'parent-page-id' },
-          properties: { Name: { title: {} } },
+          initial_data_source: {
+            properties: { Name: { title: {} } },
+            title: dsTitle,
+          },
           title,
-          description,
         },
       });
     });
@@ -295,14 +303,16 @@ describe('DatabasesAPI', () => {
       await expect(
         databasesAPI.create({
           parent: { page_id: 'parent-page-id' },
-          properties: { Name: { title: {} } },
+          initial_data_source: {
+            properties: { Name: { title: {} } },
+          },
           title: tooManyTitleElements,
         }),
       ).rejects.toThrow(NotionValidationError);
     });
 
-    it('should throw validation error when description array exceeds limit', async () => {
-      const tooManyDescriptionElements = new Array(101).fill({
+    it('should throw validation error when data source title array exceeds limit', async () => {
+      const tooManyTitleElements = new Array(101).fill({
         type: 'text',
         text: { content: 'x' },
       });
@@ -310,8 +320,10 @@ describe('DatabasesAPI', () => {
       await expect(
         databasesAPI.create({
           parent: { page_id: 'parent-page-id' },
-          properties: { Name: { title: {} } },
-          description: tooManyDescriptionElements,
+          initial_data_source: {
+            properties: { Name: { title: {} } },
+            title: tooManyTitleElements,
+          },
         }),
       ).rejects.toThrow(NotionValidationError);
     });
@@ -321,7 +333,9 @@ describe('DatabasesAPI', () => {
 
       await databasesAPI.create({
         parent: { page_id: 'parent-page-id' },
-        properties: { Name: { title: {} } },
+        initial_data_source: {
+          properties: { Name: { title: {} } },
+        },
         icon: { type: 'emoji', emoji: '📊' },
         cover: { type: 'external', external: { url: 'https://example.com/cover.jpg' } },
       });
@@ -331,7 +345,9 @@ describe('DatabasesAPI', () => {
         path: '/databases',
         body: {
           parent: { page_id: 'parent-page-id' },
-          properties: { Name: { title: {} } },
+          initial_data_source: {
+            properties: { Name: { title: {} } },
+          },
           icon: { type: 'emoji', emoji: '📊' },
           cover: { type: 'external', external: { url: 'https://example.com/cover.jpg' } },
         },
@@ -343,7 +359,9 @@ describe('DatabasesAPI', () => {
 
       await databasesAPI.create({
         parent: { page_id: 'parent-page-id' },
-        properties: { Name: { title: {} } },
+        initial_data_source: {
+          properties: { Name: { title: {} } },
+        },
         is_inline: true,
       });
 
@@ -352,7 +370,9 @@ describe('DatabasesAPI', () => {
         path: '/databases',
         body: {
           parent: { page_id: 'parent-page-id' },
-          properties: { Name: { title: {} } },
+          initial_data_source: {
+            properties: { Name: { title: {} } },
+          },
           is_inline: true,
         },
       });
@@ -360,50 +380,38 @@ describe('DatabasesAPI', () => {
   });
 
   describe('update', () => {
-    it('should update database properties', async () => {
+    it('should update database metadata (icon, cover, etc)', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
 
       const result = await databasesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        properties: {
-          Status: {
-            select: {
-              options: [{ name: 'Todo' }, { name: 'In Progress' }, { name: 'Done' }],
-            },
-          },
-        },
+        icon: { type: 'emoji', emoji: '📊' },
+        cover: { type: 'external', external: { url: 'https://example.com/cover.jpg' } },
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/databases/123e4567-e89b-12d3-a456-426614174000',
         body: {
-          properties: {
-            Status: {
-              select: {
-                options: [{ name: 'Todo' }, { name: 'In Progress' }, { name: 'Done' }],
-              },
-            },
-          },
+          icon: { type: 'emoji', emoji: '📊' },
+          cover: { type: 'external', external: { url: 'https://example.com/cover.jpg' } },
         },
       });
       expect(result).toBeInstanceOf(Database);
     });
 
-    it('should update database title and description', async () => {
+    it('should update database title', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
 
       const title = [{ type: 'text', text: { content: 'Updated Database' } }];
-      const description = [{ type: 'text', text: { content: 'Updated description' } }];
 
       await databasesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
         title,
-        description,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        body: { title, description },
+        body: { title },
       });
     });
 
@@ -417,17 +425,22 @@ describe('DatabasesAPI', () => {
       ).rejects.toThrow(NotionValidationError);
     });
 
-    it('should throw validation error when description array exceeds limit', async () => {
-      const tooManyDescriptionElements = new Array(101).fill({
-        type: 'text',
-        text: { content: 'x' },
+    it('should update database parent and is_inline', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
+
+      await databasesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
+        parent: { page_id: 'new-parent-page-id' },
+        is_inline: true,
       });
 
-      await expect(
-        databasesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-          description: tooManyDescriptionElements,
-        }),
-      ).rejects.toThrow(NotionValidationError);
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'PATCH',
+        path: '/databases/123e4567-e89b-12d3-a456-426614174000',
+        body: {
+          parent: { page_id: 'new-parent-page-id' },
+          is_inline: true,
+        },
+      });
     });
 
     it('should archive a database', async () => {

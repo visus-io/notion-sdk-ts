@@ -63,23 +63,34 @@ export interface QueryDatabaseOptions extends PaginationParameters {
 /**
  * Parent for creating a database.
  */
-export type CreateDatabaseParent = { page_id: string } | { data_source_id: string };
+export type CreateDatabaseParent = { page_id: string } | { workspace: true };
+
+/**
+ * Initial data source configuration for creating a database.
+ * In API version 2025-09-03, databases are created with an initial data source.
+ */
+export interface InitialDataSource {
+  /** Data source properties schema */
+  properties: Record<string, unknown>;
+
+  /** Data source title as rich text array */
+  title?: unknown[];
+}
 
 /**
  * Options for creating a database.
+ * As of API version 2025-09-03, databases are created with an initial_data_source
+ * containing the properties schema, rather than properties at the top level.
  */
 export interface CreateDatabaseOptions {
-  /** The parent object (page or data source) */
+  /** The parent object (page or workspace) */
   parent: CreateDatabaseParent;
+
+  /** Initial data source configuration (contains properties schema) */
+  initial_data_source: InitialDataSource;
 
   /** Database title as rich text array */
   title?: unknown[];
-
-  /** Database description as rich text array */
-  description?: unknown[];
-
-  /** Database properties schema */
-  properties: Record<string, unknown>;
 
   /** Database icon (emoji, file, or external) */
   icon?: unknown;
@@ -93,16 +104,12 @@ export interface CreateDatabaseOptions {
 
 /**
  * Options for updating a database.
+ * As of API version 2025-09-03, properties are managed at the data source level.
+ * Use the DataSourcesAPI to update properties.
  */
 export interface UpdateDatabaseOptions {
   /** Update the database title */
   title?: unknown[];
-
-  /** Update the database description */
-  description?: unknown[];
-
-  /** Update the database properties schema */
-  properties?: Record<string, unknown>;
 
   /** Update the database icon */
   icon?: unknown;
@@ -115,6 +122,12 @@ export interface UpdateDatabaseOptions {
 
   /** Move to trash or restore from trash */
   in_trash?: boolean;
+
+  /** Whether the database is inline */
+  is_inline?: boolean;
+
+  /** Move the database to a different parent */
+  parent?: CreateDatabaseParent;
 }
 
 /**
@@ -214,8 +227,19 @@ export class DatabasesAPI {
     if (options.title) {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
-    if (options.description) {
-      validateArrayLength(options.description, LIMITS.ARRAY_ELEMENTS, 'description');
+    if (options.initial_data_source?.title) {
+      validateArrayLength(
+        options.initial_data_source.title,
+        LIMITS.ARRAY_ELEMENTS,
+        'initial_data_source.title',
+      );
+    }
+    if (options.initial_data_source.title) {
+      validateArrayLength(
+        options.initial_data_source.title,
+        LIMITS.ARRAY_ELEMENTS,
+        'initial_data_source.title',
+      );
     }
 
     const response = await this.client.request<NotionDatabase>({
@@ -240,9 +264,6 @@ export class DatabasesAPI {
   async update(databaseId: string, options: UpdateDatabaseOptions): Promise<Database> {
     if (options.title) {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
-    }
-    if (options.description) {
-      validateArrayLength(options.description, LIMITS.ARRAY_ELEMENTS, 'description');
     }
 
     const response = await this.client.request<NotionDatabase>({

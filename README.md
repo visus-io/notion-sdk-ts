@@ -15,6 +15,7 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 
 - [Features](#features)
 - [Installation](#installation)
+- [Migration to API Version 2025-09-03](#migration-to-api-version-2025-09-03)
 - [Quick Start](#quick-start)
 - [Helpers](#helpers)
   - [Rich Text](#rich-text)
@@ -58,6 +59,144 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 npm install @visus-io/notion-sdk-ts
 ```
 
+## Migration to API Version 2025-09-03
+
+**This SDK now defaults to Notion API version `2025-09-03`** (previously `2022-06-28`). This version introduces breaking changes to support multi-source databases.
+
+### What Changed
+
+**Database Creation**
+
+- Properties are now specified under `initial_data_source.properties` instead of top-level `properties`
+- Parent can be `{ page_id: string }` or `{ workspace: true }` (data source parents removed)
+
+```typescript
+// ❌ Old (2022-06-28)
+await notion.databases.create({
+  parent: { page_id: 'page-id' },
+  properties: {
+    Name: { title: {} },
+    Status: {
+      select: {
+        options: [
+          /* ... */
+        ],
+      },
+    },
+  },
+});
+
+// ✅ New (2025-09-03)
+await notion.databases.create({
+  parent: { page_id: 'page-id' },
+  initial_data_source: {
+    properties: {
+      Name: { title: {} },
+      Status: {
+        select: {
+          options: [
+            /* ... */
+          ],
+        },
+      },
+    },
+  },
+});
+```
+
+**Database Updates**
+
+- `properties` field removed from update options (use Data Sources API instead)
+- Added `is_inline` and `parent` fields for moving/configuring databases
+
+```typescript
+// ❌ Old (2022-06-28) - properties updated on database
+await notion.databases.update('db-id', {
+  properties: { NewField: { number: {} } },
+});
+
+// ✅ New (2025-09-03) - properties updated on data source
+const db = await notion.databases.retrieve('db-id');
+const dataSourceId = db.dataSources[0].id;
+await notion.dataSources.update(dataSourceId, {
+  properties: { NewField: { number: {} } },
+});
+```
+
+**Search API**
+
+- Search now returns `DataSource` objects instead of `Database` objects
+- Filter value changed from `'database'` to `'data_source'`
+
+```typescript
+// ❌ Old (2022-06-28)
+const results = await notion.search.query({
+  filter: { property: 'object', value: 'database' },
+});
+
+// ✅ New (2025-09-03)
+const results = await notion.search.query({
+  filter: { property: 'object', value: 'data_source' },
+});
+```
+
+**Page Creation with Database Parent**
+
+- Use `parent.dataSource(dataSourceId, databaseId)` instead of `parent.database(id)` for creating pages
+- Both data source ID and database ID are required
+
+```typescript
+// ❌ Old (2022-06-28)
+await notion.pages.create({
+  parent: parent.database('database-id'),
+  properties: {
+    /* ... */
+  },
+});
+
+// ✅ New (2025-09-03) - recommended
+const db = await notion.databases.retrieve('database-id');
+const dataSourceId = db.dataSources[0].id;
+await notion.pages.create({
+  parent: parent.dataSource(dataSourceId, db.id),
+  properties: {
+    /* ... */
+  },
+});
+```
+
+### How to Get Data Source IDs
+
+```typescript
+// Retrieve database to get its data sources
+const database = await notion.databases.retrieve('database-id');
+
+// Get the first (and usually only) data source
+const dataSourceId = database.dataSources[0].id;
+
+// Or iterate through all data sources
+database.dataSources.forEach((ds) => {
+  console.log(`Data Source: ${ds.name} (${ds.id})`);
+});
+```
+
+### Reverting to Old Version
+
+If you need to stay on the old API version temporarily:
+
+```typescript
+const notion = new Notion({
+  auth: process.env.NOTION_TOKEN,
+  notionVersion: '2022-06-28', // Use old version
+});
+```
+
+**Note:** The old version may not work correctly with databases that have multiple data sources. We recommend migrating to `2025-09-03` as soon as possible.
+
+### More Information
+
+For complete details, see the [official Notion API upgrade guide](https://developers.notion.com/guides/get-started/upgrade-guide-2025-09-03).
+
 ## Quick Start
 
 ```typescript
@@ -78,9 +217,12 @@ const notion = new Notion({ auth: process.env.NOTION_TOKEN });
 const page = await notion.pages.retrieve('page-id');
 console.log(page.getTitle());
 
-// Create a page in a database
+// Create a page in a database (2025-09-03 API)
+const database = await notion.databases.retrieve('database-id');
+const dataSourceId = database.dataSources[0].id;
+
 await notion.pages.create({
-  parent: parent.database('database-id'),
+  parent: parent.dataSource(dataSourceId, database.id),
   properties: {
     Name: prop.title('New Task'),
     Status: prop.status('In Progress'),
@@ -301,11 +443,10 @@ const sorts = [
 import { parent, icon, cover, notionFile } from '@visus-io/notion-sdk-ts';
 
 // Parent objects
-parent.database('database-id');
 parent.page('page-id');
-parent.dataSource('data-source-id');
-parent.block('block-id');
+parent.dataSource('data-source-id', 'database-id'); // Note: both IDs required in 2025-09-03
 parent.workspace();
+parent.block('block-id'); // For comments on blocks
 
 // Icons
 icon.emoji('🚀');
@@ -658,7 +799,7 @@ const notion = new Notion({
 
   // All optional:
   baseUrl: 'https://api.notion.com', // Default
-  notionVersion: '2022-06-28', // Default
+  notionVersion: '2025-09-03', // Default (use '2022-06-28' for old version)
   timeoutMs: 60_000, // Default: 60s
   retryOnRateLimit: true, // Default: true
   maxRetries: 3, // Default: 3
@@ -849,7 +990,7 @@ src/
 │   ├── filter.helpers.ts        # filter.status(), filter.and(), etc.
 │   ├── sort.helpers.ts          # sort.property(), sort.createdTime()
 │   ├── property.helpers.ts      # prop.title(), prop.select(), etc.
-│   ├── parent.helpers.ts        # parent.database(), parent.page()
+│   ├── parent.helpers.ts        # parent.dataSource(), parent.page(), parent.workspace()
 │   └── file.helpers.ts          # icon, cover, notionFile
 ├── models/
 │   ├── base.model.ts            # Abstract BaseModel<T> with Zod validation

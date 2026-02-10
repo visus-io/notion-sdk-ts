@@ -1,18 +1,19 @@
 import type { NotionClient } from '../client';
 import {
-  databaseSchema,
-  type NotionDatabase,
+  dataSourceSchema,
+  type NotionDataSource,
   type NotionPage,
   pageSchema,
   type PaginatedList,
   type PaginationParameters,
 } from '../schemas';
-import { Database, Page } from '../models';
+import { DataSource, Page } from '../models';
 
 /**
  * Search filter object type.
+ * As of API version 2025-09-03, search returns data sources instead of databases.
  */
-export type SearchFilterObject = 'page' | 'database';
+export type SearchFilterObject = 'page' | 'data_source';
 
 /**
  * Search filter configuration.
@@ -51,9 +52,10 @@ export interface SearchOptions extends PaginationParameters {
 }
 
 /**
- * Search result item (can be a page or database).
+ * Search result item (can be a page or data source).
+ * As of API version 2025-09-03, search returns data sources instead of databases.
  */
-export type SearchResult = Page | Database;
+export type SearchResult = Page | DataSource;
 
 /**
  * Search API client for searching across the workspace.
@@ -62,10 +64,11 @@ export class SearchAPI {
   constructor(private readonly client: NotionClient) {}
 
   /**
-   * Search across all pages and databases in the workspace.
+   * Search across all pages and data sources in the workspace.
+   * As of API version 2025-09-03, search returns data sources instead of databases.
    *
    * @param options - Search options (query, filter, sort, pagination)
-   * @returns Paginated list of pages and/or databases matching the search
+   * @returns Paginated list of pages and/or data sources matching the search
    *
    * @see https://developers.notion.com/reference/post-search
    */
@@ -92,21 +95,21 @@ export class SearchAPI {
       body.start_cursor = options.start_cursor;
     }
 
-    const response = await this.client.request<PaginatedList<NotionPage | NotionDatabase>>({
+    const response = await this.client.request<PaginatedList<NotionPage | NotionDataSource>>({
       method: 'POST',
       path: '/search',
       body: Object.keys(body).length > 0 ? body : undefined,
     });
 
-    // The API returns mixed results (pages and databases)
+    // The API returns mixed results (pages and data sources)
     // We need to parse each result based on its object type
     const results: SearchResult[] = response.results.map((item) => {
       if (item.object === 'page') {
         const parsed = pageSchema.parse(item);
         return new Page(parsed);
       } else {
-        const parsed = databaseSchema.parse(item);
-        return new Database(parsed);
+        const parsed = dataSourceSchema.parse(item);
+        return new DataSource(parsed);
       }
     });
 
@@ -115,7 +118,7 @@ export class SearchAPI {
       results,
       next_cursor: response.next_cursor,
       has_more: response.has_more,
-      type: 'page_or_database',
+      type: 'page_or_data_source',
     };
   }
 }
