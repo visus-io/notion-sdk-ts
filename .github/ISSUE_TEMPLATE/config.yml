@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a Question
+    url: https://github.com/visus-io/notion-sdk-ts/discussions/new?category=q-a
+    about: Ask questions and get help using the SDK in Discussions
+  - name: Notion Developer Community
+    url: https://developers.notion.com/community
+    about: For general Notion API questions not specific to this SDK
+  - name: Notion API Documentation
+    url: https://developers.notion.com/reference/intro
+    about: Official Notion API reference documentation
+  - name: SDK Documentation
+    url: https://github.com/visus-io/notion-sdk-ts#readme
+    about: Read the full SDK documentation and examples

@@ -1,0 +1,170 @@
+name: Performance Issue
+description: Report performance problems or suggest optimizations
+title: '[Performance]: '
+labels: ['Issue: Pending Confirmation', 'Priority: Medium']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve SDK performance!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Performance Issue Description
+      description: Describe the performance problem you're experiencing
+      placeholder: When I do X, the SDK is slow/uses too much memory/etc.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What kind of performance issue is this?
+      options:
+        - Slow execution time
+        - High memory usage
+        - Excessive API calls
+        - Bundle size concerns
+        - Rate limiting issues
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: api-area
+    attributes:
+      label: API Area
+      description: Which part of the SDK is affected?
+      multiple: true
+      options:
+        - Pages API
+        - Blocks API
+        - Databases API
+        - Data Sources API
+        - Comments API
+        - Search API
+        - Users API
+        - File Uploads API
+        - Pagination
+        - Helpers
+        - Models
+        - Validation
+        - Rate Limiting
+        - General HTTP Client
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the performance issue?
+      placeholder: |
+        1. Call this API method...
+        2. With these parameters...
+        3. Observe slow performance...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: Minimal code that demonstrates the issue
+      render: typescript
+      placeholder: |
+        import { Notion, paginate } from '@visus-io/notion-sdk-ts';
+
+        const notion = new Notion({ auth: 'token' });
+        // Your code here
+    validations:
+      required: false
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Performance Metrics
+      description: Any measurements you've collected
+      placeholder: |
+        - Execution time: 5 seconds
+        - Memory usage: 500MB
+        - Number of API calls: 100
+        - Bundle size impact: +200KB
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Performance
+      description: What performance did you expect?
+      placeholder: I expected this to complete in...
+    validations:
+      required: false
+
+  - type: textarea
+    id: data-scale
+    attributes:
+      label: Data Scale
+      description: What is the scale of data you're working with?
+      placeholder: |
+        - Number of pages: 10,000
+        - Number of blocks: 500 per page
+        - Database size: 50,000 rows
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: SDK Version
+      description: Which version of @visus-io/notion-sdk-ts are you using?
+      placeholder: e.g., 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: Which Node.js version are you using?
+      placeholder: e.g., 18.0.0, 20.10.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime Environment
+      options:
+        - Node.js
+        - Bun
+        - Deno
+        - Edge Runtime (Vercel, Cloudflare Workers, etc.)
+        - Browser
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context about the performance issue
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues to ensure this hasn't been reported already
+          required: true
+        - label: I have tested with the latest version of the SDK
+          required: false
+        - label: I have profiled or measured the performance issue
+          required: false

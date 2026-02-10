@@ -1,0 +1,152 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in the SDK
+title: '[Bug]: '
+labels: ['Issue: Pending Confirmation', 'Priority: Medium']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the following information to help us investigate.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug
+      placeholder: What happened that shouldn't have?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the bug
+      placeholder: |
+        1. Initialize SDK with...
+        2. Call method...
+        3. Observe error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe the expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Describe what actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: Minimal code to reproduce the issue
+      render: typescript
+      placeholder: |
+        import { Notion } from '@visus-io/notion-sdk-ts';
+
+        const notion = new Notion({ auth: 'token' });
+        // Your code here
+    validations:
+      required: false
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Message / Stack Trace
+      description: Any error messages or stack traces
+      render: shell
+      placeholder: Paste the error message or stack trace here
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: SDK Version
+      description: Which version of @visus-io/notion-sdk-ts are you using?
+      placeholder: e.g., 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: Which Node.js version are you using?
+      placeholder: e.g., 18.0.0, 20.10.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime Environment
+      description: Where are you running the SDK?
+      options:
+        - Node.js
+        - Bun
+        - Deno
+        - Edge Runtime (Vercel, Cloudflare Workers, etc.)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: api-area
+    attributes:
+      label: API Area
+      description: Which part of the SDK is affected?
+      multiple: true
+      options:
+        - Pages API
+        - Blocks API
+        - Databases API
+        - Data Sources API
+        - Comments API
+        - Search API
+        - Users API
+        - File Uploads API
+        - Helpers (block, richText, filter, etc.)
+        - Models (Page, Block, Database, etc.)
+        - Error Handling
+        - Pagination
+        - Rate Limiting
+        - Validation
+        - TypeScript Types
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem
+      placeholder: Add any other context, screenshots, or information here
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to ensure this bug hasn't been reported already
+          required: true
+        - label: I am using the latest version of the SDK
+          required: false
+        - label: I have included a minimal code sample that reproduces the issue
+          required: false

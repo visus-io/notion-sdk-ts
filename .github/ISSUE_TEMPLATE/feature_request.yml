@@ -1,0 +1,121 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for the SDK
+title: '[Feature]: '
+labels: ['Status: Review Needed', 'Priority: Low']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide as much detail as possible.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like
+      placeholder: I'd like to be able to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered
+      placeholder: I've also thought about...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: api-area
+    attributes:
+      label: API Area
+      description: Which part of the SDK would this feature affect?
+      multiple: true
+      options:
+        - Pages API
+        - Blocks API
+        - Databases API
+        - Data Sources API
+        - Comments API
+        - Search API
+        - Users API
+        - File Uploads API
+        - Helpers (block, richText, filter, etc.)
+        - Models (Page, Block, Database, etc.)
+        - Error Handling
+        - Pagination
+        - Rate Limiting
+        - Validation
+        - TypeScript Types
+        - Configuration
+        - New API (not yet supported)
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example Usage
+      description: Show how you'd like to use this feature
+      render: typescript
+      placeholder: |
+        import { Notion } from '@visus-io/notion-sdk-ts';
+
+        const notion = new Notion({ auth: 'token' });
+        // Your proposed API usage here
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Nice to have
+        - Important for my use case
+        - Critical blocker
+    validations:
+      required: true
+
+  - type: textarea
+    id: notion-api
+    attributes:
+      label: Notion API Support
+      description: Does the Notion API already support this? If so, please provide a link to the documentation
+      placeholder: https://developers.notion.com/reference/...
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or examples
+      placeholder: Any additional information that might be helpful
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested already
+          required: true
+        - label: This feature aligns with the SDK's goals (type-safety, ergonomics, completeness)
+          required: false
+        - label: I am willing to contribute this feature via a pull request
+          required: false
