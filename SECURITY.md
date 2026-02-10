@@ -6,9 +6,9 @@ We actively support the latest version of `@visus-io/notion-sdk-ts`. Security up
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.x.x   | :white_check_mark: |
+| 1.x.x   | :white_check_mark: |
 
-Once the SDK reaches stable v1.0.0, we will maintain security support for the current major version and one previous major version.
+We maintain security support for the current major version and one previous major version.
 
 ## Reporting a Vulnerability
 
