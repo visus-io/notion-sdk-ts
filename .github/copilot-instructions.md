@@ -42,6 +42,14 @@ src/
   schemas/              -- Zod schemas and inferred types
   models/               -- OOP model classes wrapping parsed data
   helpers/              -- Factory functions and builders for API objects
+    block.helpers.ts
+    file.helpers.ts
+    filter.helpers.ts
+    pagination.helpers.ts
+    parent.helpers.ts
+    property.helpers.ts
+    richText.helpers.ts
+    sort.helpers.ts
 ```
 
 Test files are colocated with source using `.test.ts` suffix (e.g., `block.model.test.ts` next to `block.model.ts`).
@@ -79,7 +87,7 @@ Test files are colocated with source using `.test.ts` suffix (e.g., `block.model
 
 ### TypeScript
 
-- Target: ES2017, Module: CommonJS, strict mode enabled
+- Target: ES2021, Module: CommonJS, strict mode enabled
 - Prefer `as const` arrays over TypeScript enums: `const THING = [...] as const`
 - Derive types from const arrays: `type Thing = (typeof THING)[number]`
 - Use numeric separators for readability: `2_000`, `60_000`, `500 * 1_024`
@@ -138,6 +146,7 @@ Factory functions organized as namespace objects for ergonomic API object constr
 - Helpers eagerly validate inputs via `validateStringLength()` / `validateArrayLength()`, throwing `NotionValidationError` before any API call
 - Filter helpers return builder instances with chainable methods producing `FilterCondition` objects; compound filters use `filter.and()` / `filter.or()`
 - Sort helpers return builders with `.ascending()` / `.descending()` terminal methods
+- Pagination helpers (`paginate`, `paginateIterator`, `paginateWithMetadata`) automate cursor-based pagination for Notion list endpoints
 
 ### Error Handling (`src/errors.ts`, `src/validation.ts`)
 
@@ -157,6 +166,8 @@ The client only retries `rate_limited` (429) errors, using `Retry-After` header 
 ## Testing Conventions
 
 - **Framework:** Vitest with `globals: true`, though tests also explicitly `import { describe, expect, it } from 'vitest'`
+- **Environment:** Node
+- **Coverage:** v8 provider with reporters: `text`, `json`, `html`, `lcov`
 - **Structure:** Top-level `describe()` for module/class, nested `describe()` for groups, `it('should ...')` for cases
 - **Section dividers:** Comment lines of dashes (`// -------...`) separate logical test groups
 - **Model tests:** Construct with realistic mock data matching full Notion API response shapes; assert getters and methods
@@ -185,15 +196,33 @@ The client only retries `rate_limited` (429) errors, using `Retry-After` header 
 | `@vitest/coverage-v8`          | Code coverage                                 |
 | `eslint` + `typescript-eslint` | Linting                                       |
 | `prettier`                     | Code formatting                               |
+| `husky` + `lint-staged`        | Git hooks for pre-commit linting              |
+| `@commitlint`                  | Conventional commit message enforcement       |
+
+## Git Workflow
+
+- **Husky hooks:**
+  - `pre-commit`: Runs `lint-staged` to lint and format staged files before commit
+  - `commit-msg`: Runs `commitlint` to enforce conventional commit format
+- **Commit message format:** Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`)
+- **Lint-staged:** Auto-fixes and formats `.ts`, `.json`, `.md`, `.yml` files on commit
 
 ## ESLint Rules to Follow
 
 - `consistent-type-imports` -- must use `type` keyword for type-only imports
-- `explicit-function-return-type` -- functions should declare return types
+- `explicit-function-return-type` (warn) -- functions should declare return types (allows expressions, typed functions, HOFs)
 - `no-floating-promises` -- async promises must be awaited or handled
-- `no-explicit-any` -- avoid `any`; use `unknown` when the type is truly unknown
+- `await-thenable` -- only await thenable values
+- `no-misused-promises` -- proper promise handling
+- `no-explicit-any` (warn) -- avoid `any`; use `unknown` when the type is truly unknown
+- `no-unused-vars` -- prefix unused parameters/variables with `_`
+- `no-non-null-assertion` (warn) -- avoid `!` non-null assertions
 - `prefer-const`, `no-var` -- always use `const`; `let` only when reassignment is needed
 - `eqeqeq` -- strict equality (except `== null` is allowed)
+- `no-console` (warn) -- only allow `console.warn` and `console.error`
+- `no-debugger`, `no-alert` -- disallow debugger statements and alerts
+- `no-throw-literal`, `no-return-await` -- proper error handling
 - `complexity` max 15, `max-depth` 4, `max-lines-per-function` 150
 - `prefer-arrow-callback`, `prefer-template`, `object-shorthand`
-- No `.js` extensions in imports/exports
+- `sort-imports` (warn) -- case-insensitive import sorting (declaration order not enforced)
+- No `.js` extensions in imports/exports (enforced via `no-restricted-syntax`)
