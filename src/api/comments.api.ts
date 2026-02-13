@@ -1,11 +1,5 @@
 import type { NotionClient } from '../client';
-import {
-  commentSchema,
-  type NotionComment,
-  type PaginatedList,
-  paginatedListSchema,
-  type PaginationParameters,
-} from '../schemas';
+import { commentSchema, type PaginatedList, type PaginationParameters } from '../schemas';
 import { Comment } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
@@ -72,22 +66,7 @@ export class CommentsAPI extends BaseAPI {
       ...this.buildPaginationQuery(params),
     };
 
-    const response = await this.client.request<PaginatedList<NotionComment>>({
-      method: 'GET',
-      path: '/comments',
-      query,
-    });
-
-    const listSchema = paginatedListSchema(commentSchema);
-    const parsed = listSchema.parse(response);
-
-    return {
-      object: 'list',
-      results: parsed.results.map((comment) => new Comment(comment)),
-      next_cursor: parsed.next_cursor,
-      has_more: parsed.has_more,
-      type: 'comment',
-    };
+    return this.listResources('/comments', commentSchema, Comment, 'comment', query);
   }
 
   /**
@@ -104,13 +83,6 @@ export class CommentsAPI extends BaseAPI {
       validateArrayLength(options.attachments, LIMITS.COMMENT_ATTACHMENTS, 'attachments');
     }
 
-    const response = await this.client.request<NotionComment>({
-      method: 'POST',
-      path: '/comments',
-      body: options,
-    });
-
-    const parsed = commentSchema.parse(response);
-    return new Comment(parsed);
+    return this.createResource('/comments', options, commentSchema, Comment);
   }
 }

@@ -1,11 +1,5 @@
 import type { NotionClient } from '../client';
-import {
-  type NotionUser,
-  type PaginatedList,
-  paginatedListSchema,
-  type PaginationParameters,
-  userSchema,
-} from '../schemas';
+import { type PaginatedList, type PaginationParameters, userSchema } from '../schemas';
 import { User } from '../models';
 import { BaseAPI } from './base.api';
 
@@ -26,13 +20,7 @@ export class UsersAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/get-user
    */
   async retrieve(userId: string): Promise<User> {
-    const response = await this.client.request<NotionUser>({
-      method: 'GET',
-      path: `/users/${userId}`,
-    });
-
-    const parsed = userSchema.parse(response);
-    return new User(parsed);
+    return this.retrieveResource(`/users/${userId}`, userSchema, User);
   }
 
   /**
@@ -46,22 +34,7 @@ export class UsersAPI extends BaseAPI {
   async list(params?: PaginationParameters): Promise<PaginatedList<User>> {
     const query = this.buildPaginationQuery(params);
 
-    const response = await this.client.request<PaginatedList<NotionUser>>({
-      method: 'GET',
-      path: '/users',
-      query: Object.keys(query).length > 0 ? query : undefined,
-    });
-
-    const listSchema = paginatedListSchema(userSchema);
-    const parsed = listSchema.parse(response);
-
-    return {
-      object: 'list',
-      results: parsed.results.map((user) => new User(user)),
-      next_cursor: parsed.next_cursor,
-      has_more: parsed.has_more,
-      type: 'user',
-    };
+    return this.listResources('/users', userSchema, User, 'user', query);
   }
 
   /**
@@ -72,12 +45,6 @@ export class UsersAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/get-self
    */
   async me(): Promise<User> {
-    const response = await this.client.request<NotionUser>({
-      method: 'GET',
-      path: '/users/me',
-    });
-
-    const parsed = userSchema.parse(response);
-    return new User(parsed);
+    return this.retrieveResource('/users/me', userSchema, User);
   }
 }

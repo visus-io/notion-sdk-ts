@@ -1,7 +1,6 @@
 import type { NotionClient } from '../client';
 import {
   dataSourceSchema,
-  type NotionDataSource,
   type NotionPage,
   pageSchema,
   type PaginatedList,
@@ -140,14 +139,12 @@ export class DataSourcesAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    const response = await this.client.request<NotionDataSource>({
-      method: 'GET',
-      path: `/data_sources/${dataSourceId}`,
-      query: Object.keys(query).length > 0 ? query : undefined,
-    });
-
-    const parsed = dataSourceSchema.parse(response);
-    return new DataSource(parsed);
+    return this.retrieveResource(
+      `/data_sources/${dataSourceId}`,
+      dataSourceSchema,
+      DataSource,
+      query,
+    );
   }
 
   /**
@@ -231,14 +228,7 @@ export class DataSourcesAPI extends BaseAPI {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
 
-    const response = await this.client.request<NotionDataSource>({
-      method: 'POST',
-      path: '/data_sources',
-      body: options,
-    });
-
-    const parsed = dataSourceSchema.parse(response);
-    return new DataSource(parsed);
+    return this.createResource('/data_sources', options, dataSourceSchema, DataSource);
   }
 
   /**
@@ -255,14 +245,12 @@ export class DataSourcesAPI extends BaseAPI {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
 
-    const response = await this.client.request<NotionDataSource>({
-      method: 'PATCH',
-      path: `/data_sources/${dataSourceId}`,
-      body: options,
-    });
-
-    const parsed = dataSourceSchema.parse(response);
-    return new DataSource(parsed);
+    return this.updateResource(
+      `/data_sources/${dataSourceId}`,
+      options,
+      dataSourceSchema,
+      DataSource,
+    );
   }
 
   /**

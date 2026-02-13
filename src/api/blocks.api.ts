@@ -76,14 +76,7 @@ export class BlocksAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    const response = await this.client.request<NotionBlock>({
-      method: 'GET',
-      path: `/blocks/${blockId}`,
-      query: Object.keys(query).length > 0 ? query : undefined,
-    });
-
-    const parsed = blockSchema.parse(response);
-    return new Block(parsed);
+    return this.retrieveResource(`/blocks/${blockId}`, blockSchema, Block, query);
   }
 
   /**
@@ -95,13 +88,7 @@ export class BlocksAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/delete-a-block
    */
   async delete(blockId: string): Promise<Block> {
-    const response = await this.client.request<NotionBlock>({
-      method: 'DELETE',
-      path: `/blocks/${blockId}`,
-    });
-
-    const parsed = blockSchema.parse(response);
-    return new Block(parsed);
+    return this.deleteResource(`/blocks/${blockId}`, blockSchema, Block);
   }
 
   /**
@@ -114,14 +101,7 @@ export class BlocksAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/update-a-block
    */
   async update(blockId: string, options: UpdateBlockOptions): Promise<Block> {
-    const response = await this.client.request<NotionBlock>({
-      method: 'PATCH',
-      path: `/blocks/${blockId}`,
-      body: options,
-    });
-
-    const parsed = blockSchema.parse(response);
-    return new Block(parsed);
+    return this.updateResource(`/blocks/${blockId}`, options, blockSchema, Block);
   }
 
   /**
@@ -140,22 +120,7 @@ export class BlocksAPI extends BaseAPI {
     list: async (blockId: string, params?: PaginationParameters): Promise<PaginatedList<Block>> => {
       const query = this.buildPaginationQuery(params);
 
-      const response = await this.client.request<PaginatedList<NotionBlock>>({
-        method: 'GET',
-        path: `/blocks/${blockId}/children`,
-        query: Object.keys(query).length > 0 ? query : undefined,
-      });
-
-      const listSchema = paginatedListSchema(blockSchema);
-      const parsed = listSchema.parse(response);
-
-      return {
-        object: 'list',
-        results: parsed.results.map((block) => new Block(block)),
-        next_cursor: parsed.next_cursor,
-        has_more: parsed.has_more,
-        type: 'block',
-      };
+      return this.listResources(`/blocks/${blockId}/children`, blockSchema, Block, 'block', query);
     },
 
     /**

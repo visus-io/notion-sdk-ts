@@ -1,5 +1,5 @@
 import type { NotionClient } from '../client';
-import { type NotionPage, pageSchema } from '../schemas';
+import { pageSchema } from '../schemas';
 import { Page } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
@@ -101,14 +101,7 @@ export class PagesAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    const response = await this.client.request<NotionPage>({
-      method: 'GET',
-      path: `/pages/${pageId}`,
-      query: Object.keys(query).length > 0 ? query : undefined,
-    });
-
-    const parsed = pageSchema.parse(response);
-    return new Page(parsed);
+    return this.retrieveResource(`/pages/${pageId}`, pageSchema, Page, query);
   }
 
   /**
@@ -124,14 +117,7 @@ export class PagesAPI extends BaseAPI {
       validateArrayLength(options.children, LIMITS.ARRAY_ELEMENTS, 'children');
     }
 
-    const response = await this.client.request<NotionPage>({
-      method: 'POST',
-      path: '/pages',
-      body: options,
-    });
-
-    const parsed = pageSchema.parse(response);
-    return new Page(parsed);
+    return this.createResource('/pages', options, pageSchema, Page);
   }
 
   /**
@@ -144,14 +130,7 @@ export class PagesAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/patch-page
    */
   async update(pageId: string, options: UpdatePageOptions): Promise<Page> {
-    const response = await this.client.request<NotionPage>({
-      method: 'PATCH',
-      path: `/pages/${pageId}`,
-      body: options,
-    });
-
-    const parsed = pageSchema.parse(response);
-    return new Page(parsed);
+    return this.updateResource(`/pages/${pageId}`, options, pageSchema, Page);
   }
 
   /**

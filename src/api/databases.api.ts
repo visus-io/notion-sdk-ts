@@ -1,7 +1,6 @@
 import type { NotionClient } from '../client';
 import {
   databaseSchema,
-  type NotionDatabase,
   type NotionPage,
   pageSchema,
   type PaginatedList,
@@ -153,14 +152,7 @@ export class DatabasesAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    const response = await this.client.request<NotionDatabase>({
-      method: 'GET',
-      path: `/databases/${databaseId}`,
-      query: Object.keys(query).length > 0 ? query : undefined,
-    });
-
-    const parsed = databaseSchema.parse(response);
-    return new Database(parsed);
+    return this.retrieveResource(`/databases/${databaseId}`, databaseSchema, Database, query);
   }
 
   /**
@@ -226,14 +218,7 @@ export class DatabasesAPI extends BaseAPI {
       );
     }
 
-    const response = await this.client.request<NotionDatabase>({
-      method: 'POST',
-      path: '/databases',
-      body: options,
-    });
-
-    const parsed = databaseSchema.parse(response);
-    return new Database(parsed);
+    return this.createResource('/databases', options, databaseSchema, Database);
   }
 
   /**
@@ -250,14 +235,7 @@ export class DatabasesAPI extends BaseAPI {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
 
-    const response = await this.client.request<NotionDatabase>({
-      method: 'PATCH',
-      path: `/databases/${databaseId}`,
-      body: options,
-    });
-
-    const parsed = databaseSchema.parse(response);
-    return new Database(parsed);
+    return this.updateResource(`/databases/${databaseId}`, options, databaseSchema, Database);
   }
 
   /**
