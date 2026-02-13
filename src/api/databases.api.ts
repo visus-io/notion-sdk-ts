@@ -174,28 +174,12 @@ export class DatabasesAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/post-database-query
    */
   async query(databaseId: string, options?: QueryDatabaseOptions): Promise<PaginatedList<Page>> {
-    const body: Record<string, unknown> = {};
-
-    if (options?.filter) {
-      body.filter = options.filter;
-    }
-
-    if (options?.sorts) {
-      body.sorts = options.sorts;
-    }
-
-    if (options?.page_size) {
-      body.page_size = options.page_size;
-    }
-
-    if (options?.start_cursor) {
-      body.start_cursor = options.start_cursor;
-    }
-
-    if (options?.filter_properties) {
-      validateArrayLength(options.filter_properties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
-      body.filter_properties = options.filter_properties;
-    }
+    const body: Record<string, unknown> = {
+      ...(options?.filter ? { filter: options.filter } : {}),
+      ...(options?.sorts ? { sorts: options.sorts } : {}),
+      ...this.buildPaginationBody(options),
+      ...this.buildFilterPropertiesBody(options?.filter_properties),
+    };
 
     const response = await this.client.request<PaginatedList<NotionPage>>({
       method: 'POST',

@@ -76,27 +76,12 @@ export class SearchAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/post-search
    */
   async query(options?: SearchOptions): Promise<PaginatedList<SearchResult>> {
-    const body: Record<string, unknown> = {};
-
-    if (options?.query) {
-      body.query = options.query;
-    }
-
-    if (options?.filter) {
-      body.filter = options.filter;
-    }
-
-    if (options?.sort) {
-      body.sort = options.sort;
-    }
-
-    if (options?.page_size) {
-      body.page_size = options.page_size;
-    }
-
-    if (options?.start_cursor) {
-      body.start_cursor = options.start_cursor;
-    }
+    const body: Record<string, unknown> = {
+      ...(options?.query ? { query: options.query } : {}),
+      ...(options?.filter ? { filter: options.filter } : {}),
+      ...(options?.sort ? { sort: options.sort } : {}),
+      ...this.buildPaginationBody(options),
+    };
 
     const response = await this.client.request<PaginatedList<NotionPage | NotionDataSource>>({
       method: 'POST',
