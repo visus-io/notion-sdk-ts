@@ -72,11 +72,9 @@ export class BlocksAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/retrieve-a-block
    */
   async retrieve(blockId: string, options?: RetrieveBlockOptions): Promise<Block> {
-    const query: Record<string, string> = {};
-
-    if (options?.filter_properties) {
-      query.filter_properties = options.filter_properties.join(',');
-    }
+    const query: Record<string, string> = {
+      ...this.buildFilterPropertiesQuery(options?.filter_properties),
+    };
 
     const response = await this.client.request<NotionBlock>({
       method: 'GET',
@@ -140,15 +138,7 @@ export class BlocksAPI extends BaseAPI {
      * @see https://developers.notion.com/reference/get-block-children
      */
     list: async (blockId: string, params?: PaginationParameters): Promise<PaginatedList<Block>> => {
-      const query: Record<string, string> = {};
-
-      if (params?.page_size) {
-        query.page_size = String(params.page_size);
-      }
-
-      if (params?.start_cursor) {
-        query.start_cursor = params.start_cursor;
-      }
+      const query = this.buildPaginationQuery(params);
 
       const response = await this.client.request<PaginatedList<NotionBlock>>({
         method: 'GET',

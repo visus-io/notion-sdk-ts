@@ -69,15 +69,8 @@ export class CommentsAPI extends BaseAPI {
   async list(parentId: string, params?: PaginationParameters): Promise<PaginatedList<Comment>> {
     const query: Record<string, string> = {
       block_id: parentId, // Can be page_id, block_id, or database_id
+      ...this.buildPaginationQuery(params),
     };
-
-    if (params?.page_size) {
-      query.page_size = String(params.page_size);
-    }
-
-    if (params?.start_cursor) {
-      query.start_cursor = params.start_cursor;
-    }
 
     const response = await this.client.request<PaginatedList<NotionComment>>({
       method: 'GET',

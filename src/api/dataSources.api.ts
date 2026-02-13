@@ -136,12 +136,9 @@ export class DataSourcesAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/retrieve-a-data-source
    */
   async retrieve(dataSourceId: string, options?: RetrieveDataSourceOptions): Promise<DataSource> {
-    const query: Record<string, string> = {};
-
-    if (options?.filter_properties) {
-      validateArrayLength(options.filter_properties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
-      query.filter_properties = options.filter_properties.join(',');
-    }
+    const query: Record<string, string> = {
+      ...this.buildFilterPropertiesQuery(options?.filter_properties),
+    };
 
     const response = await this.client.request<NotionDataSource>({
       method: 'GET',

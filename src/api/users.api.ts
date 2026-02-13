@@ -44,15 +44,7 @@ export class UsersAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/get-users
    */
   async list(params?: PaginationParameters): Promise<PaginatedList<User>> {
-    const query: Record<string, string> = {};
-
-    if (params?.page_size) {
-      query.page_size = String(params.page_size);
-    }
-
-    if (params?.start_cursor) {
-      query.start_cursor = params.start_cursor;
-    }
+    const query = this.buildPaginationQuery(params);
 
     const response = await this.client.request<PaginatedList<NotionUser>>({
       method: 'GET',

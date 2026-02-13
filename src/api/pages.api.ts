@@ -97,12 +97,9 @@ export class PagesAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/retrieve-a-page
    */
   async retrieve(pageId: string, options?: RetrievePageOptions): Promise<Page> {
-    const query: Record<string, string> = {};
-
-    if (options?.filter_properties) {
-      validateArrayLength(options.filter_properties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
-      query.filter_properties = options.filter_properties.join(',');
-    }
+    const query: Record<string, string> = {
+      ...this.buildFilterPropertiesQuery(options?.filter_properties),
+    };
 
     const response = await this.client.request<NotionPage>({
       method: 'GET',
