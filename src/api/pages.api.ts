@@ -1,7 +1,9 @@
 import type { NotionClient } from '../client';
-import { type NotionPage, pageSchema } from '../schemas';
+import type { NotionPage } from '../schemas';
+import { pageSchema } from '../schemas';
 import { Page } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Options for retrieving a page.
@@ -81,8 +83,16 @@ export interface UpdatePageOptions {
 /**
  * Pages API client for working with Notion pages.
  */
-export class PagesAPI {
-  constructor(private readonly client: NotionClient) {}
+export class PagesAPI extends BaseAPI<NotionPage, Page> {
+  protected config = {
+    schema: pageSchema,
+    ModelClass: Page,
+    listType: 'page' as const,
+  };
+
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve a page by ID.
@@ -94,21 +104,11 @@ export class PagesAPI {
    * @see https://developers.notion.com/reference/retrieve-a-page
    */
   async retrieve(pageId: string, options?: RetrievePageOptions): Promise<Page> {
-    const query: Record<string, string> = {};
+    const query: Record<string, string> = {
+      ...this.buildFilterPropertiesQuery(options?.filter_properties),
+    };
 
-    if (options?.filter_properties) {
-      validateArrayLength(options.filter_properties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
-      query.filter_properties = options.filter_properties.join(',');
-    }
-
-    const response = await this.client.request<NotionPage>({
-      method: 'GET',
-      path: `/pages/${pageId}`,
-      query: Object.keys(query).length > 0 ? query : undefined,
-    });
-
-    const parsed = pageSchema.parse(response);
-    return new Page(parsed);
+    return this.retrieveResource(`/pages/${pageId}`, query);
   }
 
   /**
@@ -124,14 +124,7 @@ export class PagesAPI {
       validateArrayLength(options.children, LIMITS.ARRAY_ELEMENTS, 'children');
     }
 
-    const response = await this.client.request<NotionPage>({
-      method: 'POST',
-      path: '/pages',
-      body: options,
-    });
-
-    const parsed = pageSchema.parse(response);
-    return new Page(parsed);
+    return this.createResource('/pages', options);
   }
 
   /**
@@ -144,14 +137,7 @@ export class PagesAPI {
    * @see https://developers.notion.com/reference/patch-page
    */
   async update(pageId: string, options: UpdatePageOptions): Promise<Page> {
-    const response = await this.client.request<NotionPage>({
-      method: 'PATCH',
-      path: `/pages/${pageId}`,
-      body: options,
-    });
-
-    const parsed = pageSchema.parse(response);
-    return new Page(parsed);
+    return this.updateResource(`/pages/${pageId}`, options);
   }
 
   /**

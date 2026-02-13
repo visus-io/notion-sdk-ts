@@ -8,6 +8,7 @@ import {
 } from '../schemas';
 import { Block } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Options for retrieving a block.
@@ -56,8 +57,16 @@ export interface UpdateBlockOptions {
 /**
  * Blocks API client for working with Notion blocks.
  */
-export class BlocksAPI {
-  constructor(private readonly client: NotionClient) {}
+export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
+  protected config = {
+    schema: blockSchema,
+    ModelClass: Block,
+    listType: 'block' as const,
+  };
+
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve a block by ID.
@@ -69,20 +78,11 @@ export class BlocksAPI {
    * @see https://developers.notion.com/reference/retrieve-a-block
    */
   async retrieve(blockId: string, options?: RetrieveBlockOptions): Promise<Block> {
-    const query: Record<string, string> = {};
+    const query: Record<string, string> = {
+      ...this.buildFilterPropertiesQuery(options?.filter_properties),
+    };
 
-    if (options?.filter_properties) {
-      query.filter_properties = options.filter_properties.join(',');
-    }
-
-    const response = await this.client.request<NotionBlock>({
-      method: 'GET',
-      path: `/blocks/${blockId}`,
-      query: Object.keys(query).length > 0 ? query : undefined,
-    });
-
-    const parsed = blockSchema.parse(response);
-    return new Block(parsed);
+    return this.retrieveResource(`/blocks/${blockId}`, query);
   }
 
   /**
@@ -94,13 +94,7 @@ export class BlocksAPI {
    * @see https://developers.notion.com/reference/delete-a-block
    */
   async delete(blockId: string): Promise<Block> {
-    const response = await this.client.request<NotionBlock>({
-      method: 'DELETE',
-      path: `/blocks/${blockId}`,
-    });
-
-    const parsed = blockSchema.parse(response);
-    return new Block(parsed);
+    return this.deleteResource(`/blocks/${blockId}`);
   }
 
   /**
@@ -113,14 +107,7 @@ export class BlocksAPI {
    * @see https://developers.notion.com/reference/update-a-block
    */
   async update(blockId: string, options: UpdateBlockOptions): Promise<Block> {
-    const response = await this.client.request<NotionBlock>({
-      method: 'PATCH',
-      path: `/blocks/${blockId}`,
-      body: options,
-    });
-
-    const parsed = blockSchema.parse(response);
-    return new Block(parsed);
+    return this.updateResource(`/blocks/${blockId}`, options);
   }
 
   /**
@@ -137,32 +124,9 @@ export class BlocksAPI {
      * @see https://developers.notion.com/reference/get-block-children
      */
     list: async (blockId: string, params?: PaginationParameters): Promise<PaginatedList<Block>> => {
-      const query: Record<string, string> = {};
+      const query = this.buildPaginationQuery(params);
 
-      if (params?.page_size) {
-        query.page_size = String(params.page_size);
-      }
-
-      if (params?.start_cursor) {
-        query.start_cursor = params.start_cursor;
-      }
-
-      const response = await this.client.request<PaginatedList<NotionBlock>>({
-        method: 'GET',
-        path: `/blocks/${blockId}/children`,
-        query: Object.keys(query).length > 0 ? query : undefined,
-      });
-
-      const listSchema = paginatedListSchema(blockSchema);
-      const parsed = listSchema.parse(response);
-
-      return {
-        object: 'list',
-        results: parsed.results.map((block) => new Block(block)),
-        next_cursor: parsed.next_cursor,
-        has_more: parsed.has_more,
-        type: 'block',
-      };
+      return this.listResources(`/blocks/${blockId}/children`, query);
     },
 
     /**

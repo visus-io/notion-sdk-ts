@@ -3,11 +3,11 @@ import {
   commentSchema,
   type NotionComment,
   type PaginatedList,
-  paginatedListSchema,
   type PaginationParameters,
 } from '../schemas';
 import { Comment } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Display name for a comment.
@@ -51,8 +51,16 @@ export interface CreateCommentOptions {
 /**
  * Comments API client for working with Notion comments.
  */
-export class CommentsAPI {
-  constructor(private readonly client: NotionClient) {}
+export class CommentsAPI extends BaseAPI<NotionComment, Comment> {
+  protected config = {
+    schema: commentSchema,
+    ModelClass: Comment,
+    listType: 'comment' as const,
+  };
+
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve all comments from a page or block (paginated).
@@ -66,32 +74,10 @@ export class CommentsAPI {
   async list(parentId: string, params?: PaginationParameters): Promise<PaginatedList<Comment>> {
     const query: Record<string, string> = {
       block_id: parentId, // Can be page_id, block_id, or database_id
+      ...this.buildPaginationQuery(params),
     };
 
-    if (params?.page_size) {
-      query.page_size = String(params.page_size);
-    }
-
-    if (params?.start_cursor) {
-      query.start_cursor = params.start_cursor;
-    }
-
-    const response = await this.client.request<PaginatedList<NotionComment>>({
-      method: 'GET',
-      path: '/comments',
-      query,
-    });
-
-    const listSchema = paginatedListSchema(commentSchema);
-    const parsed = listSchema.parse(response);
-
-    return {
-      object: 'list',
-      results: parsed.results.map((comment) => new Comment(comment)),
-      next_cursor: parsed.next_cursor,
-      has_more: parsed.has_more,
-      type: 'comment',
-    };
+    return this.listResources('/comments', query);
   }
 
   /**
@@ -108,13 +94,6 @@ export class CommentsAPI {
       validateArrayLength(options.attachments, LIMITS.COMMENT_ATTACHMENTS, 'attachments');
     }
 
-    const response = await this.client.request<NotionComment>({
-      method: 'POST',
-      path: '/comments',
-      body: options,
-    });
-
-    const parsed = commentSchema.parse(response);
-    return new Comment(parsed);
+    return this.createResource('/comments', options);
   }
 }
