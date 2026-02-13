@@ -8,6 +8,7 @@ import {
 } from '../schemas';
 import { Comment } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Display name for a comment.
@@ -51,8 +52,10 @@ export interface CreateCommentOptions {
 /**
  * Comments API client for working with Notion comments.
  */
-export class CommentsAPI {
-  constructor(private readonly client: NotionClient) {}
+export class CommentsAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve all comments from a page or block (paginated).

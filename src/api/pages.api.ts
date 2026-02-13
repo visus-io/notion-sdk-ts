@@ -2,6 +2,7 @@ import type { NotionClient } from '../client';
 import { type NotionPage, pageSchema } from '../schemas';
 import { Page } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Options for retrieving a page.
@@ -81,8 +82,10 @@ export interface UpdatePageOptions {
 /**
  * Pages API client for working with Notion pages.
  */
-export class PagesAPI {
-  constructor(private readonly client: NotionClient) {}
+export class PagesAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve a page by ID.

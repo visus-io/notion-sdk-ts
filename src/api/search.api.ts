@@ -8,6 +8,7 @@ import {
   type PaginationParameters,
 } from '../schemas';
 import { DataSource, Page } from '../models';
+import { BaseAPI } from './base.api';
 
 /**
  * Search filter object type.
@@ -60,8 +61,10 @@ export type SearchResult = Page | DataSource;
 /**
  * Search API client for searching across the workspace.
  */
-export class SearchAPI {
-  constructor(private readonly client: NotionClient) {}
+export class SearchAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Search across all pages and data sources in the workspace.

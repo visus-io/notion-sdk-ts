@@ -1,6 +1,7 @@
 import type { NotionClient } from '../client';
 import { fileUploadSchema, type NotionFileUpload } from '../schemas';
 import { FileUpload } from '../models';
+import { BaseAPI } from './base.api';
 
 /**
  * Options for initiating a file upload.
@@ -24,8 +25,10 @@ export type FileData = Buffer | ArrayBuffer | Blob | ReadableStream;
 /**
  * FileUploads API client for uploading files to Notion.
  */
-export class FileUploadsAPI {
-  constructor(private readonly client: NotionClient) {}
+export class FileUploadsAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Initiate a file upload and get the upload URL.

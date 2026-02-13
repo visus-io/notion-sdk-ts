@@ -8,6 +8,7 @@ import {
 } from '../schemas';
 import { Block } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Options for retrieving a block.
@@ -56,8 +57,10 @@ export interface UpdateBlockOptions {
 /**
  * Blocks API client for working with Notion blocks.
  */
-export class BlocksAPI {
-  constructor(private readonly client: NotionClient) {}
+export class BlocksAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve a block by ID.

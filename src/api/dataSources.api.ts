@@ -10,6 +10,7 @@ import {
 } from '../schemas';
 import { DataSource, Page } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Parent for creating a data source.
@@ -120,8 +121,10 @@ export interface QueryDataSourceOptions extends PaginationParameters {
  * Data sources are individual tables of data that live under a Notion database.
  * As of API version 2025-09-03, data sources have their own API endpoints.
  */
-export class DataSourcesAPI {
-  constructor(private readonly client: NotionClient) {}
+export class DataSourcesAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve a data source by ID.

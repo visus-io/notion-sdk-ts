@@ -10,6 +10,7 @@ import {
 } from '../schemas';
 import { Database, Page } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
+import { BaseAPI } from './base.api';
 
 /**
  * Options for retrieving a database.
@@ -133,8 +134,10 @@ export interface UpdateDatabaseOptions {
 /**
  * Databases API client for working with Notion databases.
  */
-export class DatabasesAPI {
-  constructor(private readonly client: NotionClient) {}
+export class DatabasesAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve a database by ID.

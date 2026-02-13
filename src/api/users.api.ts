@@ -7,12 +7,15 @@ import {
   userSchema,
 } from '../schemas';
 import { User } from '../models';
+import { BaseAPI } from './base.api';
 
 /**
  * Users API client for working with Notion users.
  */
-export class UsersAPI {
-  constructor(private readonly client: NotionClient) {}
+export class UsersAPI extends BaseAPI {
+  constructor(protected readonly client: NotionClient) {
+    super(client);
+  }
 
   /**
    * Retrieve a user by ID.
