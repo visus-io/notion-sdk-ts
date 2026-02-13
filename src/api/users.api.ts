@@ -1,12 +1,23 @@
 import type { NotionClient } from '../client';
-import { type PaginatedList, type PaginationParameters, userSchema } from '../schemas';
+import {
+  type NotionUser,
+  type PaginatedList,
+  type PaginationParameters,
+  userSchema,
+} from '../schemas';
 import { User } from '../models';
 import { BaseAPI } from './base.api';
 
 /**
  * Users API client for working with Notion users.
  */
-export class UsersAPI extends BaseAPI {
+export class UsersAPI extends BaseAPI<NotionUser, User> {
+  protected config = {
+    schema: userSchema,
+    ModelClass: User,
+    listType: 'user' as const,
+  };
+
   constructor(protected readonly client: NotionClient) {
     super(client);
   }
@@ -20,7 +31,7 @@ export class UsersAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/get-user
    */
   async retrieve(userId: string): Promise<User> {
-    return this.retrieveResource(`/users/${userId}`, userSchema, User);
+    return this.retrieveResource(`/users/${userId}`);
   }
 
   /**
@@ -34,7 +45,7 @@ export class UsersAPI extends BaseAPI {
   async list(params?: PaginationParameters): Promise<PaginatedList<User>> {
     const query = this.buildPaginationQuery(params);
 
-    return this.listResources('/users', userSchema, User, 'user', query);
+    return this.listResources('/users', query);
   }
 
   /**
@@ -45,6 +56,6 @@ export class UsersAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/get-self
    */
   async me(): Promise<User> {
-    return this.retrieveResource('/users/me', userSchema, User);
+    return this.retrieveResource('/users/me');
   }
 }

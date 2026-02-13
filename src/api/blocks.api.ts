@@ -57,7 +57,13 @@ export interface UpdateBlockOptions {
 /**
  * Blocks API client for working with Notion blocks.
  */
-export class BlocksAPI extends BaseAPI {
+export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
+  protected config = {
+    schema: blockSchema,
+    ModelClass: Block,
+    listType: 'block' as const,
+  };
+
   constructor(protected readonly client: NotionClient) {
     super(client);
   }
@@ -76,7 +82,7 @@ export class BlocksAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    return this.retrieveResource(`/blocks/${blockId}`, blockSchema, Block, query);
+    return this.retrieveResource(`/blocks/${blockId}`, query);
   }
 
   /**
@@ -88,7 +94,7 @@ export class BlocksAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/delete-a-block
    */
   async delete(blockId: string): Promise<Block> {
-    return this.deleteResource(`/blocks/${blockId}`, blockSchema, Block);
+    return this.deleteResource(`/blocks/${blockId}`);
   }
 
   /**
@@ -101,7 +107,7 @@ export class BlocksAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/update-a-block
    */
   async update(blockId: string, options: UpdateBlockOptions): Promise<Block> {
-    return this.updateResource(`/blocks/${blockId}`, options, blockSchema, Block);
+    return this.updateResource(`/blocks/${blockId}`, options);
   }
 
   /**
@@ -120,7 +126,7 @@ export class BlocksAPI extends BaseAPI {
     list: async (blockId: string, params?: PaginationParameters): Promise<PaginatedList<Block>> => {
       const query = this.buildPaginationQuery(params);
 
-      return this.listResources(`/blocks/${blockId}/children`, blockSchema, Block, 'block', query);
+      return this.listResources(`/blocks/${blockId}/children`, query);
     },
 
     /**

@@ -1,6 +1,7 @@
 import type { NotionClient } from '../client';
 import {
   dataSourceSchema,
+  type NotionDataSource,
   type NotionPage,
   pageSchema,
   type PaginatedList,
@@ -120,7 +121,12 @@ export interface QueryDataSourceOptions extends PaginationParameters {
  * Data sources are individual tables of data that live under a Notion database.
  * As of API version 2025-09-03, data sources have their own API endpoints.
  */
-export class DataSourcesAPI extends BaseAPI {
+export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
+  protected config = {
+    schema: dataSourceSchema,
+    ModelClass: DataSource,
+    listType: 'data_source' as const,
+  };
   constructor(protected readonly client: NotionClient) {
     super(client);
   }
@@ -139,12 +145,7 @@ export class DataSourcesAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    return this.retrieveResource(
-      `/data_sources/${dataSourceId}`,
-      dataSourceSchema,
-      DataSource,
-      query,
-    );
+    return this.retrieveResource(`/data_sources/${dataSourceId}`, query);
   }
 
   /**
@@ -228,7 +229,7 @@ export class DataSourcesAPI extends BaseAPI {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
 
-    return this.createResource('/data_sources', options, dataSourceSchema, DataSource);
+    return this.createResource('/data_sources', options);
   }
 
   /**
@@ -245,12 +246,7 @@ export class DataSourcesAPI extends BaseAPI {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
 
-    return this.updateResource(
-      `/data_sources/${dataSourceId}`,
-      options,
-      dataSourceSchema,
-      DataSource,
-    );
+    return this.updateResource(`/data_sources/${dataSourceId}`, options);
   }
 
   /**

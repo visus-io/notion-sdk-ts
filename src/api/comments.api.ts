@@ -1,5 +1,10 @@
 import type { NotionClient } from '../client';
-import { commentSchema, type PaginatedList, type PaginationParameters } from '../schemas';
+import {
+  commentSchema,
+  type NotionComment,
+  type PaginatedList,
+  type PaginationParameters,
+} from '../schemas';
 import { Comment } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
@@ -46,7 +51,13 @@ export interface CreateCommentOptions {
 /**
  * Comments API client for working with Notion comments.
  */
-export class CommentsAPI extends BaseAPI {
+export class CommentsAPI extends BaseAPI<NotionComment, Comment> {
+  protected config = {
+    schema: commentSchema,
+    ModelClass: Comment,
+    listType: 'comment' as const,
+  };
+
   constructor(protected readonly client: NotionClient) {
     super(client);
   }
@@ -66,7 +77,7 @@ export class CommentsAPI extends BaseAPI {
       ...this.buildPaginationQuery(params),
     };
 
-    return this.listResources('/comments', commentSchema, Comment, 'comment', query);
+    return this.listResources('/comments', query);
   }
 
   /**
@@ -83,6 +94,6 @@ export class CommentsAPI extends BaseAPI {
       validateArrayLength(options.attachments, LIMITS.COMMENT_ATTACHMENTS, 'attachments');
     }
 
-    return this.createResource('/comments', options, commentSchema, Comment);
+    return this.createResource('/comments', options);
   }
 }

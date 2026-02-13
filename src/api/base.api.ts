@@ -5,37 +5,49 @@ import { LIMITS, validateArrayLength } from '../validation';
 import type { z } from 'zod';
 
 /**
- * Base API class providing common functionality for all Notion API clients.
+ * Configuration for API resource operations, including paths, schemas, and model classes.
+ *
+ * @template TResponse - The raw response type from the API
+ * @template TModel - The model class type that wraps the response
  */
-export abstract class BaseAPI {
+interface ResourceConfig<TResponse, TModel> {
+  /** Zod schema to validate the API response */
+  schema: z.ZodSchema<TResponse>;
+
+  /** Model class constructor to wrap the validated response */
+  ModelClass: new (data: TResponse) => TModel;
+
+  /** Type of items in the paginated list (used for typing the results) */
+  listType?: PaginatedListType;
+}
+
+/**
+ * Base API class providing common functionality for all Notion API clients.
+ *
+ * @template TResponse - The raw response type from the API
+ * @template TModel - The model class type that wraps the response
+ */
+export abstract class BaseAPI<TResponse, TModel> {
+  protected abstract config: ResourceConfig<TResponse, TModel>;
+
   protected constructor(protected readonly client: NotionClient) {}
 
   /**
    * Delete a resource via DELETE request.
    *
    * @param resourcePath - Path to the specific resource (e.g., '/pages/{page_id}', '/databases/{database_id}')
-   * @param schema - Zod schema to validate the response
-   * @param ModelClass - Model class constructor
    * @returns Instance of the model class representing the deleted resource
    *
    * @example
-   * return this.deleteResource<NotionPage, Page>(
-   *   `/pages/${pageId}`,
-   *   pageSchema,
-   *   Page,
-   * );
+   * return this.deleteResource(`/pages/${pageId}`);
    */
-  protected async deleteResource<TResponse, TModel>(
-    resourcePath: string,
-    schema: z.ZodSchema<TResponse>,
-    ModelClass: new (data: TResponse) => TModel,
-  ): Promise<TModel> {
+  protected async deleteResource(resourcePath: string): Promise<TModel> {
     const response = await this.client.request<TResponse>({
       method: 'DELETE',
       path: resourcePath,
     });
 
-    return this.parseAndWrap(response, schema, ModelClass);
+    return this.parseAndWrap(response);
   }
 
   /**
@@ -138,54 +150,36 @@ export abstract class BaseAPI {
    *
    * @param resourcePath - Path to the resource collection (e.g., '/pages', '/databases')
    * @param body - Request body to send
-   * @param schema - Zod schema to validate the response
-   * @param ModelClass - Model class constructor
    * @returns Instance of the model class representing the created resource
    *
    * @example
-   * return this.createResource<NotionPage, Page>(
+   * return this.createResource(
    *   '/pages',
-   *   { parent: { database_id: '...' }, properties: { ... } },
-   *   pageSchema,
-   *   Page,
+   *   { parent: { ... }, properties: { ... } },
    * );
    */
-  protected async createResource<TResponse, TModel>(
-    resourcePath: string,
-    body: unknown,
-    schema: z.ZodSchema<TResponse>,
-    ModelClass: new (data: TResponse) => TModel,
-  ): Promise<TModel> {
+  protected async createResource(resourcePath: string, body: unknown): Promise<TModel> {
     const response = await this.client.request<TResponse>({
       method: 'POST',
       path: resourcePath,
       body,
     });
 
-    return this.parseAndWrap(response, schema, ModelClass);
+    return this.parseAndWrap(response);
   }
 
   /**
    * Retrieve a resource via GET request.
    *
    * @param resourcePath - Path to the specific resource (e.g., '/pages/{page_id}', '/databases/{database_id}')
-   * @param schema - Zod schema to validate the response
-   * @param ModelClass - Model class constructor
    * @param query - Optional query parameters for the GET request
    * @returns Instance of the model class representing the retrieved resource
    *
    * @example
-   * return this.retrieveResource<NotionPage, Page>(
-   *   `/pages/${pageId}`,
-   *   pageSchema,
-   *   Page,
-   *   query
-   * );
+   * return this.retrieveResource(`/pages/${pageId}`, query);
    */
-  protected async retrieveResource<TResponse, TModel>(
+  protected async retrieveResource(
     resourcePath: string,
-    schema: z.ZodSchema<TResponse>,
-    ModelClass: new (data: TResponse) => TModel,
     query?: Record<string, string>,
   ): Promise<TModel> {
     const response = await this.client.request<TResponse>({
@@ -194,33 +188,24 @@ export abstract class BaseAPI {
       query: Object.keys(query || {}).length > 0 ? query : undefined,
     });
 
-    return this.parseAndWrap(response, schema, ModelClass);
+    return this.parseAndWrap(response);
   }
 
   /**
    * Retrieve a paginated list of resources via GET request.
    *
    * @param resourcePath - Path to the resource collection (e.g., '/pages', '/databases')
-   * @param itemSchema - Zod schema to validate each item in the results array
-   * @param ModelClass - Model class constructor for each item in the results array
-   * @param type - The type of items in the paginated list (used for typing the results)
    * @param query - Optional query parameters for pagination and filtering
    * @returns PaginatedList containing instances of the model class for each item in the results array
    *
    * @example
-   * return this.listResources<NotionPage, Page>(
+   * return this.listResources(
    *   '/pages',
-   *   pageSchema,
-   *   Page,
-   *   'page',
    *   { page_size: '50' },
    * );
    */
-  protected async listResources<TResponse, TModel>(
+  protected async listResources(
     resourcePath: string,
-    itemSchema: z.ZodSchema<TResponse>,
-    ModelClass: new (data: TResponse) => TModel,
-    type: PaginatedListType,
     query?: Record<string, string>,
   ): Promise<PaginatedList<TModel>> {
     const response = await this.client.request<PaginatedList<TResponse>>({
@@ -229,59 +214,7 @@ export abstract class BaseAPI {
       query: Object.keys(query || {}).length > 0 ? query : undefined,
     });
 
-    return this.parsePaginatedList(response, itemSchema, ModelClass, type);
-  }
-
-  /**
-   * Parse response data using the provided schema and wrap it in the specified model class.
-   *
-   * @param response - The raw response data to parse
-   * @param schema - Zod schema to validate the response
-   * @param ModelClass - Model class constructor
-   * @returns Instance of the model class representing the parsed resource
-   *
-   * @example
-   * const response = await this.client.request<NotionPage>({ ... });
-   * return this.parseAndWrap(response, pageSchema, Page);
-   */
-  protected parseAndWrap<TResponse, TModel>(
-    response: TResponse,
-    schema: z.ZodSchema<TResponse>,
-    ModelClass: new (data: TResponse) => TModel,
-  ): TModel {
-    const parsed = schema.parse(response);
-    return new ModelClass(parsed);
-  }
-
-  /**
-   * Parse a paginated list response and wrap each item in the specified model class.
-   *
-   * @param response - The raw paginated list response to parse
-   * @param itemSchema - Zod schema to validate each item in the results array
-   * @param ModelClass - Model class constructor for each item in the results array
-   * @param type - The type of items in the paginated list (used for typing the results)
-   * @returns PaginatedList containing instances of the model class for each item in the results array
-   *
-   * @example
-   * const response = await this.client.request<PaginatedList<NotionPage>>({ ... });
-   * return this.parsePaginatedList(response, pageSchema, Page, 'page');
-   */
-  protected parsePaginatedList<TResponse, TModel>(
-    response: PaginatedList<TResponse>,
-    itemSchema: z.ZodSchema<TResponse>,
-    ModelClass: new (data: TResponse) => TModel,
-    type: PaginatedListType,
-  ): PaginatedList<TModel> {
-    const listSchema = paginatedListSchema(itemSchema);
-    const parsed = listSchema.parse(response);
-
-    return {
-      object: 'list',
-      results: parsed.results.map((item) => new ModelClass(item)),
-      next_cursor: parsed.next_cursor,
-      has_more: parsed.has_more,
-      type,
-    };
+    return this.parsePaginatedList(response);
   }
 
   /**
@@ -289,30 +222,59 @@ export abstract class BaseAPI {
    *
    * @param resourcePath - Path to the specific resource (e.g., '/pages/{page_id}', '/databases/{database_id}')
    * @param body - Request body with updated fields
-   * @param schema - Zod schema to validate the response
-   * @param ModelClass - Model class constructor
    * @returns Instance of the model class representing the updated resource
    *
    * @example
-   * return this.updateResource<NotionPage, Page>(
+   * return this.updateResource(
    *   `/pages/${pageId}`,
    *   { properties: { ... } },
-   *   pageSchema,
-   *   Page,
    * );
    */
-  protected async updateResource<TResponse, TModel>(
-    resourcePath: string,
-    body: unknown,
-    schema: z.ZodSchema<TResponse>,
-    ModelClass: new (data: TResponse) => TModel,
-  ): Promise<TModel> {
+  protected async updateResource(resourcePath: string, body: unknown): Promise<TModel> {
     const response = await this.client.request<TResponse>({
       method: 'PATCH',
       path: resourcePath,
       body,
     });
 
-    return this.parseAndWrap(response, schema, ModelClass);
+    return this.parseAndWrap(response);
+  }
+
+  /**
+   * Parse response data using the provided schema and wrap it in the specified model class.
+   *
+   * @param response - The raw response data to parse
+   * @returns Instance of the model class representing the parsed resource
+   *
+   * @example
+   * const response = await this.client.request<NotionPage>({ ... });
+   * return this.parseAndWrap(response);
+   */
+  private parseAndWrap(response: TResponse): TModel {
+    const parsed = this.config.schema.parse(response);
+    return new this.config.ModelClass(parsed);
+  }
+
+  /**
+   * Parse a paginated list response and wrap each item in the specified model class.
+   *
+   * @param response - The raw paginated list response to parse
+   * @returns PaginatedList containing instances of the model class for each item in the results array
+   *
+   * @example
+   * const response = await this.client.request<PaginatedList<NotionPage>>({ ... });
+   * return this.parsePaginatedList(response);
+   */
+  private parsePaginatedList(response: PaginatedList<TResponse>): PaginatedList<TModel> {
+    const schema = paginatedListSchema(this.config.schema);
+    const parsed = schema.parse(response);
+
+    return {
+      object: 'list',
+      results: parsed.results.map((item) => new this.config.ModelClass(item)),
+      next_cursor: parsed.next_cursor,
+      has_more: parsed.has_more,
+      type: this.config.listType || ('unknown' as PaginatedListType),
+    };
   }
 }

@@ -1,4 +1,5 @@
 import type { NotionClient } from '../client';
+import type { NotionPage } from '../schemas';
 import { pageSchema } from '../schemas';
 import { Page } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
@@ -82,7 +83,13 @@ export interface UpdatePageOptions {
 /**
  * Pages API client for working with Notion pages.
  */
-export class PagesAPI extends BaseAPI {
+export class PagesAPI extends BaseAPI<NotionPage, Page> {
+  protected config = {
+    schema: pageSchema,
+    ModelClass: Page,
+    listType: 'page' as const,
+  };
+
   constructor(protected readonly client: NotionClient) {
     super(client);
   }
@@ -101,7 +108,7 @@ export class PagesAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    return this.retrieveResource(`/pages/${pageId}`, pageSchema, Page, query);
+    return this.retrieveResource(`/pages/${pageId}`, query);
   }
 
   /**
@@ -117,7 +124,7 @@ export class PagesAPI extends BaseAPI {
       validateArrayLength(options.children, LIMITS.ARRAY_ELEMENTS, 'children');
     }
 
-    return this.createResource('/pages', options, pageSchema, Page);
+    return this.createResource('/pages', options);
   }
 
   /**
@@ -130,7 +137,7 @@ export class PagesAPI extends BaseAPI {
    * @see https://developers.notion.com/reference/patch-page
    */
   async update(pageId: string, options: UpdatePageOptions): Promise<Page> {
-    return this.updateResource(`/pages/${pageId}`, options, pageSchema, Page);
+    return this.updateResource(`/pages/${pageId}`, options);
   }
 
   /**

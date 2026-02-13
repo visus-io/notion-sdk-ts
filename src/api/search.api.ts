@@ -8,7 +8,6 @@ import {
   type PaginationParameters,
 } from '../schemas';
 import { DataSource, Page } from '../models';
-import { BaseAPI } from './base.api';
 
 /**
  * Search filter object type.
@@ -61,10 +60,8 @@ export type SearchResult = Page | DataSource;
 /**
  * Search API client for searching across the workspace.
  */
-export class SearchAPI extends BaseAPI {
-  constructor(protected readonly client: NotionClient) {
-    super(client);
-  }
+export class SearchAPI {
+  constructor(private readonly client: NotionClient) {}
 
   /**
    * Search across all pages and data sources in the workspace.
@@ -80,8 +77,15 @@ export class SearchAPI extends BaseAPI {
       ...(options?.query ? { query: options.query } : {}),
       ...(options?.filter ? { filter: options.filter } : {}),
       ...(options?.sort ? { sort: options.sort } : {}),
-      ...this.buildPaginationBody(options),
     };
+
+    if (options?.page_size) {
+      body.page_size = options.page_size;
+    }
+
+    if (options?.start_cursor) {
+      body.start_cursor = options.start_cursor;
+    }
 
     const response = await this.client.request<PaginatedList<NotionPage | NotionDataSource>>({
       method: 'POST',

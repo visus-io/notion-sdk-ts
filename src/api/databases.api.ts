@@ -1,6 +1,7 @@
 import type { NotionClient } from '../client';
 import {
   databaseSchema,
+  type NotionDatabase,
   type NotionPage,
   pageSchema,
   type PaginatedList,
@@ -133,7 +134,13 @@ export interface UpdateDatabaseOptions {
 /**
  * Databases API client for working with Notion databases.
  */
-export class DatabasesAPI extends BaseAPI {
+export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
+  protected config = {
+    schema: databaseSchema,
+    ModelClass: Database,
+    listType: 'database' as const,
+  };
+
   constructor(protected readonly client: NotionClient) {
     super(client);
   }
@@ -152,7 +159,7 @@ export class DatabasesAPI extends BaseAPI {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
-    return this.retrieveResource(`/databases/${databaseId}`, databaseSchema, Database, query);
+    return this.retrieveResource(`/databases/${databaseId}`, query);
   }
 
   /**
@@ -218,7 +225,7 @@ export class DatabasesAPI extends BaseAPI {
       );
     }
 
-    return this.createResource('/databases', options, databaseSchema, Database);
+    return this.createResource('/databases', options);
   }
 
   /**
@@ -235,7 +242,7 @@ export class DatabasesAPI extends BaseAPI {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
 
-    return this.updateResource(`/databases/${databaseId}`, options, databaseSchema, Database);
+    return this.updateResource(`/databases/${databaseId}`, options);
   }
 
   /**

@@ -25,7 +25,12 @@ export type FileData = Buffer | ArrayBuffer | Blob | ReadableStream;
 /**
  * FileUploads API client for uploading files to Notion.
  */
-export class FileUploadsAPI extends BaseAPI {
+export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
+  protected config = {
+    schema: fileUploadSchema,
+    ModelClass: FileUpload,
+  };
+
   constructor(protected readonly client: NotionClient) {
     super(client);
   }
