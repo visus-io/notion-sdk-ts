@@ -11,7 +11,10 @@ describe('parent helpers', () => {
   });
 
   it('should create a data source parent', () => {
-    expect(parent.dataSource('ds-789')).toEqual({ data_source_id: 'ds-789' });
+    expect(parent.dataSource('ds-789', 'db-456')).toEqual({
+      data_source_id: 'ds-789',
+      database_id: 'db-456',
+    });
   });
 
   it('should create a workspace parent', () => {

@@ -14,6 +14,14 @@ describe('property helpers', () => {
       const result = prop.title(richText('Bold Title').bold());
       expect(result.title[0].annotations.bold).toBe(true);
     });
+
+    it('should accept a pre-built NotionRichText array', () => {
+      const preBuilt = richText('Pre-built').italic().build();
+      const result = prop.title(preBuilt);
+      expect(result.title).toHaveLength(1);
+      expect(result.title[0].plain_text).toBe('Pre-built');
+      expect(result.title[0].annotations.italic).toBe(true);
+    });
   });
 
   describe('richText', () => {

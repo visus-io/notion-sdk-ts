@@ -164,6 +164,10 @@ describe('filter helpers', () => {
         property: 'Priority',
         select: { is_empty: true },
       });
+      expect(filter.select('Priority').isNotEmpty()).toEqual({
+        property: 'Priority',
+        select: { is_not_empty: true },
+      });
     });
   });
 
@@ -349,6 +353,10 @@ describe('filter helpers', () => {
         property: 'Assignee',
         people: { is_empty: true },
       });
+      expect(filter.people('Assignee').isNotEmpty()).toEqual({
+        property: 'Assignee',
+        people: { is_not_empty: true },
+      });
     });
   });
 
@@ -416,6 +424,20 @@ describe('filter helpers', () => {
       expect(filter.formula('IsActive').checkbox().equals(true)).toEqual({
         property: 'IsActive',
         checkbox: { equals: true },
+      });
+    });
+
+    it('should delegate to number sub-filter', () => {
+      expect(filter.formula('Score').number().greaterThan(50)).toEqual({
+        property: 'Score',
+        number: { greater_than: 50 },
+      });
+    });
+
+    it('should delegate to date sub-filter', () => {
+      expect(filter.formula('ComputedDate').date().before('2025-01-01')).toEqual({
+        property: 'ComputedDate',
+        date: { before: '2025-01-01' },
       });
     });
   });
