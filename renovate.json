@@ -1,5 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["local>visus-io/renovate-config", ":preserveSemverRanges"],
-  "timezone": "America/New_York"
+  "timezone": "America/New_York",
+  "lockFileMaintenance": {
+    "enabled": true
+  }
 }
