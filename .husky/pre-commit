@@ -1,1 +1,8 @@
-~/.bun/bin/bunx --bun lint-staged
+if command -v bunx &> /dev/null; then
+    bunx --bun lint-staged
+elif command -v bun &> /dev/null; then
+    bun --bun lint-staged
+else
+    echo "Bun is not installed. Please install Bun to run lint-staged."
+    exit 1
+fi

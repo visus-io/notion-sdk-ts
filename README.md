@@ -153,7 +153,7 @@ curl -fsSL https://bun.sh/install | bash
 bun install              # Install dependencies
 bun run build            # Compile TypeScript
 
-bun test                 # Run tests
+bun run test                 # Run tests
 bun run test:watch       # Watch mode
 bun run test:coverage    # Coverage report
 
