@@ -26,9 +26,11 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 
 ```bash
 npm install @visus-io/notion-sdk-ts
+# or
+bun add @visus-io/notion-sdk-ts
 ```
 
-**Requirements:** Node.js 18+ (uses native `fetch`)
+**Requirements:** Node.js 18+ or Bun 1.0+ (uses native `fetch`)
 
 ## Quick Start
 
@@ -135,18 +137,32 @@ See the [**Migration Guide**](https://github.com/visus-io/notion-sdk-ts/wiki/Mig
 
 ## Development
 
+This project uses [Bun](https://bun.sh) as its package manager for faster dependency installation and script execution.
+
+### Prerequisites
+
+Install Bun if you haven't already:
+
 ```bash
-npm install              # Install dependencies
-npm run build            # Compile TypeScript
-
-npm test                 # Run tests
-npm run test:watch       # Watch mode
-npm run test:coverage    # Coverage report
-
-npm run lint             # ESLint
-npm run lint:fix         # Auto-fix
-npm run format           # Prettier
+curl -fsSL https://bun.sh/install | bash
 ```
+
+### Development Commands
+
+```bash
+bun install              # Install dependencies
+bun run build            # Compile TypeScript
+
+bun test                 # Run tests
+bun run test:watch       # Watch mode
+bun run test:coverage    # Coverage report
+
+bun run lint             # ESLint
+bun run lint:fix         # Auto-fix
+bun run format           # Prettier
+```
+
+> **Note:** While this project uses Bun for development, the published package works with both Node.js 18+ and Bun 1.0+.
 
 See [**Development & Contributing**](https://github.com/visus-io/notion-sdk-ts/wiki/Development) for more details.
 
