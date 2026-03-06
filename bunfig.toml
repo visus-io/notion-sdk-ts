@@ -1,0 +1,12 @@
+# Bun configuration file
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+exact = true
+engine-strict = true
+audit = "moderate"
+lockfile = true
+frozen-lockfile = false
+
+[install.scopes]
+"@visus-io" = { url = "https://registry.npmjs.org/" }
