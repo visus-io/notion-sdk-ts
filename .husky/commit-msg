@@ -1,7 +1,7 @@
 if command -v bunx >/dev/null 2>&1; then
-    bunx --bun commitlint --edit ${1}
+    bunx --bun commitlint --edit "$1"
 elif command -v bun >/dev/null 2>&1; then
-    bun --bun commitlint --edit ${1}
+    bun x commitlint --edit "$1"
 else
     echo "Bun is not installed. Please install Bun to run commitlint."
     exit 1
