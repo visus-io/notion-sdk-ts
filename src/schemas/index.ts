@@ -13,4 +13,5 @@ export * from './propertyObjects.schema';
 export * from './pagination.schema';
 export * from './parent.schema';
 export * from './richText.schema';
+export * from './shared.schema';
 export * from './user.schema';

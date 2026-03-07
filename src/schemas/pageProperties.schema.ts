@@ -33,7 +33,7 @@ const createdByPropertySchema = z.object({
 const createdTimePropertySchema = z.object({
   id: z.string().trim(),
   type: z.literal('created_time'),
-  created_time: z.iso.datetime(),
+  created_time: notionDateStringSchema,
 });
 
 /** Date property. */
@@ -65,7 +65,7 @@ const filesPropertySchema = z.object({
       name: z.string().trim(),
       type: z.enum(['external', 'file', 'file_upload']),
       external: z.object({ url: z.url() }).optional(),
-      file: z.object({ url: z.url(), expiry_time: z.iso.datetime() }).optional(),
+      file: z.object({ url: z.url(), expiry_time: notionDateStringSchema }).optional(),
       file_upload: z.object({ id: z.uuid() }).optional(),
     }),
   ),
@@ -101,7 +101,7 @@ const lastEditedByPropertySchema = z.object({
 const lastEditedTimePropertySchema = z.object({
   id: z.string().trim(),
   type: z.literal('last_edited_time'),
-  last_edited_time: z.iso.datetime(),
+  last_edited_time: notionDateStringSchema,
 });
 
 /** Multi-select property. */

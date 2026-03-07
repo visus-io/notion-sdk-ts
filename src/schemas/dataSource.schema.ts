@@ -3,6 +3,7 @@ import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 import { propertiesObjectSchema } from './propertyObjects.schema';
 
@@ -32,13 +33,13 @@ export const dataSourceSchema = z.object({
   database_parent: parentSchema,
 
   /** Date and time when this data source was created (ISO 8601) */
-  created_time: z.iso.datetime(),
+  created_time: notionDateStringSchema,
 
   /** User who created the data source */
   created_by: userSchema,
 
   /** Date and time when this data source was updated (ISO 8601) */
-  last_edited_time: z.iso.datetime(),
+  last_edited_time: notionDateStringSchema,
 
   /** User who last edited the data source */
   last_edited_by: userSchema,

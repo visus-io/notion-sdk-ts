@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -16,7 +17,7 @@ import { userSchema } from './user.schema';
 /** Comment attachment file schema. */
 const commentAttachmentFileSchema = z.object({
   url: z.url(),
-  expiry_time: z.iso.datetime(),
+  expiry_time: notionDateStringSchema,
 });
 
 /** Comment attachment schema. */
@@ -46,9 +47,9 @@ export const commentSchema = z.object({
   id: z.uuid(),
   parent: parentSchema,
   discussion_id: z.uuid(),
-  created_time: z.iso.datetime(),
+  created_time: notionDateStringSchema,
   created_by: userSchema,
-  last_edited_time: z.iso.datetime(),
+  last_edited_time: notionDateStringSchema,
   rich_text: richTextSchema,
   attachments: z.array(commentAttachmentSchema).optional(),
   display_name: commentDisplayNameSchema.optional(),

@@ -5,6 +5,7 @@ import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -72,9 +73,9 @@ export const blockSchema = z.object({
     'unsupported',
     'video',
   ]),
-  created_time: z.iso.datetime(),
+  created_time: notionDateStringSchema,
   created_by: userSchema,
-  last_edited_time: z.iso.datetime(),
+  last_edited_time: notionDateStringSchema,
   last_edited_by: userSchema,
   archived: z.boolean(),
   in_trash: z.boolean(),
