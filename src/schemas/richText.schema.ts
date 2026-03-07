@@ -25,7 +25,8 @@ const annotationsSchema = z.object({
 
 /** Text content with optional link. */
 const textContentSchema = z.object({
-  content: z.string().trim(),
+  // eslint-disable-next-line zod/prefer-string-schema-with-trim -- content must preserve whitespace from Notion API
+  content: z.string(),
   link: z.object({ url: z.url() }).nullable(),
 });
 
@@ -40,9 +41,12 @@ const databaseMentionSchema = z.object({
 const dateMentionSchema = z.object({
   type: z.literal('date'),
   date: z.object({
-    start: z.string().trim(),
-    end: z.string().trim().nullable(),
-    time_zone: z.string().trim().nullable(),
+    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- date strings must preserve exact format from Notion API
+    start: z.string(),
+    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- date strings must preserve exact format from Notion API
+    end: z.string().nullable(),
+    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- date strings must preserve exact format from Notion API
+    time_zone: z.string().nullable().optional(),
   }),
 });
 
@@ -116,7 +120,8 @@ const mentionRichTextSchema = z.object({
 const equationRichTextSchema = z.object({
   type: z.literal('equation'),
   equation: z.object({
-    expression: z.string().trim(),
+    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- LaTeX expression must preserve whitespace from Notion API
+    expression: z.string(),
   }),
   annotations: annotationsSchema,
   // eslint-disable-next-line zod/prefer-string-schema-with-trim -- plain_text must preserve whitespace from Notion API

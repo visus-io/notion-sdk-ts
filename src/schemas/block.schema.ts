@@ -17,10 +17,20 @@ import { userSchema } from './user.schema';
  * https://developers.notion.com/reference/block
  */
 
+let childrenSchema: z.ZodOptional<z.ZodArray<z.ZodTypeAny>> | undefined;
+
+const getChildrenSchema = (): z.ZodOptional<z.ZodArray<z.ZodTypeAny>> => {
+  childrenSchema ??= z.array(blockSchema).optional();
+  return childrenSchema;
+};
+
 const headingsObjectSchema = z.object({
   rich_text: richTextSchema,
   color: z.enum(NOTION_COLORS),
   is_toggleable: z.boolean(),
+  get children() {
+    return getChildrenSchema();
+  },
 });
 
 export const blockSchema = z.object({
@@ -84,7 +94,7 @@ export const blockSchema = z.object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -94,7 +104,7 @@ export const blockSchema = z.object({
       icon: z.union([emojiSchema, fileSchema]),
       color: z.enum(NOTION_COLORS),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -120,7 +130,7 @@ export const blockSchema = z.object({
     .object({
       width_ratio: z.number().min(0).max(1).optional(),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -130,7 +140,12 @@ export const blockSchema = z.object({
       url: z.url(),
     })
     .optional(),
-  equation: z.object({ expression: z.string().trim() }).optional(),
+  equation: z
+    .object({
+      // eslint-disable-next-line zod/prefer-string-schema-with-trim -- LaTeX expression must preserve whitespace from Notion API
+      expression: z.string(),
+    })
+    .optional(),
   file: z
     .object({
       caption: richTextSchema,
@@ -153,7 +168,7 @@ export const blockSchema = z.object({
       list_start_index: z.int().optional(),
       list_format: z.enum(['numbers', 'letters', 'roman']).optional(),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -162,7 +177,7 @@ export const blockSchema = z.object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -181,7 +196,7 @@ export const blockSchema = z.object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -194,7 +209,7 @@ export const blockSchema = z.object({
         })
         .nullable(),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -219,7 +234,7 @@ export const blockSchema = z.object({
     .object({
       rich_text: richTextSchema,
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -229,7 +244,7 @@ export const blockSchema = z.object({
       checked: z.boolean().optional(),
       color: z.enum(NOTION_COLORS),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -238,7 +253,7 @@ export const blockSchema = z.object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),
@@ -246,7 +261,7 @@ export const blockSchema = z.object({
     .object({
       rich_text: richTextSchema,
       get children() {
-        return z.array(blockSchema).optional();
+        return getChildrenSchema();
       },
     })
     .optional(),

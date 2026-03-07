@@ -141,6 +141,99 @@ describe('blockSchema', () => {
       const result = blockSchema.safeParse(block);
       expect(result.success).toBe(true);
     });
+
+    it('should parse toggleable heading_1 with children', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'heading_1',
+        has_children: true,
+        heading_1: {
+          rich_text: richTextArray,
+          color: 'default',
+          is_toggleable: true,
+          children: [
+            {
+              ...baseBlock,
+              id: '123e4567-e89b-12d3-a456-426614174010',
+              type: 'paragraph',
+              paragraph: {
+                rich_text: richTextArray,
+                color: 'default',
+              },
+            },
+          ],
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+
+    it('should parse toggleable heading_2 with children', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'heading_2',
+        has_children: true,
+        heading_2: {
+          rich_text: richTextArray,
+          color: 'blue',
+          is_toggleable: true,
+          children: [
+            {
+              ...baseBlock,
+              id: '123e4567-e89b-12d3-a456-426614174011',
+              type: 'bulleted_list_item',
+              bulleted_list_item: {
+                rich_text: richTextArray,
+                color: 'default',
+              },
+            },
+          ],
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+
+    it('should parse toggleable heading_3 with nested children', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'heading_3',
+        has_children: true,
+        heading_3: {
+          rich_text: richTextArray,
+          color: 'purple',
+          is_toggleable: true,
+          children: [
+            {
+              ...baseBlock,
+              id: '123e4567-e89b-12d3-a456-426614174012',
+              type: 'paragraph',
+              has_children: true,
+              paragraph: {
+                rich_text: richTextArray,
+                color: 'default',
+                children: [
+                  {
+                    ...baseBlock,
+                    id: '123e4567-e89b-12d3-a456-426614174013',
+                    type: 'paragraph',
+                    paragraph: {
+                      rich_text: richTextArray,
+                      color: 'default',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('list blocks', () => {

@@ -81,6 +81,43 @@ describe('richTextSchema', () => {
         expect(result.data[0].plain_text).toBe('  spaced text  ');
       }
     });
+
+    it('should preserve whitespace in text content', () => {
+      const richText = [
+        {
+          type: 'text' as const,
+          text: { content: '  Some words  ', link: null },
+          annotations: baseAnnotations,
+          plain_text: '  Some words  ',
+          href: null,
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+      if (result.success && result.data[0].type === 'text') {
+        expect(result.data[0].text.content).toBe('  Some words  ');
+      }
+    });
+
+    it('should preserve leading and trailing spaces in content', () => {
+      const richText = [
+        {
+          type: 'text' as const,
+          text: { content: ' test ', link: null },
+          annotations: baseAnnotations,
+          plain_text: ' test ',
+          href: null,
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+      if (result.success && result.data[0].type === 'text') {
+        expect(result.data[0].text.content).toBe(' test ');
+        expect(result.data[0].plain_text).toBe(' test ');
+      }
+    });
   });
 
   describe('mention rich text type', () => {
@@ -165,6 +202,37 @@ describe('richTextSchema', () => {
 
       const result = richTextSchema.safeParse(richText);
       expect(result.success).toBe(true);
+    });
+
+    it('should parse date mention with date range', () => {
+      const richText = [
+        {
+          type: 'mention' as const,
+          mention: {
+            type: 'date' as const,
+            date: {
+              start: '2024-01-01',
+              end: '2024-12-31',
+              time_zone: 'America/New_York',
+            },
+          },
+          annotations: baseAnnotations,
+          plain_text: 'Jan 1 - Dec 31, 2024',
+          href: null,
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+      if (
+        result.success &&
+        result.data[0].type === 'mention' &&
+        result.data[0].mention.type === 'date'
+      ) {
+        expect(result.data[0].mention.date.start).toBe('2024-01-01');
+        expect(result.data[0].mention.date.end).toBe('2024-12-31');
+        expect(result.data[0].mention.date.time_zone).toBe('America/New_York');
+      }
     });
 
     it('should parse link_preview mention', () => {
@@ -267,6 +335,48 @@ describe('richTextSchema', () => {
 
       const result = richTextSchema.safeParse(richText);
       expect(result.success).toBe(true);
+    });
+
+    it('should preserve whitespace in equation expression', () => {
+      const richText = [
+        {
+          type: 'equation' as const,
+          equation: {
+            expression: '  E = mc^2  ',
+          },
+          annotations: baseAnnotations,
+          plain_text: 'E = mc^2',
+          href: null,
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+      if (result.success && result.data[0].type === 'equation') {
+        expect(result.data[0].equation.expression).toBe('  E = mc^2  ');
+      }
+    });
+
+    it('should parse complex LaTeX expression with spacing', () => {
+      const richText = [
+        {
+          type: 'equation' as const,
+          equation: {
+            expression: '\\frac{ - b \\pm \\sqrt {b^2 - 4ac} }{{2a}}',
+          },
+          annotations: baseAnnotations,
+          plain_text: 'quadratic formula',
+          href: null,
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+      if (result.success && result.data[0].type === 'equation') {
+        expect(result.data[0].equation.expression).toBe(
+          '\\frac{ - b \\pm \\sqrt {b^2 - 4ac} }{{2a}}',
+        );
+      }
     });
   });
 

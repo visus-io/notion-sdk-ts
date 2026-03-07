@@ -588,6 +588,66 @@ describe('pagePropertiesSchema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should parse rollup property with array type and array data', () => {
+      const property = {
+        id: 'prop-rollup-array',
+        type: 'rollup' as const,
+        rollup: {
+          type: 'array' as const,
+          function: 'show_original' as const,
+          array: [
+            {
+              type: 'number' as const,
+              number: 123,
+            },
+            {
+              type: 'number' as const,
+              number: 456,
+            },
+          ],
+        },
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+      if (result.success && result.data.type === 'rollup') {
+        expect(result.data.rollup.array).toBeDefined();
+        expect(result.data.rollup.array).toHaveLength(2);
+      }
+    });
+
+    it('should parse rollup property with array type containing different property types', () => {
+      const property = {
+        id: 'prop-rollup-mixed-array',
+        type: 'rollup' as const,
+        rollup: {
+          type: 'array' as const,
+          function: 'show_original' as const,
+          array: [
+            {
+              type: 'rich_text' as const,
+              rich_text: [{ type: 'text', text: { content: 'Hello' }, plain_text: 'Hello' }],
+            },
+            {
+              type: 'checkbox' as const,
+              checkbox: true,
+            },
+            {
+              type: 'number' as const,
+              number: 42,
+            },
+          ],
+        },
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+      if (result.success && result.data.type === 'rollup') {
+        expect(result.data.rollup.array).toBeDefined();
+        expect(result.data.rollup.array).toHaveLength(3);
+      }
+    });
+
     it('should parse all rollup function types', () => {
       const functions = [
         'average',

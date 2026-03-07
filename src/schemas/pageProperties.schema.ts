@@ -193,6 +193,7 @@ const rollupPropertySchema = z.object({
       })
       .nullable()
       .optional(),
+    array: z.array(z.unknown()).optional(),
   }),
 });
 
