@@ -1,10 +1,12 @@
 import tseslint from 'typescript-eslint';
+import zod from 'eslint-plugin-zod';
 
 export default [
   {
     ignores: ['dist', 'node_modules', 'coverage', '**/*.test.ts', '**/*.spec.ts'],
   },
   ...tseslint.configs.recommendedTypeChecked,
+  zod.configs.recommended,
   {
     languageOptions: {
       parserOptions: {
@@ -65,17 +67,17 @@ export default [
       'no-restricted-syntax': [
         'error',
         {
-          selector: 'ImportDeclaration[source.value=/\\.js$/]',
+          selector: String.raw`ImportDeclaration[source.value=/\.js$/]`,
           message:
             'Do not use .js extension in imports. TypeScript will resolve modules without explicit extensions.',
         },
         {
-          selector: 'ExportNamedDeclaration[source.value=/\\.js$/]',
+          selector: String.raw`ExportNamedDeclaration[source.value=/\.js$/]`,
           message:
             'Do not use .js extension in exports. TypeScript will resolve modules without explicit extensions.',
         },
         {
-          selector: 'ExportAllDeclaration[source.value=/\\.js$/]',
+          selector: String.raw`ExportAllDeclaration[source.value=/\.js$/]`,
           message:
             'Do not use .js extension in exports. TypeScript will resolve modules without explicit extensions.',
         },

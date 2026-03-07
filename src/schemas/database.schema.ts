@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
 import { parentSchema } from './parent.schema';
@@ -18,7 +18,7 @@ import { userSchema } from './user.schema';
 /** Data source reference with id and name. */
 export const dataSourceRefSchema = z.object({
   id: z.uuid(),
-  name: z.string(),
+  name: z.string().trim(),
 });
 
 export type DataSourceRef = z.infer<typeof dataSourceRefSchema>;

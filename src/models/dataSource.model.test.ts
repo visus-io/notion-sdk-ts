@@ -143,7 +143,7 @@ describe('DataSource', () => {
         },
         {
           type: 'text',
-          text: { content: ' List', link: null },
+          text: { content: ' ', link: null },
           annotations: {
             bold: false,
             italic: false,
@@ -152,14 +152,28 @@ describe('DataSource', () => {
             code: false,
             color: 'default',
           },
-          plain_text: ' List',
+          plain_text: ' ',
+          href: null,
+        },
+        {
+          type: 'text',
+          text: { content: 'List', link: null },
+          annotations: {
+            bold: false,
+            italic: false,
+            strikethrough: false,
+            underline: false,
+            code: false,
+            color: 'default',
+          },
+          plain_text: 'List',
           href: null,
         },
       ],
       description: [
         {
           type: 'text',
-          text: { content: 'Track all ', link: null },
+          text: { content: 'Track all', link: null },
           annotations: {
             bold: false,
             italic: false,
@@ -168,7 +182,21 @@ describe('DataSource', () => {
             code: false,
             color: 'default',
           },
-          plain_text: 'Track all ',
+          plain_text: 'Track all',
+          href: null,
+        },
+        {
+          type: 'text',
+          text: { content: ' ', link: null },
+          annotations: {
+            bold: false,
+            italic: false,
+            strikethrough: false,
+            underline: false,
+            code: false,
+            color: 'default',
+          },
+          plain_text: ' ',
           href: null,
         },
         {

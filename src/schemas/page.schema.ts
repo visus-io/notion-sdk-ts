@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
 import { pagePropertiesSchema } from './pageProperties.schema';
@@ -26,7 +26,7 @@ export const pageSchema = z.object({
   in_trash: z.boolean(),
   icon: z.nullable(z.union([fileSchema, emojiSchema])),
   cover: z.nullable(fileSchema),
-  properties: z.record(z.string(), pagePropertiesSchema),
+  properties: z.record(z.string().trim(), pagePropertiesSchema),
   parent: parentSchema,
   url: z.url(),
   public_url: z.url().nullable(),

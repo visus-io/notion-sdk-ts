@@ -2,7 +2,7 @@ import type { NotionClient } from '../client';
 import type { PaginatedList, PaginatedListType, PaginationParameters } from '../schemas';
 import { paginatedListSchema } from '../schemas';
 import { LIMITS, validateArrayLength } from '../validation';
-import type { z } from 'zod';
+import type * as z from 'zod';
 
 /**
  * Configuration for API resource operations, including paths, schemas, and model classes.

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Notion file upload object schema.
@@ -16,12 +16,12 @@ export const fileUploadSchema = z.object({
   created_time: z.iso.datetime(),
   expiry_time: z.iso.datetime().nullable(),
   status: z.enum(['pending', 'uploaded', 'expired', 'failed']),
-  filename: z.string(),
-  content_type: z.string().nullable(),
+  filename: z.string().trim(),
+  content_type: z.string().trim().nullable(),
   content_length: z.number().nullable(),
-  upload_url: z.string(),
-  complete_url: z.string(),
-  file_import_result: z.string(),
+  upload_url: z.string().trim(),
+  complete_url: z.string().trim(),
+  file_import_result: z.string().trim(),
 });
 
 export type NotionFileUpload = z.infer<typeof fileUploadSchema>;

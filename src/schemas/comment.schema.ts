@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
 import { userSchema } from './user.schema';
@@ -31,11 +31,11 @@ export type CommentAttachment = z.infer<typeof commentAttachmentSchema>;
 export const commentDisplayNameSchema = z.union([
   z.object({
     type: z.literal('user'),
-    resolved_name: z.string(),
+    resolved_name: z.string().trim(),
   }),
   z.object({
     type: z.literal('custom'),
-    resolved_name: z.string(),
+    resolved_name: z.string().trim(),
   }),
 ]);
 
