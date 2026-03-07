@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { NOTION_COLORS } from './colors';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -41,12 +42,9 @@ const databaseMentionSchema = z.object({
 const dateMentionSchema = z.object({
   type: z.literal('date'),
   date: z.object({
-    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- date strings must preserve exact format from Notion API
-    start: z.string(),
-    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- date strings must preserve exact format from Notion API
-    end: z.string().nullable(),
-    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- date strings must preserve exact format from Notion API
-    time_zone: z.string().nullable().optional(),
+    start: notionDateStringSchema,
+    end: notionDateStringSchema.nullable(),
+    time_zone: z.string().trim().nullable().optional(),
   }),
 });
 

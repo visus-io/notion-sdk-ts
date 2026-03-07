@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { NOTION_COLORS } from './colors';
 import { richTextSchema } from './richText.schema';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -41,8 +42,8 @@ const datePropertySchema = z.object({
   type: z.literal('date'),
   date: z
     .object({
-      start: z.string().trim(),
-      end: z.string().trim().nullable(),
+      start: notionDateStringSchema,
+      end: notionDateStringSchema.nullable(),
       time_zone: z.string().trim().nullable(),
     })
     .nullable(),
@@ -79,8 +80,8 @@ const formulaPropertySchema = z.object({
     z.object({
       type: z.literal('date'),
       date: z.object({
-        start: z.string().trim(),
-        end: z.string().trim().nullable(),
+        start: notionDateStringSchema,
+        end: notionDateStringSchema.nullable(),
         time_zone: z.string().trim().nullable(),
       }),
     }),
@@ -187,8 +188,8 @@ const rollupPropertySchema = z.object({
     number: z.number().nullable().optional(),
     date: z
       .object({
-        start: z.string().trim(),
-        end: z.string().trim().nullable(),
+        start: notionDateStringSchema,
+        end: notionDateStringSchema.nullable(),
         time_zone: z.string().trim().nullable(),
       })
       .nullable()
@@ -257,8 +258,8 @@ const verificationPropertySchema = z.object({
       verified_by: userSchema.nullable(),
       date: z
         .object({
-          start: z.string().trim(),
-          end: z.string().trim().nullable(),
+          start: notionDateStringSchema,
+          end: notionDateStringSchema.nullable(),
           time_zone: z.string().trim().nullable(),
         })
         .nullable(),

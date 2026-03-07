@@ -674,7 +674,7 @@ describe('pagePropertiesSchema', () => {
         'sum',
         'unchecked',
         'unique',
-      ];
+      ] as const;
 
       functions.forEach((func) => {
         const property = {
@@ -682,7 +682,7 @@ describe('pagePropertiesSchema', () => {
           type: 'rollup' as const,
           rollup: {
             type: 'number' as const,
-            function: func as any,
+            function: func,
             number: 42,
           },
         };
