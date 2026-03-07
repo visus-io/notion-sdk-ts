@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Notion user object schemas.
@@ -26,7 +26,7 @@ const personUserSchema = z.object({
   object: z.literal('user'),
   id: z.uuid(),
   type: z.literal('person'),
-  name: z.string().optional(),
+  name: z.string().trim().optional(),
   avatar_url: z.union([z.url(), z.null()]).optional(),
   person: z.object({
     email: z.email(),
@@ -38,15 +38,15 @@ const botUserSchema = z.object({
   object: z.literal('user'),
   id: z.uuid(),
   type: z.literal('bot'),
-  name: z.string().optional(),
+  name: z.string().trim().optional(),
   avatar_url: z.union([z.url(), z.null()]).optional(),
   bot: z.object({
     owner: botOwnerSchema,
-    workspace_name: z.string().nullable().optional(),
-    workspace_id: z.string().optional(),
+    workspace_name: z.string().trim().nullable().optional(),
+    workspace_id: z.string().trim().optional(),
     workspace_limits: z
       .object({
-        max_file_upload_size_in_bytes: z.number().int(),
+        max_file_upload_size_in_bytes: z.int(),
       })
       .optional(),
   }),

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Notion emoji object schema.
@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 export const emojiSchema = z.object({
   type: z.literal('emoji'),
-  emoji: z.string(),
+  emoji: z.string().trim(),
 });
 
 export type NotionEmoji = z.infer<typeof emojiSchema>;

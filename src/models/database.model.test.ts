@@ -95,7 +95,7 @@ describe('Database', () => {
       title: [
         {
           type: 'text',
-          text: { content: 'Task', link: null },
+          text: { content: 'Task ', link: null },
           annotations: {
             bold: false,
             italic: false,
@@ -104,12 +104,12 @@ describe('Database', () => {
             code: false,
             color: 'default',
           },
-          plain_text: 'Task',
+          plain_text: 'Task ',
           href: null,
         },
         {
           type: 'text',
-          text: { content: ' Database', link: null },
+          text: { content: 'Database', link: null },
           annotations: {
             bold: false,
             italic: false,
@@ -118,7 +118,7 @@ describe('Database', () => {
             code: false,
             color: 'default',
           },
-          plain_text: ' Database',
+          plain_text: 'Database',
           href: null,
         },
       ],

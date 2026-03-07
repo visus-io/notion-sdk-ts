@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 /**
  * Pagination schemas and utilities.
@@ -35,7 +35,7 @@ export const paginatedListSchema = <T extends z.ZodTypeAny>(resultSchema: T) => 
   return z.object({
     object: z.literal('list'),
     results: z.array(resultSchema),
-    next_cursor: z.string().nullable(),
+    next_cursor: z.string().trim().nullable(),
     has_more: z.boolean(),
     type: z.enum([
       'block',

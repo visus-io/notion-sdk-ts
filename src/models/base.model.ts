@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod';
+import type * as z from 'zod';
 
 /**
  * Base model class providing common functionality for all Notion models.
@@ -7,7 +7,7 @@ import type { ZodType } from 'zod';
 export abstract class BaseModel<T> {
   protected readonly data: T;
 
-  protected constructor(data: T, schema: ZodType<T>) {
+  protected constructor(data: T, schema: z.ZodType<T>) {
     this.data = schema.parse(data);
   }
 

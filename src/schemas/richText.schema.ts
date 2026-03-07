@@ -1,5 +1,6 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { NOTION_COLORS } from './colors';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -25,6 +26,7 @@ const annotationsSchema = z.object({
 
 /** Text content with optional link. */
 const textContentSchema = z.object({
+  // eslint-disable-next-line zod/prefer-string-schema-with-trim -- content must preserve whitespace from Notion API
   content: z.string(),
   link: z.object({ url: z.url() }).nullable(),
 });
@@ -40,9 +42,9 @@ const databaseMentionSchema = z.object({
 const dateMentionSchema = z.object({
   type: z.literal('date'),
   date: z.object({
-    start: z.string(),
-    end: z.string().nullable(),
-    time_zone: z.string().nullable().optional(),
+    start: notionDateStringSchema,
+    end: notionDateStringSchema.nullable(),
+    time_zone: z.string().trim().nullable().optional(),
   }),
 });
 
@@ -97,6 +99,7 @@ const textRichTextSchema = z.object({
   type: z.literal('text'),
   text: textContentSchema,
   annotations: annotationsSchema,
+  // eslint-disable-next-line zod/prefer-string-schema-with-trim -- plain_text must preserve whitespace from Notion API
   plain_text: z.string(),
   href: z.url().nullable(),
 });
@@ -106,6 +109,7 @@ const mentionRichTextSchema = z.object({
   type: z.literal('mention'),
   mention: mentionSchema,
   annotations: annotationsSchema,
+  // eslint-disable-next-line zod/prefer-string-schema-with-trim -- plain_text must preserve whitespace from Notion API
   plain_text: z.string(),
   href: z.url().nullable(),
 });
@@ -114,9 +118,11 @@ const mentionRichTextSchema = z.object({
 const equationRichTextSchema = z.object({
   type: z.literal('equation'),
   equation: z.object({
+    // eslint-disable-next-line zod/prefer-string-schema-with-trim -- LaTeX expression must preserve whitespace from Notion API
     expression: z.string(),
   }),
   annotations: annotationsSchema,
+  // eslint-disable-next-line zod/prefer-string-schema-with-trim -- plain_text must preserve whitespace from Notion API
   plain_text: z.string(),
   href: z.url().nullable(),
 });

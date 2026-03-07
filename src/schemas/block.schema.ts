@@ -1,10 +1,11 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { CODE_BLOCK_LANGUAGES } from './codeLanguages';
 import { NOTION_COLORS } from './colors';
 import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -17,11 +18,20 @@ import { userSchema } from './user.schema';
  * https://developers.notion.com/reference/block
  */
 
-const headingsObject = z.object({
+let childrenSchema: z.ZodOptional<z.ZodArray<z.ZodTypeAny>> | undefined;
+
+const getChildrenSchema = (): z.ZodOptional<z.ZodArray<z.ZodTypeAny>> => {
+  childrenSchema ??= z.array(blockSchema).optional();
+  return childrenSchema;
+};
+
+const headingsObjectSchema = z.object({
   rich_text: richTextSchema,
   color: z.enum(NOTION_COLORS),
   is_toggleable: z.boolean(),
-  children: z.array(z.any()).optional(),
+  get children() {
+    return getChildrenSchema();
+  },
 });
 
 export const blockSchema = z.object({
@@ -59,12 +69,13 @@ export const blockSchema = z.object({
     'template',
     'to_do',
     'toggle',
+    'transcription',
     'unsupported',
     'video',
   ]),
-  created_time: z.iso.datetime(),
+  created_time: notionDateStringSchema,
   created_by: userSchema,
-  last_edited_time: z.iso.datetime(),
+  last_edited_time: notionDateStringSchema,
   last_edited_by: userSchema,
   archived: z.boolean(),
   in_trash: z.boolean(),
@@ -83,7 +94,9 @@ export const blockSchema = z.object({
     .object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   callout: z
@@ -91,17 +104,19 @@ export const blockSchema = z.object({
       rich_text: richTextSchema,
       icon: z.union([emojiSchema, fileSchema]),
       color: z.enum(NOTION_COLORS),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   child_database: z
     .object({
-      title: z.string(),
+      title: z.string().trim(),
     })
     .optional(),
   child_page: z
     .object({
-      title: z.string(),
+      title: z.string().trim(),
     })
     .optional(),
   code: z
@@ -115,7 +130,9 @@ export const blockSchema = z.object({
   column: z
     .object({
       width_ratio: z.number().min(0).max(1).optional(),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   divider: z.object({}).optional(),
@@ -124,7 +141,12 @@ export const blockSchema = z.object({
       url: z.url(),
     })
     .optional(),
-  equation: z.object({ expression: z.string() }).optional(),
+  equation: z
+    .object({
+      // eslint-disable-next-line zod/prefer-string-schema-with-trim -- LaTeX expression must preserve whitespace from Notion API
+      expression: z.string(),
+    })
+    .optional(),
   file: z
     .object({
       caption: richTextSchema,
@@ -132,28 +154,32 @@ export const blockSchema = z.object({
       file: fileSchema.optional(),
       external: fileSchema.optional(),
       file_upload: fileSchema.optional(),
-      name: z.string().optional(),
+      name: z.string().trim().optional(),
     })
     .optional(),
-  heading_1: headingsObject.optional(),
-  heading_2: headingsObject.optional(),
-  heading_3: headingsObject.optional(),
+  heading_1: headingsObjectSchema.optional(),
+  heading_2: headingsObjectSchema.optional(),
+  heading_3: headingsObjectSchema.optional(),
   image: fileSchema.optional(),
   link_preview: z.object({ url: z.url() }).optional(),
   numbered_list_item: z
     .object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
-      list_start_index: z.number().int().optional(),
+      list_start_index: z.int().optional(),
       list_format: z.enum(['numbers', 'letters', 'roman']).optional(),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   paragraph: z
     .object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   pdf: z
@@ -163,14 +189,16 @@ export const blockSchema = z.object({
       file: fileSchema.optional(),
       external: fileSchema.optional(),
       file_upload: fileSchema.optional(),
-      name: z.string().optional(),
+      name: z.string().trim().optional(),
     })
     .optional(),
   quote: z
     .object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   synced_block: z
@@ -181,12 +209,14 @@ export const blockSchema = z.object({
           block_id: z.uuid(),
         })
         .nullable(),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   table: z
     .object({
-      table_width: z.number().int(),
+      table_width: z.int(),
       has_column_header: z.boolean(),
       has_row_header: z.boolean(),
     })
@@ -204,7 +234,9 @@ export const blockSchema = z.object({
   template: z
     .object({
       rich_text: richTextSchema,
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   to_do: z
@@ -212,16 +244,29 @@ export const blockSchema = z.object({
       rich_text: richTextSchema,
       checked: z.boolean().optional(),
       color: z.enum(NOTION_COLORS),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
   toggle: z
     .object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
-      children: z.array(z.any()).optional(),
+      get children() {
+        return getChildrenSchema();
+      },
     })
     .optional(),
+  transcription: z
+    .object({
+      rich_text: richTextSchema,
+      get children() {
+        return getChildrenSchema();
+      },
+    })
+    .optional(),
+  unsupported: z.object({}).optional(),
   video: fileSchema.optional(),
 });
 

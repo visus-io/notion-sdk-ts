@@ -1,4 +1,5 @@
-import { z } from 'zod';
+import * as z from 'zod';
+import { notionDateStringSchema } from './shared.schema';
 
 /**
  * Notion file upload object schema.
@@ -13,15 +14,15 @@ import { z } from 'zod';
 export const fileUploadSchema = z.object({
   object: z.literal('file_upload'),
   id: z.uuid(),
-  created_time: z.iso.datetime(),
-  expiry_time: z.iso.datetime().nullable(),
+  created_time: notionDateStringSchema,
+  expiry_time: notionDateStringSchema.nullable(),
   status: z.enum(['pending', 'uploaded', 'expired', 'failed']),
-  filename: z.string(),
-  content_type: z.string().nullable(),
+  filename: z.string().trim(),
+  content_type: z.string().trim().nullable(),
   content_length: z.number().nullable(),
-  upload_url: z.string(),
-  complete_url: z.string(),
-  file_import_result: z.string(),
+  upload_url: z.string().trim(),
+  complete_url: z.string().trim(),
+  file_import_result: z.string().trim(),
 });
 
 export type NotionFileUpload = z.infer<typeof fileUploadSchema>;

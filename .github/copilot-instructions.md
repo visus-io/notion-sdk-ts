@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`@visus-io/notion-sdk-ts` is a type-safe TypeScript SDK for the Notion API. It wraps the full Notion REST API with Zod v4 runtime validation, OOP model classes, and ergonomic helper factories. The single runtime dependency is `zod`; it uses Node 18+ built-in `fetch`.
+`@visus-io/notion-sdk-ts` is a type-safe TypeScript SDK for the Notion API. It wraps the full Notion REST API with Zod v4 runtime validation, OOP model classes, and ergonomic helper factories. The single runtime dependency is `zod`; it uses Node 18+ built-in `fetch`. The SDK targets Notion API version `2025-09-03` by default.
 
 ### Architecture
 
@@ -19,14 +19,14 @@ The `Notion` class is the public entry point. It creates a `NotionClient` (HTTP 
 ## Commands
 
 ```bash
-npm run build            # Compile TypeScript to dist/ via tsc
-npm test                 # Run tests with Vitest
-npm run test:watch       # Run tests in watch mode
-npm run test:coverage    # Run tests with v8 coverage
-npm run lint             # Lint with ESLint
-npm run lint:fix         # Lint and auto-fix
-npm run format           # Format with Prettier
-npm run format:check     # Check formatting
+bun run build            # Compile TypeScript to dist/ via tsc
+bun run test             # Run tests with Vitest
+bun run test:watch       # Run tests in watch mode
+bun run test:coverage    # Run tests with v8 coverage
+bun run lint             # Lint with ESLint
+bun run lint:fix         # Lint and auto-fix
+bun run format           # Format with Prettier
+bun run format:check     # Check formatting
 ```
 
 ## Project Structure
@@ -88,6 +88,7 @@ Test files are colocated with source using `.test.ts` suffix (e.g., `block.model
 ### TypeScript
 
 - Target: ES2021, Module: CommonJS, strict mode enabled
+- Declaration maps and source maps are disabled
 - Prefer `as const` arrays over TypeScript enums: `const THING = [...] as const`
 - Derive types from const arrays: `type Thing = (typeof THING)[number]`
 - Use numeric separators for readability: `2_000`, `60_000`, `500 * 1_024`
@@ -128,7 +129,7 @@ Each API class encapsulates one Notion resource's endpoints.
 OOP wrappers around validated schema data, extending `BaseModel<T>`.
 
 - `BaseModel<T>` is abstract, takes `data` + `schema`, validates via `schema.parse(data)` on construction
-- Provides `toJSON(): T` (deep clone via `JSON.parse(JSON.stringify(this.data))`)
+- Provides `toJSON(): T` (deep clone via `structuredClone(this.data)`)
 - Abstract getters: `object` and `id`
 - Concrete models expose data as **getter properties**, converting snake_case API fields to camelCase
 - Datetime strings are converted to `Date` objects in getters
@@ -163,6 +164,24 @@ All error classes set `this.name` explicitly and use `Error.captureStackTrace` (
 
 The client only retries `rate_limited` (429) errors, using `Retry-After` header or exponential backoff (`2^attempt * 1000ms`, capped at 60s).
 
+#### Validation Limits (`LIMITS` constant in `validation.ts`)
+
+The SDK enforces Notion API size limits client-side before making requests:
+
+- `RICH_TEXT_CONTENT`: 2,000 characters
+- `RICH_TEXT_LINK_URL`: 2,000 characters
+- `EQUATION_EXPRESSION`: 1,000 characters
+- `ARRAY_ELEMENTS`: 100 items
+- `URL`: 2,000 characters
+- `EMAIL`: 200 characters
+- `PHONE_NUMBER`: 200 characters
+- `MULTI_SELECT`: 100 items
+- `RELATION`: 100 items
+- `PEOPLE`: 100 items
+- `COMMENT_ATTACHMENTS`: 3 files
+- `PAYLOAD_BLOCKS`: 1,000 blocks
+- `PAYLOAD_SIZE_BYTES`: 512,000 bytes (500 KiB)
+
 ## Testing Conventions
 
 - **Framework:** Vitest with `globals: true`, though tests also explicitly `import { describe, expect, it } from 'vitest'`
@@ -184,7 +203,7 @@ The client only retries `rate_limited` (429) errors, using `Retry-After` header 
 - **Generic schema factories** -- e.g., `paginatedListSchema(resultSchema)` for reusable paginated response parsing
 - **`Object.assign` for function namespaces** -- makes a function both callable and extensible with static methods
 - **`readonly children = { ... }` pattern** -- object literals with arrow functions for sub-resource namespaces (e.g., `blocks.children.list()`)
-- **Deep clone via JSON round-trip** -- `toJSON()` uses `JSON.parse(JSON.stringify(this.data))`
+- **Deep clone via `structuredClone`** -- `toJSON()` uses `structuredClone(this.data)` for safe deep copying
 
 ## Dependencies
 

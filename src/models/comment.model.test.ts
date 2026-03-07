@@ -219,7 +219,7 @@ describe('Comment', () => {
       rich_text: [
         {
           type: 'text' as const,
-          text: { content: 'Hello ', link: null },
+          text: { content: 'Hello', link: null },
           annotations: {
             bold: false,
             italic: false,
@@ -228,7 +228,21 @@ describe('Comment', () => {
             code: false,
             color: 'default' as const,
           },
-          plain_text: 'Hello ',
+          plain_text: 'Hello',
+          href: null,
+        },
+        {
+          type: 'text' as const,
+          text: { content: ' ', link: null },
+          annotations: {
+            bold: false,
+            italic: false,
+            strikethrough: false,
+            underline: false,
+            code: false,
+            color: 'default' as const,
+          },
+          plain_text: ' ',
           href: null,
         },
         {

@@ -1,6 +1,7 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { NOTION_COLORS } from './colors';
 import { richTextSchema } from './richText.schema';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -16,55 +17,55 @@ import { userSchema } from './user.schema';
 
 /** Checkbox property. */
 const checkboxPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('checkbox'),
   checkbox: z.boolean(),
 });
 
 /** Created by property. */
 const createdByPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('created_by'),
   created_by: userSchema,
 });
 
 /** Created time property. */
 const createdTimePropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('created_time'),
-  created_time: z.iso.datetime(),
+  created_time: notionDateStringSchema,
 });
 
 /** Date property. */
 const datePropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('date'),
   date: z
     .object({
-      start: z.string(),
-      end: z.string().nullable(),
-      time_zone: z.string().nullable(),
+      start: notionDateStringSchema,
+      end: notionDateStringSchema.nullable(),
+      time_zone: z.string().trim().nullable(),
     })
     .nullable(),
 });
 
 /** Email property. */
 const emailPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('email'),
-  email: z.string().nullable(),
+  email: z.string().trim().nullable(),
 });
 
 /** Files property. */
 const filesPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('files'),
   files: z.array(
     z.object({
-      name: z.string(),
+      name: z.string().trim(),
       type: z.enum(['external', 'file', 'file_upload']),
       external: z.object({ url: z.url() }).optional(),
-      file: z.object({ url: z.url(), expiry_time: z.iso.datetime() }).optional(),
+      file: z.object({ url: z.url(), expiry_time: notionDateStringSchema }).optional(),
       file_upload: z.object({ id: z.uuid() }).optional(),
     }),
   ),
@@ -72,45 +73,45 @@ const filesPropertySchema = z.object({
 
 /** Formula property. */
 const formulaPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('formula'),
   formula: z.discriminatedUnion('type', [
     z.object({ type: z.literal('boolean'), boolean: z.boolean() }),
     z.object({
       type: z.literal('date'),
       date: z.object({
-        start: z.string(),
-        end: z.string().nullable(),
-        time_zone: z.string().nullable(),
+        start: notionDateStringSchema,
+        end: notionDateStringSchema.nullable(),
+        time_zone: z.string().trim().nullable(),
       }),
     }),
     z.object({ type: z.literal('number'), number: z.number().nullable() }),
-    z.object({ type: z.literal('string'), string: z.string().nullable() }),
+    z.object({ type: z.literal('string'), string: z.string().trim().nullable() }),
   ]),
 });
 
 /** Last edited by property. */
 const lastEditedByPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('last_edited_by'),
   last_edited_by: userSchema,
 });
 
 /** Last edited time property. */
 const lastEditedTimePropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('last_edited_time'),
-  last_edited_time: z.iso.datetime(),
+  last_edited_time: notionDateStringSchema,
 });
 
 /** Multi-select property. */
 const multiSelectPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('multi_select'),
   multi_select: z.array(
     z.object({
-      id: z.string(),
-      name: z.string(),
+      id: z.string().trim(),
+      name: z.string().trim(),
       color: z.enum(NOTION_COLORS),
     }),
   ),
@@ -118,28 +119,28 @@ const multiSelectPropertySchema = z.object({
 
 /** Number property. */
 const numberPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('number'),
   number: z.number().nullable(),
 });
 
 /** People property. */
 const peoplePropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('people'),
   people: z.array(userSchema),
 });
 
 /** Phone number property. */
 const phoneNumberPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('phone_number'),
-  phone_number: z.string().nullable(),
+  phone_number: z.string().trim().nullable(),
 });
 
 /** Relation property. */
 const relationPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('relation'),
   relation: z.array(z.object({ id: z.uuid() })),
   has_more: z.boolean(),
@@ -147,14 +148,14 @@ const relationPropertySchema = z.object({
 
 /** Rich text property. */
 const richTextPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('rich_text'),
   rich_text: richTextSchema,
 });
 
 /** Rollup property. */
 const rollupPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('rollup'),
   rollup: z.object({
     type: z.enum(['number', 'date', 'array', 'incomplete', 'unsupported']),
@@ -187,24 +188,24 @@ const rollupPropertySchema = z.object({
     number: z.number().nullable().optional(),
     date: z
       .object({
-        start: z.string(),
-        end: z.string().nullable(),
-        time_zone: z.string().nullable(),
+        start: notionDateStringSchema,
+        end: notionDateStringSchema.nullable(),
+        time_zone: z.string().trim().nullable(),
       })
       .nullable()
       .optional(),
-    array: z.array(z.any()).optional(),
+    array: z.array(z.unknown()).optional(),
   }),
 });
 
 /** Select property. */
 const selectPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('select'),
   select: z
     .object({
-      id: z.string(),
-      name: z.string(),
+      id: z.string().trim(),
+      name: z.string().trim(),
       color: z.enum(NOTION_COLORS),
     })
     .nullable(),
@@ -212,12 +213,12 @@ const selectPropertySchema = z.object({
 
 /** Status property. */
 const statusPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('status'),
   status: z
     .object({
-      id: z.string(),
-      name: z.string(),
+      id: z.string().trim(),
+      name: z.string().trim(),
       color: z.enum(NOTION_COLORS),
     })
     .nullable(),
@@ -225,31 +226,31 @@ const statusPropertySchema = z.object({
 
 /** Title property. */
 const titlePropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('title'),
   title: richTextSchema,
 });
 
 /** URL property. */
 const urlPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('url'),
   url: z.url().nullable(),
 });
 
 /** Unique ID property. */
 const uniqueIdPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('unique_id'),
   unique_id: z.object({
-    number: z.number().int(),
-    prefix: z.string().nullable(),
+    number: z.int(),
+    prefix: z.string().trim().nullable(),
   }),
 });
 
 /** Verification property. */
 const verificationPropertySchema = z.object({
-  id: z.string(),
+  id: z.string().trim(),
   type: z.literal('verification'),
   verification: z
     .object({
@@ -257,9 +258,9 @@ const verificationPropertySchema = z.object({
       verified_by: userSchema.nullable(),
       date: z
         .object({
-          start: z.string(),
-          end: z.string().nullable(),
-          time_zone: z.string().nullable(),
+          start: notionDateStringSchema,
+          end: notionDateStringSchema.nullable(),
+          time_zone: z.string().trim().nullable(),
         })
         .nullable(),
     })

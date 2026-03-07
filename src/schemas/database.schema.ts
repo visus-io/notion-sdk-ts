@@ -1,8 +1,9 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
+import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -18,7 +19,7 @@ import { userSchema } from './user.schema';
 /** Data source reference with id and name. */
 export const dataSourceRefSchema = z.object({
   id: z.uuid(),
-  name: z.string(),
+  name: z.string().trim(),
 });
 
 export type DataSourceRef = z.infer<typeof dataSourceRefSchema>;
@@ -27,9 +28,9 @@ export const databaseSchema = z.object({
   object: z.literal('database'),
   id: z.uuid(),
   data_sources: z.array(dataSourceRefSchema),
-  created_time: z.iso.datetime(),
+  created_time: notionDateStringSchema,
   created_by: userSchema,
-  last_edited_time: z.iso.datetime(),
+  last_edited_time: notionDateStringSchema,
   last_edited_by: userSchema,
   title: richTextSchema,
   description: richTextSchema,

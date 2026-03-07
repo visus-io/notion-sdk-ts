@@ -1,4 +1,5 @@
-import { z } from 'zod';
+import * as z from 'zod';
+import { notionDateStringSchema } from './shared.schema';
 
 /**
  * Notion file object schemas.
@@ -15,7 +16,7 @@ const notionFileSchema = z.object({
   type: z.literal('file'),
   file: z.object({
     url: z.url(),
-    expiry_time: z.iso.datetime(),
+    expiry_time: notionDateStringSchema,
   }),
 });
 

@@ -6,7 +6,7 @@ describe('RichText', () => {
     const richTextData = [
       {
         type: 'text',
-        text: { content: 'Hello ', link: null },
+        text: { content: 'Hello', link: null },
         annotations: {
           bold: false,
           italic: false,
@@ -15,7 +15,21 @@ describe('RichText', () => {
           code: false,
           color: 'default',
         },
-        plain_text: 'Hello ',
+        plain_text: 'Hello',
+        href: null,
+      },
+      {
+        type: 'text',
+        text: { content: ' ', link: null },
+        annotations: {
+          bold: false,
+          italic: false,
+          strikethrough: false,
+          underline: false,
+          code: false,
+          color: 'default',
+        },
+        plain_text: ' ',
         href: null,
       },
       {
@@ -78,7 +92,21 @@ describe('RichText', () => {
       },
       {
         type: 'text',
-        text: { content: ' italic', link: null },
+        text: { content: ' ', link: null },
+        annotations: {
+          bold: false,
+          italic: false,
+          strikethrough: false,
+          underline: false,
+          code: false,
+          color: 'default',
+        },
+        plain_text: ' ',
+        href: null,
+      },
+      {
+        type: 'text',
+        text: { content: 'italic', link: null },
         annotations: {
           bold: false,
           italic: true,
@@ -87,26 +115,12 @@ describe('RichText', () => {
           code: false,
           color: 'default',
         },
-        plain_text: ' italic',
+        plain_text: 'italic',
         href: null,
       },
       {
         type: 'text',
-        text: { content: ' strike', link: null },
-        annotations: {
-          bold: false,
-          italic: false,
-          strikethrough: true,
-          underline: false,
-          code: false,
-          color: 'default',
-        },
-        plain_text: ' strike',
-        href: null,
-      },
-      {
-        type: 'text',
-        text: { content: ' link', link: null },
+        text: { content: ' ', link: null },
         annotations: {
           bold: false,
           italic: false,
@@ -115,13 +129,55 @@ describe('RichText', () => {
           code: false,
           color: 'default',
         },
-        plain_text: ' link',
+        plain_text: ' ',
+        href: null,
+      },
+      {
+        type: 'text',
+        text: { content: 'strike', link: null },
+        annotations: {
+          bold: false,
+          italic: false,
+          strikethrough: true,
+          underline: false,
+          code: false,
+          color: 'default',
+        },
+        plain_text: 'strike',
+        href: null,
+      },
+      {
+        type: 'text',
+        text: { content: ' ', link: null },
+        annotations: {
+          bold: false,
+          italic: false,
+          strikethrough: false,
+          underline: false,
+          code: false,
+          color: 'default',
+        },
+        plain_text: ' ',
+        href: null,
+      },
+      {
+        type: 'text',
+        text: { content: 'link', link: null },
+        annotations: {
+          bold: false,
+          italic: false,
+          strikethrough: false,
+          underline: false,
+          code: false,
+          color: 'default',
+        },
+        plain_text: 'link',
         href: 'https://example.com',
       },
     ];
 
     const richText = new RichText(richTextData);
-    expect(richText.toMarkdown()).toBe('`code`* italic*~~ strike~~[ link](https://example.com)');
+    expect(richText.toMarkdown()).toBe('`code` *italic* ~~strike~~ [link](https://example.com)');
   });
 
   it('should detect and extract links', () => {
@@ -187,7 +243,21 @@ describe('RichText', () => {
       },
       {
         type: 'text',
-        text: { content: ' text ', link: null },
+        text: { content: ' ', link: null },
+        annotations: {
+          bold: false,
+          italic: false,
+          strikethrough: false,
+          underline: false,
+          code: false,
+          color: 'default',
+        },
+        plain_text: ' ',
+        href: null,
+      },
+      {
+        type: 'text',
+        text: { content: 'text', link: null },
         annotations: {
           bold: false,
           italic: false,
@@ -196,7 +266,21 @@ describe('RichText', () => {
           code: false,
           color: 'default',
         },
-        plain_text: ' text ',
+        plain_text: 'text',
+        href: null,
+      },
+      {
+        type: 'text',
+        text: { content: ' ', link: null },
+        annotations: {
+          bold: false,
+          italic: false,
+          strikethrough: false,
+          underline: false,
+          code: false,
+          color: 'default',
+        },
+        plain_text: ' ',
         href: null,
       },
       {
@@ -216,7 +300,7 @@ describe('RichText', () => {
     ];
 
     const richText = new RichText(richTextData);
-    expect(richText.toHTML()).toBe('<code>Code</code><u> text </u><s>strikethrough</s>');
+    expect(richText.toHTML()).toBe('<code>Code</code> <u>text</u> <s>strikethrough</s>');
   });
 
   it('should handle links in HTML', () => {
