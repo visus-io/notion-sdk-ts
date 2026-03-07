@@ -159,6 +159,22 @@ describe('block helpers', () => {
     });
   });
 
+  describe('transcription', () => {
+    it('should create a transcription block', () => {
+      const result = block.transcription('Transcribed audio text');
+      expect(result.type).toBe('transcription');
+      expect(result.transcription).toHaveProperty('rich_text');
+    });
+
+    it('should accept children', () => {
+      const result = block.transcription('Audio content', {
+        children: [block.paragraph('Nested content')],
+      });
+      const t = result.transcription as { children?: unknown[] };
+      expect(t.children).toHaveLength(1);
+    });
+  });
+
   // -----------------------------------------------------------------------
   // Code & equation
   // -----------------------------------------------------------------------
