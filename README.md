@@ -30,7 +30,7 @@ npm install @visus-io/notion-sdk-ts
 bun add @visus-io/notion-sdk-ts
 ```
 
-**Requirements:** Node.js 18+ or Bun 1.0+ (uses native `fetch`)
+**Requirements:** Node.js 18+ or Bun 1.3.10+ (uses native `fetch`)
 
 ## Quick Start
 
@@ -162,7 +162,7 @@ bun run lint:fix         # Auto-fix
 bun run format           # Prettier
 ```
 
-> **Note:** While this project uses Bun for development, the published package works with both Node.js 18+ and Bun 1.0+.
+> **Note:** While this project uses Bun for development, the published package works with both Node.js 18+ and Bun 1.3.10+.
 
 See [**Development & Contributing**](https://github.com/visus-io/notion-sdk-ts/wiki/Development) for more details.
 
