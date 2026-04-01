@@ -7,6 +7,8 @@ engine-strict = true
 audit = "moderate"
 lockfile = true
 frozen-lockfile = false
+minimumReleaseAge = 259200
+minimumReleaseAgeExcludes = ["@types/node", "typescript"]
 
 [install.scopes]
 "@visus-io" = { url = "https://registry.npmjs.org/" }
