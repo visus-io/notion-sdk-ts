@@ -59,7 +59,7 @@ export class NotionValidationError extends Error {
     if ('captureStackTrace' in Error) {
       (
         Error as typeof Error & {
-          captureStackTrace: (obj: object, fn: (...args: unknown[]) => unknown) => void;
+          captureStackTrace: (obj: object, fn: new (...args: unknown[]) => unknown) => void;
         }
       ).captureStackTrace(this, NotionValidationError);
     }
