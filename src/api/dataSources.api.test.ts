@@ -43,7 +43,6 @@ describe('DataSourcesAPI', () => {
     parent: { type: 'database_id', database_id: '523e4567-e89b-12d3-a456-426614174000' },
     database_parent: { type: 'workspace', workspace: true },
     url: 'https://notion.so/test-data-source',
-    archived: false,
     in_trash: false,
     is_inline: false,
     public_url: null,
@@ -56,7 +55,6 @@ describe('DataSourcesAPI', () => {
     created_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
     last_edited_time: '2023-01-02T00:00:00.000Z',
     last_edited_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
-    archived: false,
     in_trash: false,
     icon: null,
     cover: null,
@@ -231,22 +229,6 @@ describe('DataSourcesAPI', () => {
       ).rejects.toThrow(NotionValidationError);
     });
 
-    it('should query a data source with archived filter', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedPageResponse);
-
-      await dataSourcesAPI.query('123e4567-e89b-12d3-a456-426614174000', {
-        archived: true,
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'POST',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000/query',
-        body: {
-          archived: true,
-        },
-      });
-    });
-
     it('should query a data source with in_trash filter', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedPageResponse);
 
@@ -414,17 +396,17 @@ describe('DataSourcesAPI', () => {
     });
 
     it('should archive a data source', async () => {
-      const archivedDataSource = { ...mockDataSourceResponse, archived: true };
-      vi.mocked(mockClient.request).mockResolvedValue(archivedDataSource);
+      const trashedDataSource = { ...mockDataSourceResponse, in_trash: true };
+      vi.mocked(mockClient.request).mockResolvedValue(trashedDataSource);
 
       await dataSourcesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        archived: true,
+        in_trash: true,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: true },
+        body: { in_trash: true },
       });
     });
 
@@ -459,23 +441,23 @@ describe('DataSourcesAPI', () => {
   });
 
   describe('archive', () => {
-    it('should archive a data source using convenience method', async () => {
-      const archivedDataSource = { ...mockDataSourceResponse, archived: true };
-      vi.mocked(mockClient.request).mockResolvedValue(archivedDataSource);
+    it('should move a data source to trash using convenience method', async () => {
+      const trashedDataSource = { ...mockDataSourceResponse, in_trash: true };
+      vi.mocked(mockClient.request).mockResolvedValue(trashedDataSource);
 
       const result = await dataSourcesAPI.archive('123e4567-e89b-12d3-a456-426614174000');
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: true },
+        body: { in_trash: true },
       });
       expect(result).toBeInstanceOf(DataSource);
     });
   });
 
   describe('restore', () => {
-    it('should restore an archived data source using convenience method', async () => {
+    it('should restore a trashed data source using convenience method', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDataSourceResponse);
 
       const result = await dataSourcesAPI.restore('123e4567-e89b-12d3-a456-426614174000');
@@ -483,7 +465,7 @@ describe('DataSourcesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: false },
+        body: { in_trash: false },
       });
       expect(result).toBeInstanceOf(DataSource);
     });

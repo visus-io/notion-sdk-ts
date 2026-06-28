@@ -110,13 +110,6 @@ export class Database extends BaseModel<NotionDatabase> {
   }
 
   /**
-   * Returns the archived status.
-   */
-  get archived(): boolean {
-    return this.data.archived;
-  }
-
-  /**
    * Returns whether the database is in trash.
    */
   get inTrash(): boolean {

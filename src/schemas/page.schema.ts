@@ -23,7 +23,6 @@ export const pageSchema = z.object({
   created_by: userSchema,
   last_edited_time: notionDateStringSchema,
   last_edited_by: userSchema,
-  archived: z.boolean(),
   in_trash: z.boolean(),
   icon: z.nullable(z.union([fileSchema, emojiSchema])),
   cover: z.nullable(fileSchema),

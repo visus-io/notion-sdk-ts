@@ -18,7 +18,6 @@ describe('PagesAPI', () => {
     created_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
     last_edited_time: '2023-01-02T00:00:00.000Z',
     last_edited_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
-    archived: false,
     in_trash: false,
     icon: null,
     cover: null,
@@ -264,19 +263,19 @@ describe('PagesAPI', () => {
     });
 
     it('should archive a page', async () => {
-      const archivedPage = { ...mockPageResponse, archived: true };
-      vi.mocked(mockClient.request).mockResolvedValue(archivedPage);
+      const trashedPage = { ...mockPageResponse, in_trash: true };
+      vi.mocked(mockClient.request).mockResolvedValue(trashedPage);
 
       const result = await pagesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        archived: true,
+        in_trash: true,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: true },
+        body: { in_trash: true },
       });
-      expect(result.archived).toBe(true);
+      expect(result.inTrash).toBe(true);
     });
 
     it('should update page icon and cover', async () => {
@@ -328,24 +327,24 @@ describe('PagesAPI', () => {
   });
 
   describe('archive', () => {
-    it('should archive a page using convenience method', async () => {
-      const archivedPage = { ...mockPageResponse, archived: true };
-      vi.mocked(mockClient.request).mockResolvedValue(archivedPage);
+    it('should move a page to trash using convenience method', async () => {
+      const trashedPage = { ...mockPageResponse, in_trash: true };
+      vi.mocked(mockClient.request).mockResolvedValue(trashedPage);
 
       const result = await pagesAPI.archive('123e4567-e89b-12d3-a456-426614174000');
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: true },
+        body: { in_trash: true },
       });
       expect(result).toBeInstanceOf(Page);
-      expect(result.archived).toBe(true);
+      expect(result.inTrash).toBe(true);
     });
   });
 
   describe('restore', () => {
-    it('should restore an archived page using convenience method', async () => {
+    it('should restore a trashed page using convenience method', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
 
       const result = await pagesAPI.restore('123e4567-e89b-12d3-a456-426614174000');
@@ -353,10 +352,10 @@ describe('PagesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: false },
+        body: { in_trash: false },
       });
       expect(result).toBeInstanceOf(Page);
-      expect(result.archived).toBe(false);
+      expect(result.inTrash).toBe(false);
     });
   });
 });

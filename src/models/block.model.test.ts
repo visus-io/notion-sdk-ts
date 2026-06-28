@@ -18,7 +18,6 @@ describe('Block', () => {
         object: 'user',
         id: '323e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       has_children: false,
       paragraph: {
@@ -48,7 +47,6 @@ describe('Block', () => {
     expect(block.type).toBe('paragraph');
     expect(block.createdTime).toEqual(new Date('2023-01-01T00:00:00.000Z'));
     expect(block.lastEditedTime).toEqual(new Date('2023-01-02T00:00:00.000Z'));
-    expect(block.archived).toBe(false);
     expect(block.inTrash).toBe(false);
     expect(block.hasChildren).toBe(false);
     expect(block.isTextBlock()).toBe(true);
@@ -71,7 +69,6 @@ describe('Block', () => {
         object: 'user',
         id: '323e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       has_children: false,
       heading_1: {
@@ -102,7 +99,6 @@ describe('Block', () => {
         object: 'user',
         id: '323e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       has_children: false,
       divider: {},

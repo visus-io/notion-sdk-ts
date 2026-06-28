@@ -9,7 +9,7 @@ import { userSchema } from './user.schema';
 /**
  * Notion database object schema.
  *
- * Databases are collections of pages with a defined schema. As of API version 2025-09-03,
+ * Databases are collections of pages with a defined schema. As of API version 2026-03-11,
  * databases contain one or more data sources (individual tables).
  *
  * Notion API reference:
@@ -38,7 +38,6 @@ export const databaseSchema = z.object({
   cover: z.nullable(fileSchema),
   parent: parentSchema,
   url: z.url(),
-  archived: z.boolean(),
   in_trash: z.boolean(),
   is_inline: z.boolean(),
   public_url: z.nullable(z.url()),

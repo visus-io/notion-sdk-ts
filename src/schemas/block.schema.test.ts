@@ -20,7 +20,6 @@ describe('blockSchema', () => {
       object: 'user' as const,
       id: '123e4567-e89b-12d3-a456-426614174003',
     },
-    archived: false,
     in_trash: false,
     has_children: false,
   };
@@ -724,7 +723,7 @@ describe('blockSchema', () => {
     });
   });
 
-  describe('template and transcription blocks', () => {
+  describe('template and meeting_notes blocks', () => {
     it('should parse template block', () => {
       const block: NotionBlock = {
         ...baseBlock,
@@ -738,11 +737,11 @@ describe('blockSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should parse transcription block', () => {
+    it('should parse meeting_notes block', () => {
       const block: NotionBlock = {
         ...baseBlock,
-        type: 'transcription',
-        transcription: {
+        type: 'meeting_notes',
+        meeting_notes: {
           rich_text: richTextArray,
         },
       };

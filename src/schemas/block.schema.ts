@@ -25,6 +25,17 @@ const getChildrenSchema = (): z.ZodOptional<z.ZodArray<z.ZodTypeAny>> => {
   return childrenSchema;
 };
 
+/**
+ * Position for inserting block children in the Append Block Children endpoint.
+ */
+export const blockPositionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('after_block'), after_block: z.object({ id: z.uuid() }) }),
+  z.object({ type: z.literal('start') }),
+  z.object({ type: z.literal('end') }),
+]);
+
+export type BlockPosition = z.infer<typeof blockPositionSchema>;
+
 const headingsObjectSchema = z.object({
   rich_text: richTextSchema,
   color: z.enum(NOTION_COLORS),
@@ -69,7 +80,7 @@ export const blockSchema = z.object({
     'template',
     'to_do',
     'toggle',
-    'transcription',
+    'meeting_notes',
     'unsupported',
     'video',
   ]),
@@ -77,7 +88,6 @@ export const blockSchema = z.object({
   created_by: userSchema,
   last_edited_time: notionDateStringSchema,
   last_edited_by: userSchema,
-  archived: z.boolean(),
   in_trash: z.boolean(),
   has_children: z.boolean(),
 
@@ -258,7 +268,7 @@ export const blockSchema = z.object({
       },
     })
     .optional(),
-  transcription: z
+  meeting_notes: z
     .object({
       rich_text: richTextSchema,
       get children() {

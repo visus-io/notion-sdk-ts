@@ -16,7 +16,6 @@ describe('Page', () => {
         object: 'user',
         id: '223e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       icon: null,
       cover: null,
@@ -52,7 +51,6 @@ describe('Page', () => {
     expect(page.id).toBe('123e4567-e89b-12d3-a456-426614174000');
     expect(page.createdTime).toEqual(new Date('2023-01-01T00:00:00.000Z'));
     expect(page.lastEditedTime).toEqual(new Date('2023-01-02T00:00:00.000Z'));
-    expect(page.archived).toBe(false);
     expect(page.inTrash).toBe(false);
     expect(page.url).toBe('https://notion.so/page');
     expect(page.publicUrl).toBe(null);
@@ -73,7 +71,6 @@ describe('Page', () => {
         object: 'user',
         id: '223e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       icon: null,
       cover: null,
@@ -105,7 +102,6 @@ describe('Page', () => {
         object: 'user',
         id: '223e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       icon: null,
       cover: null,
@@ -137,7 +133,6 @@ describe('Page', () => {
         object: 'user',
         id: '223e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       icon: null,
       cover: null,
@@ -180,7 +175,6 @@ describe('Page', () => {
         object: 'user',
         id: '223e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       icon: null,
       cover: null,
@@ -215,7 +209,6 @@ describe('Page', () => {
         object: 'user',
         id: '223e4567-e89b-12d3-a456-426614174000',
       },
-      archived: false,
       in_trash: false,
       icon: null,
       cover: null,

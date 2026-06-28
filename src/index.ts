@@ -1,5 +1,6 @@
 // Export main SDK class
 export { Notion } from './notion';
+export { NOTION_VERSION } from './client';
 export type { NotionClientOptions } from './client';
 
 // Export API namespaces

@@ -232,11 +232,11 @@ function template(text: RichTextInput, options?: { children?: unknown[] }): Bloc
   };
 }
 
-function transcription(text: RichTextInput, options?: { children?: unknown[] }): BlockObject {
+function meetingNotes(text: RichTextInput, options?: { children?: unknown[] }): BlockObject {
   return {
     object: 'block',
-    type: 'transcription',
-    transcription: {
+    type: 'meeting_notes',
+    meeting_notes: {
       rich_text: resolveRichText(text),
       ...(options?.children ? { children: options.children } : {}),
     },
@@ -529,7 +529,7 @@ export const block = {
   quote,
   callout,
   template,
-  transcription,
+  meetingNotes,
 
   // Code & equation
   code,

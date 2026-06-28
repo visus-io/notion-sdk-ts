@@ -59,7 +59,6 @@ describe('Database', () => {
       cover: null,
       parent: { type: 'workspace', workspace: true },
       url: 'https://notion.so/database',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -70,7 +69,6 @@ describe('Database', () => {
     expect(database.id).toBe('123e4567-e89b-12d3-a456-426614174000');
     expect(database.createdTime).toEqual(new Date('2023-01-01T00:00:00.000Z'));
     expect(database.lastEditedTime).toEqual(new Date('2023-01-02T00:00:00.000Z'));
-    expect(database.archived).toBe(false);
     expect(database.inTrash).toBe(false);
     expect(database.url).toBe('https://notion.so/database');
     expect(database.publicUrl).toBe(null);
@@ -142,7 +140,6 @@ describe('Database', () => {
       cover: null,
       parent: { type: 'workspace', workspace: true },
       url: 'https://notion.so/database',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -174,7 +171,6 @@ describe('Database', () => {
       cover: null,
       parent: { type: 'workspace', workspace: true },
       url: 'https://notion.so/database',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -214,7 +210,6 @@ describe('Database', () => {
         page_id: '423e4567-e89b-12d3-a456-426614174000',
       },
       url: 'https://notion.so/database',
-      archived: false,
       in_trash: false,
       is_inline: true,
       public_url: null,
@@ -246,7 +241,6 @@ describe('Database', () => {
       cover: null,
       parent: { type: 'workspace', workspace: true },
       url: 'https://notion.so/database',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -287,7 +281,6 @@ describe('Database', () => {
       cover: null,
       parent: { type: 'workspace', workspace: true },
       url: 'https://notion.so/database',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -327,7 +320,6 @@ describe('Database', () => {
       },
       parent: { type: 'workspace', workspace: true },
       url: 'https://notion.so/database-123',
-      archived: true,
       in_trash: false,
       is_inline: false,
       public_url: 'https://public.notion.so/database',
@@ -339,7 +331,6 @@ describe('Database', () => {
       type: 'external',
       external: { url: 'https://example.com/cover.png' },
     });
-    expect(database.archived).toBe(true);
     expect(database.publicUrl).toBe('https://public.notion.so/database');
     expect(database.createdBy.id).toBe('323e4567-e89b-12d3-a456-426614174000');
     expect(database.lastEditedBy.id).toBe('423e4567-e89b-12d3-a456-426614174000');
@@ -396,7 +387,6 @@ describe('Database', () => {
       cover: null,
       parent: { type: 'workspace', workspace: true },
       url: 'https://notion.so/database',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,

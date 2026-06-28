@@ -19,14 +19,25 @@ export interface RetrieveBlockOptions {
 }
 
 /**
+ * Position for inserting block children.
+ * - `after_block`: insert after the specified block (replaces the old `after` parameter)
+ * - `start`: insert at the beginning of the parent
+ * - `end`: insert at the end of the parent (default when `position` is omitted)
+ */
+export type BlockPosition =
+  | { type: 'after_block'; after_block: { id: string } }
+  | { type: 'start' }
+  | { type: 'end' };
+
+/**
  * Options for appending children to a block.
  */
 export interface AppendBlockChildrenOptions extends PaginationParameters {
   /** Array of block objects to append (max 100) */
   children: unknown[];
 
-  /** Position to insert the children */
-  after?: string;
+  /** Position to insert the children (default: end) */
+  position?: BlockPosition;
 }
 
 /**
@@ -50,8 +61,8 @@ export interface UpdateBlockOptions {
   /** Block type-specific properties to update (depends on block type) */
   [blockType: string]: unknown;
 
-  /** Archive or restore the block */
-  archived?: boolean;
+  /** Move to trash or restore from trash */
+  in_trash?: boolean;
 }
 
 /**

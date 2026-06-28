@@ -29,10 +29,6 @@ export class Block extends BaseModel<NotionBlock> {
     return new Date(this.data.last_edited_time);
   }
 
-  get archived(): boolean {
-    return this.data.archived;
-  }
-
   get inTrash(): boolean {
     return this.data.in_trash;
   }

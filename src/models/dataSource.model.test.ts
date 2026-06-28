@@ -85,7 +85,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -96,7 +95,6 @@ describe('DataSource', () => {
     expect(dataSource.id).toBe('123e4567-e89b-12d3-a456-426614174000');
     expect(dataSource.createdTime).toEqual(new Date('2023-01-01T00:00:00.000Z'));
     expect(dataSource.lastEditedTime).toEqual(new Date('2023-01-02T00:00:00.000Z'));
-    expect(dataSource.archived).toBe(false);
     expect(dataSource.inTrash).toBe(false);
     expect(dataSource.url).toBe('https://notion.so/datasource');
     expect(dataSource.publicUrl).toBe(null);
@@ -217,7 +215,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -256,7 +253,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -294,7 +290,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -356,7 +351,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -412,7 +406,6 @@ describe('DataSource', () => {
         external: { url: 'https://example.com/cover.png' },
       },
       url: 'https://notion.so/datasource-123',
-      archived: true,
       in_trash: true,
       is_inline: true,
       public_url: 'https://public.notion.so/datasource',
@@ -424,7 +417,6 @@ describe('DataSource', () => {
       type: 'external',
       external: { url: 'https://example.com/cover.png' },
     });
-    expect(dataSource.archived).toBe(true);
     expect(dataSource.inTrash).toBe(true);
     expect(dataSource.isInline).toBe(true);
     expect(dataSource.publicUrl).toBe('https://public.notion.so/datasource');
@@ -460,7 +452,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -506,7 +497,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
@@ -575,7 +565,6 @@ describe('DataSource', () => {
       icon: null,
       cover: null,
       url: 'https://notion.so/datasource',
-      archived: false,
       in_trash: false,
       is_inline: false,
       public_url: null,
