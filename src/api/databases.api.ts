@@ -226,7 +226,7 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
   }
 
   /**
-   * Update a database's properties, title, description, or archived status.
+   * Update a database's properties, title, description, or trash status.
    *
    * @param databaseId - The ID of the database to update
    * @param options - Options for updating the database

@@ -125,7 +125,7 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
   }
 
   /**
-   * Update a page's properties, icon, cover, or archived status.
+   * Update a page's properties, icon, cover, or trash status.
    *
    * @param pageId - The ID of the page to update
    * @param options - Options for updating the page

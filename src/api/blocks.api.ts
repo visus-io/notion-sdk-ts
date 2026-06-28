@@ -1,5 +1,6 @@
 import type { NotionClient } from '../client';
 import {
+  type BlockPosition,
   blockSchema,
   type NotionBlock,
   type PaginatedList,
@@ -17,17 +18,6 @@ export interface RetrieveBlockOptions {
   /** Filter properties to include in the response */
   filter_properties?: string[];
 }
-
-/**
- * Position for inserting block children.
- * - `after_block`: insert after the specified block (replaces the old `after` parameter)
- * - `start`: insert at the beginning of the parent
- * - `end`: insert at the end of the parent (default when `position` is omitted)
- */
-export type BlockPosition =
-  | { type: 'after_block'; after_block: { id: string } }
-  | { type: 'start' }
-  | { type: 'end' };
 
 /**
  * Options for appending children to a block.

@@ -210,7 +210,10 @@ describe('BlocksAPI', () => {
 
       await blocksAPI.children.append('123e4567-e89b-12d3-a456-426614174000', {
         children,
-        position: { type: 'after_block', after_block: { id: 'block-id-123' } },
+        position: {
+          type: 'after_block',
+          after_block: { id: '423e4567-e89b-12d3-a456-426614174000' },
+        },
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
@@ -218,7 +221,10 @@ describe('BlocksAPI', () => {
         path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
         body: {
           children,
-          position: { type: 'after_block', after_block: { id: 'block-id-123' } },
+          position: {
+            type: 'after_block',
+            after_block: { id: '423e4567-e89b-12d3-a456-426614174000' },
+          },
         },
       });
     });
