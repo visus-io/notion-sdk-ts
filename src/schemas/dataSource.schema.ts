@@ -65,7 +65,7 @@ export const dataSourceSchema = z.object({
   /** Whether the data source is inline */
   is_inline: z.boolean(),
 
-  /** Whether the data source has been deleted */
+  /** Whether the data source is in the trash */
   in_trash: z.boolean(),
 });
 

@@ -441,7 +441,7 @@ describe('DataSourcesAPI', () => {
   });
 
   describe('archive', () => {
-    it('should move a data source to trash using convenience method', async () => {
+    it('should move a data source to trash via deprecated alias', async () => {
       const trashedDataSource = { ...mockDataSourceResponse, in_trash: true };
       vi.mocked(mockClient.request).mockResolvedValue(trashedDataSource);
 

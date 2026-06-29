@@ -245,26 +245,6 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
    * @param dataSourceId - The ID of the data source to trash
    * @returns The trashed data source wrapped in a DataSource model
    */
-  async archive(dataSourceId: string): Promise<DataSource> {
-    return this.update(dataSourceId, { in_trash: true });
-  }
-
-  /**
-   * Restore a trashed data source (convenience method).
-   *
-   * @param dataSourceId - The ID of the data source to restore
-   * @returns The restored data source wrapped in a DataSource model
-   */
-  async restore(dataSourceId: string): Promise<DataSource> {
-    return this.update(dataSourceId, { in_trash: false });
-  }
-
-  /**
-   * Move a data source to trash (convenience method).
-   *
-   * @param dataSourceId - The ID of the data source to trash
-   * @returns The trashed data source wrapped in a DataSource model
-   */
   async trash(dataSourceId: string): Promise<DataSource> {
     return this.update(dataSourceId, { in_trash: true });
   }
@@ -277,5 +257,27 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
    */
   async untrash(dataSourceId: string): Promise<DataSource> {
     return this.update(dataSourceId, { in_trash: false });
+  }
+
+  /**
+   * Move a data source to trash.
+   *
+   * @deprecated Use {@link trash} instead.
+   * @param dataSourceId - The ID of the data source to trash
+   * @returns The trashed data source wrapped in a DataSource model
+   */
+  async archive(dataSourceId: string): Promise<DataSource> {
+    return this.trash(dataSourceId);
+  }
+
+  /**
+   * Restore a trashed data source.
+   *
+   * @deprecated Use {@link untrash} instead.
+   * @param dataSourceId - The ID of the data source to restore
+   * @returns The restored data source wrapped in a DataSource model
+   */
+  async restore(dataSourceId: string): Promise<DataSource> {
+    return this.untrash(dataSourceId);
   }
 }

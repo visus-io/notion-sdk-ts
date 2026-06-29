@@ -457,12 +457,12 @@ describe('DatabasesAPI', () => {
     });
   });
 
-  describe('archive', () => {
+  describe('trash', () => {
     it('should move a database to trash using convenience method', async () => {
       const trashedDatabase = { ...mockDatabaseResponse, in_trash: true };
       vi.mocked(mockClient.request).mockResolvedValue(trashedDatabase);
 
-      const result = await databasesAPI.archive('123e4567-e89b-12d3-a456-426614174000');
+      const result = await databasesAPI.trash('123e4567-e89b-12d3-a456-426614174000');
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',

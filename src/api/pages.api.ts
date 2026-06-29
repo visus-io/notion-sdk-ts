@@ -143,7 +143,7 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    * @param pageId - The ID of the page to trash
    * @returns The trashed page wrapped in a Page model
    */
-  async archive(pageId: string): Promise<Page> {
+  async trash(pageId: string): Promise<Page> {
     return this.update(pageId, { in_trash: true });
   }
 

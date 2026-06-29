@@ -326,12 +326,12 @@ describe('PagesAPI', () => {
     });
   });
 
-  describe('archive', () => {
+  describe('trash', () => {
     it('should move a page to trash using convenience method', async () => {
       const trashedPage = { ...mockPageResponse, in_trash: true };
       vi.mocked(mockClient.request).mockResolvedValue(trashedPage);
 
-      const result = await pagesAPI.archive('123e4567-e89b-12d3-a456-426614174000');
+      const result = await pagesAPI.trash('123e4567-e89b-12d3-a456-426614174000');
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
