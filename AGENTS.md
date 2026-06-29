@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`@visus-io/notion-sdk-ts` is a type-safe TypeScript SDK for the Notion API. It wraps the full Notion REST API with Zod v4 runtime validation, OOP model classes, and ergonomic helper factories. The single runtime dependency is `zod`; it uses Node 18+ built-in `fetch`. The SDK targets Notion API version `2026-03-11` by default.
+`@visus-io/notion-sdk-ts` is a type-safe TypeScript SDK for the Notion API. It wraps the full Notion REST API with Zod v4 runtime validation, OOP model classes, and ergonomic helper factories. The single runtime dependency is `zod`; it uses Node 18+ built-in `fetch`. The SDK targets Notion API version `2026-03-11` (fixed; the version cannot be overridden).
 
 ### Architecture
 

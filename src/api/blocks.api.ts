@@ -22,7 +22,7 @@ export interface RetrieveBlockOptions {
 /**
  * Options for appending children to a block.
  */
-export interface AppendBlockChildrenOptions extends PaginationParameters {
+export interface AppendBlockChildrenOptions {
   /** Array of block objects to append (max 100) */
   children: unknown[];
 
