@@ -113,7 +113,7 @@ export interface QueryDataSourceOptions extends PaginationParameters {
  * Data Sources API client for working with Notion data sources.
  *
  * Data sources are individual tables of data that live under a Notion database.
- * As of API version 2026-03-11, data sources have their own API endpoints.
+ * As of API version 2025-09-03, data sources have their own API endpoints.
  */
 export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
   protected config = {

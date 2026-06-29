@@ -395,18 +395,18 @@ describe('DataSourcesAPI', () => {
       ).rejects.toThrow(NotionValidationError);
     });
 
-    it('should archive a data source', async () => {
-      const trashedDataSource = { ...mockDataSourceResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedDataSource);
+    it('should restore a data source from trash via update', async () => {
+      const restoredDataSource = { ...mockDataSourceResponse, in_trash: false };
+      vi.mocked(mockClient.request).mockResolvedValue(restoredDataSource);
 
       await dataSourcesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        in_trash: true,
+        in_trash: false,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
+        body: { in_trash: false },
       });
     });
 

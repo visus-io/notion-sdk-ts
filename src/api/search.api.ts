@@ -11,7 +11,7 @@ import { DataSource, Page } from '../models';
 
 /**
  * Search filter object type.
- * As of API version 2026-03-11, search returns data sources instead of databases.
+ * As of API version 2025-09-03, search returns data sources instead of databases.
  */
 export type SearchFilterObject = 'page' | 'data_source';
 
@@ -53,7 +53,7 @@ export interface SearchOptions extends PaginationParameters {
 
 /**
  * Search result item (can be a page or data source).
- * As of API version 2026-03-11, search returns data sources instead of databases.
+ * As of API version 2025-09-03, search returns data sources instead of databases.
  */
 export type SearchResult = Page | DataSource;
 
@@ -65,7 +65,7 @@ export class SearchAPI {
 
   /**
    * Search across all pages and data sources in the workspace.
-   * As of API version 2026-03-11, search returns data sources instead of databases.
+   * As of API version 2025-09-03, search returns data sources instead of databases.
    *
    * @param options - Search options (query, filter, sort, pagination)
    * @returns Paginated list of pages and/or data sources matching the search

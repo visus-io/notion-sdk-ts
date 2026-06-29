@@ -47,7 +47,7 @@ describe('NotionClient', () => {
       await client.request({ method: 'GET', path: '/pages/abc' });
 
       const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-      expect((init.headers as Record<string, string>)['Notion-Version']).toBe('2026-03-11');
+      expect((init.headers as Record<string, string>)['Notion-Version']).toBe(NOTION_VERSION);
     });
   });
 

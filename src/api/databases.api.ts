@@ -68,7 +68,7 @@ export type CreateDatabaseParent = { page_id: string } | { workspace: true };
 
 /**
  * Initial data source configuration for creating a database.
- * In API version 2026-03-11, databases are created with an initial data source.
+ * As of API version 2025-09-03, databases are created with an initial data source.
  */
 export interface InitialDataSource {
   /** Data source properties schema */
@@ -80,7 +80,7 @@ export interface InitialDataSource {
 
 /**
  * Options for creating a database.
- * As of API version 2026-03-11, databases are created with an initial_data_source
+ * As of API version 2025-09-03, databases are created with an initial_data_source
  * containing the properties schema, rather than properties at the top level.
  */
 export interface CreateDatabaseOptions {
@@ -105,7 +105,7 @@ export interface CreateDatabaseOptions {
 
 /**
  * Options for updating a database.
- * As of API version 2026-03-11, properties are managed at the data source level.
+ * As of API version 2025-09-03, properties are managed at the data source level.
  * Use the DataSourcesAPI to update properties.
  */
 export interface UpdateDatabaseOptions {

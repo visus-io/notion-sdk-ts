@@ -13,7 +13,7 @@ import * as z from 'zod';
 
 /**
  * Paginated list response type.
- * As of API version 2026-03-11, 'data_source' and 'page_or_data_source' are used
+ * As of API version 2025-09-03, 'data_source' and 'page_or_data_source' are used
  * instead of 'database' and 'page_or_database' in search results.
  */
 export type PaginatedListType =

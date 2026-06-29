@@ -9,7 +9,7 @@ import { userSchema } from './user.schema';
 /**
  * Notion database object schema.
  *
- * Databases are collections of pages with a defined schema. As of API version 2026-03-11,
+ * Databases are collections of pages with a defined schema. As of API version 2025-09-03,
  * databases contain one or more data sources (individual tables).
  *
  * Notion API reference:

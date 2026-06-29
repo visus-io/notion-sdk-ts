@@ -262,7 +262,7 @@ describe('PagesAPI', () => {
       expect(result).toBeInstanceOf(Page);
     });
 
-    it('should archive a page', async () => {
+    it('should move a page to trash', async () => {
       const trashedPage = { ...mockPageResponse, in_trash: true };
       vi.mocked(mockClient.request).mockResolvedValue(trashedPage);
 

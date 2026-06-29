@@ -28,7 +28,7 @@ function database(databaseId: string): { database_id: string } {
 
 /**
  * Create a data source parent object.
- * In API version 2026-03-11, both data_source_id and database_id are required
+ * As of API version 2025-09-03, both data_source_id and database_id are required
  * when creating a page with a data source parent.
  *
  * @example

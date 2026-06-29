@@ -11,7 +11,7 @@ import { propertiesObjectSchema } from './propertyObjects.schema';
  * Notion data source object schema.
  *
  * Data sources are individual tables of data that live under a Notion database.
- * As of API version 2026-03-11, data sources have their own API endpoints.
+ * As of API version 2025-09-03, data sources have their own API endpoints.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/data-source

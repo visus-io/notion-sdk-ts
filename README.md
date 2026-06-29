@@ -123,7 +123,7 @@ await notion.blocks.children.append('page-id', {
   children: [block.paragraph('text')],
   after: 'block-id',
 });
-block.transcription({ ... });
+block.transcription('Transcription text');
 
 // NEW (v3.x / 2026-03-11)
 import { NOTION_VERSION } from '@visus-io/notion-sdk-ts';
@@ -132,7 +132,7 @@ await notion.blocks.children.append('page-id', {
   children: [block.paragraph('text')],
   position: { type: 'after_block', after_block: { id: 'block-id' } },
 });
-block.meetingNotes({ ... });
+block.meetingNotes('Meeting notes text');
 ```
 
 ### Key Changes (v2.x — 2025-09-03)
