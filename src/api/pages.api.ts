@@ -156,4 +156,15 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
   async restore(pageId: string): Promise<Page> {
     return this.update(pageId, { in_trash: false });
   }
+
+  /**
+   * Move a page to trash (convenience method).
+   *
+   * @deprecated Use {@link trash} instead.
+   * @param pageId - The ID of the page to trash
+   * @returns The trashed page wrapped in a Page model
+   */
+  async archive(pageId: string): Promise<Page> {
+    return this.trash(pageId);
+  }
 }

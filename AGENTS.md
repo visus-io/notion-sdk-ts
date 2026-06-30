@@ -124,7 +124,7 @@ Each API class encapsulates one Notion resource's endpoints.
 - Request flow: validate inputs -> build body -> `this.client.request<T>()` -> parse with Zod -> wrap in model
 - Client-side validation runs before the request via `validateArrayLength()` / `validateStringLength()` from `validation.ts`
 - Paginated list responses use `paginatedListSchema(itemSchema)`, then map results through model constructors
-- Convenience methods wrap common patterns (e.g., `archive(id)` calls `update(id, { in_trash: true })`)
+- Convenience methods wrap common patterns (e.g., `trash(id)` calls `update(id, { in_trash: true })`)
 - Sub-resources use object literals with arrow functions: `readonly children = { list: async (...) => {...} }`
 - Include JSDoc with `@param`, `@returns`, and `@see` links to Notion API docs
 

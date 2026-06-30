@@ -261,4 +261,15 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
   async restore(databaseId: string): Promise<Database> {
     return this.update(databaseId, { in_trash: false });
   }
+
+  /**
+   * Move a database to trash (convenience method).
+   *
+   * @deprecated Use {@link trash} instead.
+   * @param databaseId - The ID of the database to trash
+   * @returns The trashed database wrapped in a Database model
+   */
+  async archive(databaseId: string): Promise<Database> {
+    return this.trash(databaseId);
+  }
 }
