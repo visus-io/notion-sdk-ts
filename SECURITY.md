@@ -6,11 +6,12 @@ We actively support the latest version of `@visus-io/notion-sdk-ts`. Security up
 
 | Version | Supported          | Notes                                    |
 | ------- | ------------------ | ---------------------------------------- |
-| 2.x.x   | :white_check_mark: | Current major version (API v2025-09-03)  |
-| 1.x.x   | :white_check_mark: | Previous major version (API v2022-06-28) |
+| 3.x.x   | :white_check_mark: | Current major version (API v2026-03-11)  |
+| 2.x.x   | :white_check_mark: | Previous major version (API v2025-09-03) |
+| 1.x.x   | :x:                | No longer supported (API v2022-06-28)    |
 | < 1.0   | :x:                | No longer supported                      |
 
-We maintain security support for the current major version and one previous major version. Users are encouraged to upgrade to 2.x.x for the latest features and security updates.
+We maintain security support for the current major version and one previous major version. Users are encouraged to upgrade to 3.x.x for the latest features and security updates.
 
 ## Reporting a Vulnerability
 
@@ -194,13 +195,20 @@ We actively monitor these dependencies for security vulnerabilities.
 
 Security updates will be released as patch versions (e.g., 2.0.1 → 2.0.2 or 1.0.1 → 1.0.2) whenever possible to allow for easy adoption. Critical security fixes may be backported to the previous major version (1.x.x) during its support period.
 
+### Version 3.0.0 Release Notes
+
+Version 3.0.0 targets Notion API version 2026-03-11. Key security considerations:
+
+- **Breaking Changes:** `archived` is renamed to `in_trash` across all APIs. The `notionVersion` client option has been removed — the API version is now a fixed constant.
+- **`after` → `position`:** The append block children API now uses a typed `position` union.
+- **`transcription` → `meeting_notes`:** Block type renamed.
+
 ### Version 2.0.0 Release Notes
 
-Version 2.0.0 introduces support for Notion API version 2025-09-03. While this is primarily a feature upgrade, note the following security considerations:
+Version 2.0.0 introduced support for Notion API version 2025-09-03. Note the following security considerations:
 
-- **Breaking Changes:** Database and search APIs have been restructured. Review the migration guide to ensure secure handling of data source IDs.
-- **New Parent Types:** Page creation now requires both data source ID and database ID. Validate both parameters to prevent unauthorized access.
-- **API Version:** Users can temporarily revert to API version 2022-06-28 by setting `notionVersion` in client options, but this may not support multi-source databases.
+- **Breaking Changes:** Database and search APIs were restructured. Review the migration guide to ensure secure handling of data source IDs.
+- **New Parent Types:** Page creation requires both data source ID and database ID. Validate both parameters to prevent unauthorized access.
 
 Security advisories will be published via:
 
@@ -244,5 +252,5 @@ We appreciate the security research community's efforts in responsibly disclosin
 
 ---
 
-**Last Updated:** February 10, 2026  
+**Last Updated:** June 28, 2026  
 **Maintained by:** Visus Development Team

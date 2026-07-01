@@ -67,9 +67,6 @@ export interface UpdatePageOptions {
   /** Lock or unlock the page from editing */
   is_locked?: boolean;
 
-  /** Archive or restore the page */
-  archived?: boolean;
-
   /** Move to trash or restore from trash */
   in_trash?: boolean;
 
@@ -128,7 +125,7 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
   }
 
   /**
-   * Update a page's properties, icon, cover, or archived status.
+   * Update a page's properties, icon, cover, or trash status.
    *
    * @param pageId - The ID of the page to update
    * @param options - Options for updating the page
@@ -141,22 +138,33 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
   }
 
   /**
-   * Archive a page (convenience method).
+   * Move a page to trash (convenience method).
    *
-   * @param pageId - The ID of the page to archive
-   * @returns The archived page wrapped in a Page model
+   * @param pageId - The ID of the page to trash
+   * @returns The trashed page wrapped in a Page model
    */
-  async archive(pageId: string): Promise<Page> {
-    return this.update(pageId, { archived: true });
+  async trash(pageId: string): Promise<Page> {
+    return this.update(pageId, { in_trash: true });
   }
 
   /**
-   * Restore an archived page (convenience method).
+   * Restore a trashed page (convenience method).
    *
    * @param pageId - The ID of the page to restore
    * @returns The restored page wrapped in a Page model
    */
   async restore(pageId: string): Promise<Page> {
-    return this.update(pageId, { archived: false });
+    return this.update(pageId, { in_trash: false });
+  }
+
+  /**
+   * Move a page to trash (convenience method).
+   *
+   * @deprecated Use {@link trash} instead.
+   * @param pageId - The ID of the page to trash
+   * @returns The trashed page wrapped in a Page model
+   */
+  async archive(pageId: string): Promise<Page> {
+    return this.trash(pageId);
   }
 }

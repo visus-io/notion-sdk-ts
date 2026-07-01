@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NotionClient } from './client';
+import { NOTION_VERSION, NotionClient } from './client';
 import { NotionAPIError } from './errors';
 
 // ---------------------------------------------------------------------------
@@ -33,6 +33,24 @@ const successBody = { object: 'page', id: 'page-id' };
 // ---------------------------------------------------------------------------
 
 describe('NotionClient', () => {
+  describe('NOTION_VERSION constant', () => {
+    it('should equal 2026-03-11', () => {
+      expect(NOTION_VERSION).toBe('2026-03-11');
+    });
+
+    it('should send Notion-Version: 2026-03-11 header on every request', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(mockResponse(200, { object: 'page', id: 'page-id' }));
+
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+      await client.request({ method: 'GET', path: '/pages/abc' });
+
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect((init.headers as Record<string, string>)['Notion-Version']).toBe(NOTION_VERSION);
+    });
+  });
+
   describe('Retry-After header parsing', () => {
     it('should store retryAfterMs on NotionAPIError when Retry-After header is present', async () => {
       const fetchMock = vi

@@ -38,7 +38,6 @@ export const databaseSchema = z.object({
   cover: z.nullable(fileSchema),
   parent: parentSchema,
   url: z.url(),
-  archived: z.boolean(),
   in_trash: z.boolean(),
   is_inline: z.boolean(),
   public_url: z.nullable(z.url()),

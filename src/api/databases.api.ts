@@ -68,7 +68,7 @@ export type CreateDatabaseParent = { page_id: string } | { workspace: true };
 
 /**
  * Initial data source configuration for creating a database.
- * In API version 2025-09-03, databases are created with an initial data source.
+ * As of API version 2025-09-03, databases are created with an initial data source.
  */
 export interface InitialDataSource {
   /** Data source properties schema */
@@ -117,9 +117,6 @@ export interface UpdateDatabaseOptions {
 
   /** Update the database cover */
   cover?: unknown;
-
-  /** Archive or restore the database */
-  archived?: boolean;
 
   /** Move to trash or restore from trash */
   in_trash?: boolean;
@@ -229,7 +226,7 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
   }
 
   /**
-   * Update a database's properties, title, description, or archived status.
+   * Update a database's properties, title, description, or trash status.
    *
    * @param databaseId - The ID of the database to update
    * @param options - Options for updating the database
@@ -246,22 +243,33 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
   }
 
   /**
-   * Archive a database (convenience method).
+   * Move a database to trash (convenience method).
    *
-   * @param databaseId - The ID of the database to archive
-   * @returns The archived database wrapped in a Database model
+   * @param databaseId - The ID of the database to trash
+   * @returns The trashed database wrapped in a Database model
    */
-  async archive(databaseId: string): Promise<Database> {
-    return this.update(databaseId, { archived: true });
+  async trash(databaseId: string): Promise<Database> {
+    return this.update(databaseId, { in_trash: true });
   }
 
   /**
-   * Restore an archived database (convenience method).
+   * Restore a trashed database (convenience method).
    *
    * @param databaseId - The ID of the database to restore
    * @returns The restored database wrapped in a Database model
    */
   async restore(databaseId: string): Promise<Database> {
-    return this.update(databaseId, { archived: false });
+    return this.update(databaseId, { in_trash: false });
+  }
+
+  /**
+   * Move a database to trash (convenience method).
+   *
+   * @deprecated Use {@link trash} instead.
+   * @param databaseId - The ID of the database to trash
+   * @returns The trashed database wrapped in a Database model
+   */
+  async archive(databaseId: string): Promise<Database> {
+    return this.trash(databaseId);
   }
 }

@@ -6,6 +6,12 @@ import {
 } from './errors';
 
 /**
+ * The Notion API version targeted by this SDK.
+ * All schemas, request bodies, helpers, and models are coupled to this version.
+ */
+export const NOTION_VERSION = '2026-03-11' as const;
+
+/**
  * Configuration options for the Notion client.
  */
 export interface NotionClientOptions {
@@ -14,9 +20,6 @@ export interface NotionClientOptions {
 
   /** Base URL for API requests (default: https://api.notion.com) */
   baseUrl?: string;
-
-  /** Notion API version (default: 2025-09-03) */
-  notionVersion?: string;
 
   /** Request timeout in milliseconds (default: 60000) */
   timeoutMs?: number;
@@ -47,7 +50,6 @@ export interface RequestOptions {
 export class NotionClient {
   private readonly auth: string;
   private readonly baseUrl: string;
-  private readonly notionVersion: string;
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
   private readonly maxRetries: number;
@@ -56,7 +58,6 @@ export class NotionClient {
   constructor(options: NotionClientOptions) {
     this.auth = options.auth;
     this.baseUrl = options.baseUrl ?? 'https://api.notion.com';
-    this.notionVersion = options.notionVersion ?? '2025-09-03';
     this.timeoutMs = options.timeoutMs ?? 60000;
     this.fetchImpl = options.fetch ?? fetch;
     this.maxRetries = options.maxRetries ?? 3;
@@ -190,7 +191,7 @@ export class NotionClient {
     return {
       Authorization: `Bearer ${this.auth}`,
       'Content-Type': 'application/json',
-      'Notion-Version': this.notionVersion,
+      'Notion-Version': NOTION_VERSION,
     };
   }
 

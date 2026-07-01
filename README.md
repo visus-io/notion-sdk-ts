@@ -1,13 +1,12 @@
 # @visus-io/notion-sdk-ts
 
 [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/visus-io/notion-sdk-ts/ci.yml?style=for-the-badge&logo=github)](https://github.com/visus-io/notion-sdk-ts/actions/workflows/ci.yaml)
-
-[![Sonar Quality Gate](https://img.shields.io/sonar/quality_gate/visus%3Anotion-sdk-ts?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white)](https://sonarcloud.io/summary/overall?id=visus%3Anotion-sdk-ts)
-[![Sonar Coverage](https://img.shields.io/sonar/coverage/visus%3Anotion-sdk-ts?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarcloud&logoColor=white)](https://sonarcloud.io/summary/overall?id=visus%3Anotion-sdk-ts)
+[![Sonar Quality Gate](https://img.shields.io/sonar/quality_gate/visus%3Anotion-sdk-ts?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonar&logoColor=white)](https://sonarcloud.io/summary/overall?id=visus%3Anotion-sdk-ts)
+[![Sonar Coverage](https://img.shields.io/sonar/coverage/visus%3Anotion-sdk-ts?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonar&logoColor=white)](https://sonarcloud.io/summary/overall?id=visus%3Anotion-sdk-ts)
 
 [![NPM Version](https://img.shields.io/npm/v/%40visus-io%2Fnotion-sdk-ts?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/@visus-io/notion-sdk-ts)
 ![NPM Downloads](https://img.shields.io/npm/dm/%40visus-io%2Fnotion-sdk-ts?style=for-the-badge&logo=npm)
-![GitHub](https://img.shields.io/github/license/visus-io/notion-sdk-ts?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/license-mit-green?style=for-the-badge)
 
 A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, and ergonomic helpers.
 
@@ -82,7 +81,7 @@ Comprehensive documentation is available in the [**GitHub Wiki**](https://github
 ### Getting Started
 
 - [**Getting Started**](https://github.com/visus-io/notion-sdk-ts/wiki/Getting-Started) - Installation, quick start, and basic configuration
-- [**Migration Guide**](https://github.com/visus-io/notion-sdk-ts/wiki/Migration-Guide) - Migrating to API version 2025-09-03
+- [**Migration Guide**](https://github.com/visus-io/notion-sdk-ts/wiki/Migration-Guide) - Migrating between API versions
 - [**Common Use Cases**](https://github.com/visus-io/notion-sdk-ts/wiki/Common-Use-Cases) - Practical examples and workflows
 
 ### Core Concepts
@@ -105,25 +104,53 @@ Comprehensive documentation is available in the [**GitHub Wiki**](https://github
 
 ## Migration Notice
 
-**This SDK now defaults to Notion API version `2025-09-03`** (previously `2022-06-28`). This version introduces breaking changes for multi-source database support.
+**This SDK now targets Notion API version `2026-03-11`** (upgraded from `2025-09-03` in v3.x; originally `2022-06-28` in v1.x). The API version is fixed — it cannot be overridden via client options.
 
-### Key Changes
+### Key Changes (v3.x — 2026-03-11)
 
-- **Database creation:** Properties moved to `initial_data_source.properties`
-- **Database updates:** Use Data Sources API for property changes
-- **Page creation:** Requires both data source ID and database ID
-- **Search API:** Returns `DataSource` objects instead of `Database`
+- **`archived` → `in_trash`**: Field renamed across all schemas, models, and API request bodies
+- **`after` → `position` object**: `blocks.children.append()` now accepts a typed `position` union
+- **`transcription` → `meeting_notes`**: Block type and helper renamed
+- **`notionVersion` removed**: Use the exported `NOTION_VERSION` constant to inspect the target version
 
-### Quick Migration Example
+### Quick Migration Example (v2.x → v3.x)
 
 ```typescript
-// OLD (2022-06-28)
+// OLD (v2.x / 2025-09-03)
+console.log(page.archived);
+await notion.blocks.children.append('page-id', {
+  children: [block.paragraph('text')],
+  after: 'block-id',
+});
+block.transcription('Transcription text');
+
+// NEW (v3.x / 2026-03-11)
+import { NOTION_VERSION } from '@visus-io/notion-sdk-ts';
+console.log(page.inTrash);
+await notion.blocks.children.append('page-id', {
+  children: [block.paragraph('text')],
+  position: { type: 'after_block', after_block: { id: 'block-id' } },
+});
+block.meetingNotes('Meeting notes text');
+```
+
+### Key Changes (v2.x — 2025-09-03)
+
+- **Database creation**: Properties moved to `initial_data_source.properties`
+- **Database updates**: Use Data Sources API for property changes
+- **Page creation**: Requires both data source ID and database ID
+- **Search API**: Returns `DataSource` objects instead of `Database`
+
+### Quick Migration Example (v1.x → v2.x)
+
+```typescript
+// OLD (v1.x / 2022-06-28)
 await notion.pages.create({
   parent: parent.database('database-id'),
   properties: { Name: prop.title('Task') },
 });
 
-// NEW (2025-09-03)
+// NEW (v2.x / 2025-09-03)
 const db = await notion.databases.retrieve('database-id');
 const dataSourceId = db.dataSources[0].id;
 

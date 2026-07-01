@@ -47,9 +47,6 @@ export interface UpdateDataSourceOptions {
   /** Update the data source properties schema */
   properties?: Record<string, unknown>;
 
-  /** Archive or restore the data source */
-  archived?: boolean;
-
   /** Move to trash or restore from trash */
   in_trash?: boolean;
 
@@ -105,14 +102,11 @@ export interface QueryDataSourceOptions extends PaginationParameters {
   /** Filter properties to include in results */
   filter_properties?: string[];
 
-  /** Filter by archived status */
-  archived?: boolean;
+  /** Filter by result type (for wikis) */
+  result_type?: 'page' | 'data_source';
 
   /** Filter by trash status */
   in_trash?: boolean;
-
-  /** Filter by result type (for wikis) */
-  result_type?: 'page' | 'data_source';
 }
 
 /**
@@ -186,10 +180,6 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
       body.filter_properties = options.filter_properties;
     }
 
-    if (options?.archived !== undefined) {
-      body.archived = options.archived;
-    }
-
     if (options?.in_trash !== undefined) {
       body.in_trash = options.in_trash;
     }
@@ -250,26 +240,6 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
   }
 
   /**
-   * Archive a data source (convenience method).
-   *
-   * @param dataSourceId - The ID of the data source to archive
-   * @returns The archived data source wrapped in a DataSource model
-   */
-  async archive(dataSourceId: string): Promise<DataSource> {
-    return this.update(dataSourceId, { archived: true });
-  }
-
-  /**
-   * Restore an archived data source (convenience method).
-   *
-   * @param dataSourceId - The ID of the data source to restore
-   * @returns The restored data source wrapped in a DataSource model
-   */
-  async restore(dataSourceId: string): Promise<DataSource> {
-    return this.update(dataSourceId, { archived: false });
-  }
-
-  /**
    * Move a data source to trash (convenience method).
    *
    * @param dataSourceId - The ID of the data source to trash
@@ -287,5 +257,27 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
    */
   async untrash(dataSourceId: string): Promise<DataSource> {
     return this.update(dataSourceId, { in_trash: false });
+  }
+
+  /**
+   * Move a data source to trash.
+   *
+   * @deprecated Use {@link trash} instead.
+   * @param dataSourceId - The ID of the data source to trash
+   * @returns The trashed data source wrapped in a DataSource model
+   */
+  async archive(dataSourceId: string): Promise<DataSource> {
+    return this.trash(dataSourceId);
+  }
+
+  /**
+   * Restore a trashed data source.
+   *
+   * @deprecated Use {@link untrash} instead.
+   * @param dataSourceId - The ID of the data source to restore
+   * @returns The restored data source wrapped in a DataSource model
+   */
+  async restore(dataSourceId: string): Promise<DataSource> {
+    return this.untrash(dataSourceId);
   }
 }

@@ -20,7 +20,6 @@ describe('BlocksAPI', () => {
     created_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
     last_edited_time: '2023-01-02T00:00:00.000Z',
     last_edited_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
-    archived: false,
     in_trash: false,
     has_children: false,
     paragraph: {
@@ -88,8 +87,8 @@ describe('BlocksAPI', () => {
 
   describe('delete', () => {
     it('should delete a block by ID', async () => {
-      const archivedBlock = { ...mockBlockResponse, archived: true };
-      vi.mocked(mockClient.request).mockResolvedValue(archivedBlock);
+      const trashedBlock = { ...mockBlockResponse, in_trash: true };
+      vi.mocked(mockClient.request).mockResolvedValue(trashedBlock);
 
       const result = await blocksAPI.delete('123e4567-e89b-12d3-a456-426614174000');
 
@@ -98,7 +97,7 @@ describe('BlocksAPI', () => {
         path: '/blocks/123e4567-e89b-12d3-a456-426614174000',
       });
       expect(result).toBeInstanceOf(Block);
-      expect(result.archived).toBe(true);
+      expect(result.inTrash).toBe(true);
     });
   });
 
@@ -107,13 +106,13 @@ describe('BlocksAPI', () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockBlockResponse);
 
       const result = await blocksAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        archived: false,
+        in_trash: false,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/blocks/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: false },
+        body: { in_trash: false },
       });
       expect(result).toBeInstanceOf(Block);
     });
@@ -199,7 +198,7 @@ describe('BlocksAPI', () => {
       expect(result.results[0]).toBeInstanceOf(Block);
     });
 
-    it('should append children with after parameter', async () => {
+    it('should append children with after_block position', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
 
       const children = [
@@ -211,7 +210,10 @@ describe('BlocksAPI', () => {
 
       await blocksAPI.children.append('123e4567-e89b-12d3-a456-426614174000', {
         children,
-        after: 'block-id-123',
+        position: {
+          type: 'after_block',
+          after_block: { id: '423e4567-e89b-12d3-a456-426614174000' },
+        },
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
@@ -219,7 +221,60 @@ describe('BlocksAPI', () => {
         path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
         body: {
           children,
-          after: 'block-id-123',
+          position: {
+            type: 'after_block',
+            after_block: { id: '423e4567-e89b-12d3-a456-426614174000' },
+          },
+        },
+      });
+    });
+
+    it('should append children with start position', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
+
+      const children = [
+        {
+          type: 'paragraph',
+          paragraph: { rich_text: [{ type: 'text', text: { content: 'New' } }] },
+        },
+      ];
+
+      await blocksAPI.children.append('123e4567-e89b-12d3-a456-426614174000', {
+        children,
+        position: { type: 'start' },
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'PATCH',
+        path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
+        body: {
+          children,
+          position: { type: 'start' },
+        },
+      });
+    });
+
+    it('should append children with end position', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
+
+      const children = [
+        {
+          type: 'paragraph',
+          paragraph: { rich_text: [{ type: 'text', text: { content: 'New' } }] },
+        },
+      ];
+
+      await blocksAPI.children.append('123e4567-e89b-12d3-a456-426614174000', {
+        children,
+        position: { type: 'end' },
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'PATCH',
+        path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
+        body: {
+          children,
+          position: { type: 'end' },
         },
       });
     });

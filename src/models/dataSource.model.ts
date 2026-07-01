@@ -134,13 +134,6 @@ export class DataSource extends BaseModel<NotionDataSource> {
   }
 
   /**
-   * Returns the archived status.
-   */
-  get archived(): boolean {
-    return this.data.archived;
-  }
-
-  /**
    * Returns whether the data source is in trash.
    */
   get inTrash(): boolean {

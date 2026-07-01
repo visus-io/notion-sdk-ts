@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`@visus-io/notion-sdk-ts` is a type-safe TypeScript SDK for the Notion API. It wraps the full Notion REST API with Zod v4 runtime validation, OOP model classes, and ergonomic helper factories. The single runtime dependency is `zod`; it uses Node 18+ built-in `fetch`. The SDK targets Notion API version `2025-09-03` by default.
+`@visus-io/notion-sdk-ts` is a type-safe TypeScript SDK for the Notion API. It wraps the full Notion REST API with Zod v4 runtime validation, OOP model classes, and ergonomic helper factories. The single runtime dependency is `zod`; it uses Node 18+ built-in `fetch`. The SDK targets Notion API version `2026-03-11` (fixed; the version cannot be overridden).
 
 ### Architecture
 
@@ -124,7 +124,7 @@ Each API class encapsulates one Notion resource's endpoints.
 - Request flow: validate inputs -> build body -> `this.client.request<T>()` -> parse with Zod -> wrap in model
 - Client-side validation runs before the request via `validateArrayLength()` / `validateStringLength()` from `validation.ts`
 - Paginated list responses use `paginatedListSchema(itemSchema)`, then map results through model constructors
-- Convenience methods wrap common patterns (e.g., `archive(id)` calls `update(id, { archived: true })`)
+- Convenience methods wrap common patterns (e.g., `trash(id)` calls `update(id, { in_trash: true })`)
 - Sub-resources use object literals with arrow functions: `readonly children = { list: async (...) => {...} }`
 - Include JSDoc with `@param`, `@returns`, and `@see` links to Notion API docs
 

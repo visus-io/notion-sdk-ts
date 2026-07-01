@@ -48,7 +48,6 @@ describe('DatabasesAPI', () => {
     },
     parent: { type: 'page_id', page_id: '523e4567-e89b-12d3-a456-426614174000' },
     url: 'https://notion.so/test-database',
-    archived: false,
     in_trash: false,
     is_inline: false,
     public_url: null,
@@ -61,7 +60,6 @@ describe('DatabasesAPI', () => {
     created_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
     last_edited_time: '2023-01-02T00:00:00.000Z',
     last_edited_by: { object: 'user', id: '323e4567-e89b-12d3-a456-426614174000' },
-    archived: false,
     in_trash: false,
     icon: null,
     cover: null,
@@ -443,21 +441,6 @@ describe('DatabasesAPI', () => {
       });
     });
 
-    it('should archive a database', async () => {
-      const archivedDatabase = { ...mockDatabaseResponse, archived: true };
-      vi.mocked(mockClient.request).mockResolvedValue(archivedDatabase);
-
-      await databasesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        archived: true,
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: true },
-      });
-    });
-
     it('should move database to trash', async () => {
       const trashedDatabase = { ...mockDatabaseResponse, in_trash: true };
       vi.mocked(mockClient.request).mockResolvedValue(trashedDatabase);
@@ -474,24 +457,24 @@ describe('DatabasesAPI', () => {
     });
   });
 
-  describe('archive', () => {
-    it('should archive a database using convenience method', async () => {
-      const archivedDatabase = { ...mockDatabaseResponse, archived: true };
-      vi.mocked(mockClient.request).mockResolvedValue(archivedDatabase);
+  describe('trash', () => {
+    it('should move a database to trash using convenience method', async () => {
+      const trashedDatabase = { ...mockDatabaseResponse, in_trash: true };
+      vi.mocked(mockClient.request).mockResolvedValue(trashedDatabase);
 
-      const result = await databasesAPI.archive('123e4567-e89b-12d3-a456-426614174000');
+      const result = await databasesAPI.trash('123e4567-e89b-12d3-a456-426614174000');
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: true },
+        body: { in_trash: true },
       });
       expect(result).toBeInstanceOf(Database);
     });
   });
 
   describe('restore', () => {
-    it('should restore an archived database using convenience method', async () => {
+    it('should restore a trashed database using convenience method', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
 
       const result = await databasesAPI.restore('123e4567-e89b-12d3-a456-426614174000');
@@ -499,7 +482,7 @@ describe('DatabasesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'PATCH',
         path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        body: { archived: false },
+        body: { in_trash: false },
       });
       expect(result).toBeInstanceOf(Database);
     });
