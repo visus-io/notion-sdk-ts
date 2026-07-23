@@ -17,10 +17,7 @@ export interface RetrievePageOptions {
  * Parent for creating a page.
  */
 export type CreatePageParent =
-  | { page_id: string }
-  | { database_id: string }
-  | { data_source_id: string }
-  | { workspace: true };
+  { page_id: string } | { database_id: string } | { data_source_id: string } | { workspace: true };
 
 /**
  * Options for creating a page.
@@ -101,7 +98,7 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    * @see https://developers.notion.com/reference/retrieve-a-page
    */
   async retrieve(pageId: string, options?: RetrievePageOptions): Promise<Page> {
-    const query: Record<string, string> = {
+    const query: Record<string, string | string[]> = {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 

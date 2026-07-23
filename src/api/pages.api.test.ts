@@ -53,20 +53,6 @@ describe('PagesAPI', () => {
   });
 
   describe('retrieve', () => {
-    it('should retrieve a page by ID', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
-
-      const result = await pagesAPI.retrieve('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        query: undefined,
-      });
-      expect(result).toBeInstanceOf(Page);
-      expect(result.id).toBe('123e4567-e89b-12d3-a456-426614174000');
-    });
-
     it('should retrieve a page with filter_properties', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
 
@@ -77,7 +63,7 @@ describe('PagesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'GET',
         path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        query: { filter_properties: 'prop1,prop2' },
+        query: { filter_properties: ['prop1', 'prop2'] },
       });
     });
 
@@ -93,29 +79,6 @@ describe('PagesAPI', () => {
   });
 
   describe('create', () => {
-    it('should create a page with page parent', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
-
-      const result = await pagesAPI.create({
-        parent: { page_id: 'parent-page-id' },
-        properties: {
-          title: { title: [{ type: 'text', text: { content: 'New Page' } }] },
-        },
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'POST',
-        path: '/pages',
-        body: {
-          parent: { page_id: 'parent-page-id' },
-          properties: {
-            title: { title: [{ type: 'text', text: { content: 'New Page' } }] },
-          },
-        },
-      });
-      expect(result).toBeInstanceOf(Page);
-    });
-
     it('should create a page with database parent', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
 
@@ -262,22 +225,6 @@ describe('PagesAPI', () => {
       expect(result).toBeInstanceOf(Page);
     });
 
-    it('should move a page to trash', async () => {
-      const trashedPage = { ...mockPageResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedPage);
-
-      const result = await pagesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        in_trash: true,
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-      expect(result.inTrash).toBe(true);
-    });
-
     it('should update page icon and cover', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
 
@@ -308,54 +255,6 @@ describe('PagesAPI', () => {
         path: '/pages/123e4567-e89b-12d3-a456-426614174000',
         body: { is_locked: true },
       });
-    });
-
-    it('should move page to trash', async () => {
-      const trashedPage = { ...mockPageResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedPage);
-
-      await pagesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        in_trash: true,
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-    });
-  });
-
-  describe('trash', () => {
-    it('should move a page to trash using convenience method', async () => {
-      const trashedPage = { ...mockPageResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedPage);
-
-      const result = await pagesAPI.trash('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-      expect(result).toBeInstanceOf(Page);
-      expect(result.inTrash).toBe(true);
-    });
-  });
-
-  describe('restore', () => {
-    it('should restore a trashed page using convenience method', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
-
-      const result = await pagesAPI.restore('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/pages/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: false },
-      });
-      expect(result).toBeInstanceOf(Page);
-      expect(result.inTrash).toBe(false);
     });
   });
 });

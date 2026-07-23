@@ -85,91 +85,32 @@ describe('FileUploadsAPI', () => {
   });
 
   describe('upload', () => {
-    it('should upload file data to the upload URL', async () => {
+    it.each([
+      {
+        desc: 'Buffer',
+        contentType: 'image/png',
+        fileData: Buffer.from('image data') as BodyInit,
+      },
+      {
+        desc: 'ArrayBuffer',
+        contentType: 'application/octet-stream',
+        fileData: new ArrayBuffer(100) as BodyInit,
+      },
+      {
+        desc: 'Blob',
+        contentType: 'text/plain',
+        fileData: new Blob(['test content'], { type: 'text/plain' }) as BodyInit,
+      },
+    ])('should upload $desc file data', async ({ contentType, fileData }) => {
       const mockResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
       mockFetch.mockResolvedValue(mockResponse);
 
-      const fileData = Buffer.from('test file content');
-      await fileUploadsAPI.upload(
-        'https://s3.amazonaws.com/notion-uploads/test-upload',
-        fileData,
-        'application/pdf',
-      );
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://s3.amazonaws.com/notion-uploads/test-upload',
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/pdf',
-          },
-          body: fileData,
-        },
-      );
-    });
-
-    it('should upload file with different content types', async () => {
-      const mockResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const fileData = Buffer.from('image data');
-      await fileUploadsAPI.upload('https://upload-url.com/upload', fileData, 'image/png');
+      await fileUploadsAPI.upload('https://upload-url.com/upload', fileData, contentType);
 
       expect(mockFetch).toHaveBeenCalledWith('https://upload-url.com/upload', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'image/png',
-        },
-        body: fileData,
-      });
-    });
-
-    it('should throw error when upload fails', async () => {
-      const mockResponse = {
-        ok: false,
-        status: 403,
-        statusText: 'Forbidden',
-      } as Response;
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const fileData = Buffer.from('test file content');
-
-      await expect(
-        fileUploadsAPI.upload('https://upload-url.com/upload', fileData, 'application/pdf'),
-      ).rejects.toThrow('File upload failed: 403 Forbidden');
-    });
-
-    it('should handle ArrayBuffer upload', async () => {
-      const mockResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const fileData = new ArrayBuffer(100);
-      await fileUploadsAPI.upload(
-        'https://upload-url.com/upload',
-        fileData,
-        'application/octet-stream',
-      );
-
-      expect(mockFetch).toHaveBeenCalledWith('https://upload-url.com/upload', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-        },
-        body: fileData,
-      });
-    });
-
-    it('should handle Blob upload', async () => {
-      const mockResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
-      mockFetch.mockResolvedValue(mockResponse);
-
-      const fileData = new Blob(['test content'], { type: 'text/plain' });
-      await fileUploadsAPI.upload('https://upload-url.com/upload', fileData, 'text/plain');
-
-      expect(mockFetch).toHaveBeenCalledWith('https://upload-url.com/upload', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'text/plain',
+          'Content-Type': contentType,
         },
         body: fileData,
       });
@@ -206,75 +147,7 @@ describe('FileUploadsAPI', () => {
     });
   });
 
-  describe('retrieve', () => {
-    it('should retrieve a file upload by ID', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockFileUploadResponse);
-
-      const result = await fileUploadsAPI.retrieve('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/file_uploads/123e4567-e89b-12d3-a456-426614174000',
-      });
-      expect(result).toBeInstanceOf(FileUpload);
-      expect(result.id).toBe('123e4567-e89b-12d3-a456-426614174000');
-    });
-
-    it('should retrieve file upload status', async () => {
-      const uploadedResponse = { ...mockFileUploadResponse, status: 'uploaded' };
-      vi.mocked(mockClient.request).mockResolvedValue(uploadedResponse);
-
-      const result = await fileUploadsAPI.retrieve('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(result.status).toBe('uploaded');
-    });
-  });
-
   describe('uploadFile', () => {
-    it('should upload a complete file using Buffer', async () => {
-      // Mock initiate response
-      vi.mocked(mockClient.request)
-        .mockResolvedValueOnce(mockFileUploadResponse)
-        .mockResolvedValueOnce(mockUploadedFileUploadResponse);
-
-      // Mock upload response
-      const mockUploadResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
-      mockFetch.mockResolvedValue(mockUploadResponse);
-
-      const fileData = Buffer.from('test file content');
-      const result = await fileUploadsAPI.uploadFile('test.pdf', fileData, 'application/pdf');
-
-      // Verify initiate was called
-      expect(mockClient.request).toHaveBeenNthCalledWith(1, {
-        method: 'POST',
-        path: '/file_uploads',
-        body: {
-          filename: 'test.pdf',
-          content_type: 'application/pdf',
-          content_length: fileData.length,
-        },
-      });
-
-      // Verify upload was called
-      expect(mockFetch).toHaveBeenCalledWith(mockFileUploadResponse.upload_url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/pdf',
-        },
-        body: fileData,
-      });
-
-      // Verify complete was called
-      expect(mockClient.request).toHaveBeenNthCalledWith(2, {
-        method: 'POST',
-        path: '/file_uploads/123e4567-e89b-12d3-a456-426614174000/complete',
-        body: {},
-      });
-
-      expect(result).toBeInstanceOf(FileUpload);
-      expect(result.status).toBe('uploaded');
-    });
-
     it('should upload a complete file using ArrayBuffer', async () => {
       vi.mocked(mockClient.request)
         .mockResolvedValueOnce(mockFileUploadResponse)

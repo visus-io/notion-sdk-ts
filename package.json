@@ -37,7 +37,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -71,6 +71,7 @@
     "eslint-plugin-zod": "4.7.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "msw": "2.15.0",
     "prettier": "^3.8.1",
     "prettier-plugin-packagejson": "^3.0.0",
     "typescript": "^6.0.0",

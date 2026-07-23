@@ -152,7 +152,7 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
    * @see https://developers.notion.com/reference/retrieve-a-database
    */
   async retrieve(databaseId: string, options?: RetrieveDatabaseOptions): Promise<Database> {
-    const query: Record<string, string> = {
+    const query: Record<string, string | string[]> = {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
@@ -174,12 +174,14 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
       ...(options?.filter ? { filter: options.filter } : {}),
       ...(options?.sorts ? { sorts: options.sorts } : {}),
       ...this.buildPaginationBody(options),
-      ...this.buildFilterPropertiesBody(options?.filter_properties),
     };
+
+    const query = this.buildFilterPropertiesQuery(options?.filter_properties);
 
     const response = await this.client.request<PaginatedList<NotionPage>>({
       method: 'POST',
       path: `/databases/${databaseId}/query`,
+      query: Object.keys(query).length > 0 ? query : undefined,
       body: Object.keys(body).length > 0 ? body : undefined,
     });
 

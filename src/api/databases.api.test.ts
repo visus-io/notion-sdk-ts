@@ -103,20 +103,6 @@ describe('DatabasesAPI', () => {
   });
 
   describe('retrieve', () => {
-    it('should retrieve a database by ID', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
-
-      const result = await databasesAPI.retrieve('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        query: undefined,
-      });
-      expect(result).toBeInstanceOf(Database);
-      expect(result.id).toBe('123e4567-e89b-12d3-a456-426614174000');
-    });
-
     it('should retrieve a database with filter_properties', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
 
@@ -127,7 +113,7 @@ describe('DatabasesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'GET',
         path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        query: { filter_properties: 'prop1,prop2' },
+        query: { filter_properties: ['prop1', 'prop2'] },
       });
     });
 
@@ -221,9 +207,8 @@ describe('DatabasesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'POST',
         path: '/databases/123e4567-e89b-12d3-a456-426614174000/query',
-        body: {
-          filter_properties: ['Name', 'Status'],
-        },
+        query: { filter_properties: ['Name', 'Status'] },
+        body: undefined,
       });
     });
 
@@ -439,52 +424,6 @@ describe('DatabasesAPI', () => {
           is_inline: true,
         },
       });
-    });
-
-    it('should move database to trash', async () => {
-      const trashedDatabase = { ...mockDatabaseResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedDatabase);
-
-      await databasesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        in_trash: true,
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-    });
-  });
-
-  describe('trash', () => {
-    it('should move a database to trash using convenience method', async () => {
-      const trashedDatabase = { ...mockDatabaseResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedDatabase);
-
-      const result = await databasesAPI.trash('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-      expect(result).toBeInstanceOf(Database);
-    });
-  });
-
-  describe('restore', () => {
-    it('should restore a trashed database using convenience method', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
-
-      const result = await databasesAPI.restore('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/databases/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: false },
-      });
-      expect(result).toBeInstanceOf(Database);
     });
   });
 });

@@ -89,7 +89,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   async complete(completeUrl: string): Promise<FileUpload> {
     const response = await this.client.request<NotionFileUpload>({
       method: 'POST',
-      path: completeUrl.replace(/^https:\/\/api\.notion\.com\/v1/, ''),
+      path: new URL(completeUrl).pathname.replace(/^\/v1/, ''),
       body: {},
     });
 

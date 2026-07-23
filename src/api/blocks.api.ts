@@ -79,7 +79,7 @@ export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
    * @see https://developers.notion.com/reference/retrieve-a-block
    */
   async retrieve(blockId: string, options?: RetrieveBlockOptions): Promise<Block> {
-    const query: Record<string, string> = {
+    const query: Record<string, string | string[]> = {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 

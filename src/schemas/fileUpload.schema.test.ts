@@ -3,81 +3,64 @@ import { fileUploadSchema } from './fileUpload.schema';
 
 describe('fileUploadSchema', () => {
   describe('valid file uploads', () => {
-    it('should parse file upload with pending status', () => {
-      const fileUpload = {
-        object: 'file_upload' as const,
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        created_time: '2024-01-01T00:00:00.000Z',
-        expiry_time: '2024-01-02T00:00:00.000Z',
+    it.each([
+      {
         status: 'pending' as const,
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        expiry_time: '2024-01-02T00:00:00.000Z' as string | null,
         filename: 'document.pdf',
-        content_type: 'application/pdf',
-        content_length: 1024000,
-        upload_url: 'https://upload.example.com/file',
-        complete_url: 'https://api.example.com/complete',
+        content_type: 'application/pdf' as string | null,
+        content_length: 1024000 as number | null,
         file_import_result: 'pending',
-      };
-
-      const result = fileUploadSchema.safeParse(fileUpload);
-      expect(result.success).toBe(true);
-    });
-
-    it('should parse file upload with uploaded status', () => {
-      const fileUpload = {
-        object: 'file_upload' as const,
-        id: '123e4567-e89b-12d3-a456-426614174001',
-        created_time: '2024-01-01T00:00:00.000Z',
-        expiry_time: null,
+      },
+      {
         status: 'uploaded' as const,
+        id: '123e4567-e89b-12d3-a456-426614174001',
+        expiry_time: null,
         filename: 'image.png',
         content_type: 'image/png',
         content_length: 500000,
-        upload_url: 'https://upload.example.com/image',
-        complete_url: 'https://api.example.com/complete',
         file_import_result: 'success',
-      };
-
-      const result = fileUploadSchema.safeParse(fileUpload);
-      expect(result.success).toBe(true);
-    });
-
-    it('should parse file upload with expired status', () => {
-      const fileUpload = {
-        object: 'file_upload' as const,
-        id: '123e4567-e89b-12d3-a456-426614174002',
-        created_time: '2024-01-01T00:00:00.000Z',
-        expiry_time: '2024-01-01T01:00:00.000Z',
+      },
+      {
         status: 'expired' as const,
+        id: '123e4567-e89b-12d3-a456-426614174002',
+        expiry_time: '2024-01-01T01:00:00.000Z',
         filename: 'data.csv',
         content_type: 'text/csv',
         content_length: 2048,
-        upload_url: 'https://upload.example.com/data',
-        complete_url: 'https://api.example.com/complete',
         file_import_result: 'expired',
-      };
-
-      const result = fileUploadSchema.safeParse(fileUpload);
-      expect(result.success).toBe(true);
-    });
-
-    it('should parse file upload with failed status', () => {
-      const fileUpload = {
-        object: 'file_upload' as const,
-        id: '123e4567-e89b-12d3-a456-426614174003',
-        created_time: '2024-01-01T00:00:00.000Z',
-        expiry_time: null,
+      },
+      {
         status: 'failed' as const,
+        id: '123e4567-e89b-12d3-a456-426614174003',
+        expiry_time: null,
         filename: 'video.mp4',
         content_type: 'video/mp4',
         content_length: null,
-        upload_url: 'https://upload.example.com/video',
-        complete_url: 'https://api.example.com/complete',
         file_import_result: 'error',
-      };
+      },
+    ])(
+      'should parse file upload with $status status',
+      ({ status, id, expiry_time, filename, content_type, content_length, file_import_result }) => {
+        const fileUpload = {
+          object: 'file_upload' as const,
+          id,
+          created_time: '2024-01-01T00:00:00.000Z',
+          expiry_time,
+          status,
+          filename,
+          content_type,
+          content_length,
+          upload_url: 'https://upload.example.com/file',
+          complete_url: 'https://api.example.com/complete',
+          file_import_result,
+        };
 
-      const result = fileUploadSchema.safeParse(fileUpload);
-      expect(result.success).toBe(true);
-    });
+        const result = fileUploadSchema.safeParse(fileUpload);
+        expect(result.success).toBe(true);
+      },
+    );
 
     it('should parse file upload with null content_type and content_length', () => {
       const fileUpload = {

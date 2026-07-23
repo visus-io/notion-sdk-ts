@@ -187,78 +187,93 @@ describe('block helper validation', () => {
 // ---------------------------------------------------------------------------
 
 describe('prop helper validation', () => {
-  it('should throw for URL exceeding 2000 characters', () => {
-    const longUrl = 'https://example.com/' + 'a'.repeat(2000);
-    expect(() => prop.url(longUrl)).toThrow(NotionValidationError);
-    expect(() => prop.url(longUrl)).toThrow(/URL/);
+  it.each([
+    {
+      name: 'URL',
+      limit: 2000,
+      pattern: /URL/,
+      buildOverLimit: () => prop.url('https://example.com/' + 'a'.repeat(2000)),
+      buildWithinLimit: () => prop.url('https://example.com'),
+    },
+    {
+      name: 'email',
+      limit: 200,
+      pattern: /Email/,
+      buildOverLimit: () => prop.email('a'.repeat(192) + '@test.com'),
+      buildWithinLimit: () => prop.email('user@example.com'),
+    },
+    {
+      name: 'phone number',
+      limit: 200,
+      pattern: /Phone number/,
+      buildOverLimit: () => prop.phoneNumber('1'.repeat(201)),
+      buildWithinLimit: () => prop.phoneNumber('+1-555-0100'),
+    },
+  ])('should throw for $name exceeding $limit characters', ({ buildOverLimit, pattern }) => {
+    expect(buildOverLimit).toThrow(NotionValidationError);
+    expect(buildOverLimit).toThrow(pattern);
   });
 
-  it('should accept URL within 2000 characters', () => {
-    expect(() => prop.url('https://example.com')).not.toThrow();
+  it.each([
+    { name: 'URL', build: () => prop.url('https://example.com') },
+    { name: 'email', build: () => prop.email('user@example.com') },
+    { name: 'phone number', build: () => prop.phoneNumber('+1-555-0100') },
+  ])('should accept $name within limit', ({ build }) => {
+    expect(build).not.toThrow();
   });
 
-  it('should accept null URL', () => {
-    expect(() => prop.url(null)).not.toThrow();
+  it.each([
+    { name: 'URL', build: () => prop.url(null) },
+    { name: 'email', build: () => prop.email(null) },
+    { name: 'phone number', build: () => prop.phoneNumber(null) },
+  ])('should accept null $name', ({ build }) => {
+    expect(build).not.toThrow();
   });
 
-  it('should throw for email exceeding 200 characters', () => {
-    const longEmail = 'a'.repeat(192) + '@test.com';
-    expect(() => prop.email(longEmail)).toThrow(NotionValidationError);
-    expect(() => prop.email(longEmail)).toThrow(/Email/);
+  it.each([
+    {
+      name: 'multi-select options',
+      limit: 100,
+      pattern: /Multi-select options/,
+      buildWith: (n: number) =>
+        prop.multiSelect(Array.from({ length: n }, (_, i) => `option-${i}`)),
+    },
+    {
+      name: 'relation pages',
+      limit: 100,
+      pattern: /Relation pages/,
+      buildWith: (n: number) => prop.relation(Array.from({ length: n }, (_, i) => `page-${i}`)),
+    },
+    {
+      name: 'people',
+      limit: 100,
+      pattern: /People/,
+      buildWith: (n: number) => prop.people(Array.from({ length: n }, (_, i) => `user-${i}`)),
+    },
+  ])('should throw for $name exceeding $limit', ({ buildWith, limit, pattern }) => {
+    expect(() => buildWith(limit + 1)).toThrow(NotionValidationError);
+    expect(() => buildWith(limit + 1)).toThrow(pattern);
   });
 
-  it('should accept email within 200 characters', () => {
-    expect(() => prop.email('user@example.com')).not.toThrow();
-  });
-
-  it('should accept null email', () => {
-    expect(() => prop.email(null)).not.toThrow();
-  });
-
-  it('should throw for phone number exceeding 200 characters', () => {
-    expect(() => prop.phoneNumber('1'.repeat(201))).toThrow(NotionValidationError);
-    expect(() => prop.phoneNumber('1'.repeat(201))).toThrow(/Phone number/);
-  });
-
-  it('should accept phone number within 200 characters', () => {
-    expect(() => prop.phoneNumber('+1-555-0100')).not.toThrow();
-  });
-
-  it('should accept null phone number', () => {
-    expect(() => prop.phoneNumber(null)).not.toThrow();
-  });
-
-  it('should throw for multi-select exceeding 100 options', () => {
-    const options = Array.from({ length: 101 }, (_, i) => `option-${i}`);
-    expect(() => prop.multiSelect(options)).toThrow(NotionValidationError);
-    expect(() => prop.multiSelect(options)).toThrow(/Multi-select options/);
-  });
-
-  it('should accept multi-select within 100 options', () => {
-    const options = Array.from({ length: 100 }, (_, i) => `option-${i}`);
-    expect(() => prop.multiSelect(options)).not.toThrow();
-  });
-
-  it('should throw for relation exceeding 100 pages', () => {
-    const ids = Array.from({ length: 101 }, (_, i) => `page-${i}`);
-    expect(() => prop.relation(ids)).toThrow(NotionValidationError);
-    expect(() => prop.relation(ids)).toThrow(/Relation pages/);
-  });
-
-  it('should accept relation within 100 pages', () => {
-    const ids = Array.from({ length: 100 }, (_, i) => `page-${i}`);
-    expect(() => prop.relation(ids)).not.toThrow();
-  });
-
-  it('should throw for people exceeding 100 users', () => {
-    const ids = Array.from({ length: 101 }, (_, i) => `user-${i}`);
-    expect(() => prop.people(ids)).toThrow(NotionValidationError);
-    expect(() => prop.people(ids)).toThrow(/People/);
-  });
-
-  it('should accept people within 100 users', () => {
-    const ids = Array.from({ length: 100 }, (_, i) => `user-${i}`);
-    expect(() => prop.people(ids)).not.toThrow();
+  it.each([
+    {
+      name: 'multi-select options',
+      limit: 100,
+      buildWith: (n: number) =>
+        prop.multiSelect(Array.from({ length: n }, (_, i) => `option-${i}`)),
+    },
+    {
+      name: 'relation pages',
+      limit: 100,
+      buildWith: (n: number) => prop.relation(Array.from({ length: n }, (_, i) => `page-${i}`)),
+    },
+    {
+      name: 'people',
+      limit: 100,
+      buildWith: (n: number) => prop.people(Array.from({ length: n }, (_, i) => `user-${i}`)),
+    },
+  ])('should accept $name within $limit', ({ buildWith, limit }) => {
+    expect(() => buildWith(limit)).not.toThrow();
   });
 
   it('should throw for title text exceeding 2000 characters', () => {
