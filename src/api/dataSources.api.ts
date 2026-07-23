@@ -105,7 +105,7 @@ export interface QueryDataSourceOptions extends PaginationParameters {
   /** Filter by result type (for wikis) */
   result_type?: 'page' | 'data_source';
 
-  /** Whether to return archived pages. Defaults to false (non-archived pages only). */
+  /** Whether to return only archived pages (true) or only non-archived pages (false, default) */
   is_archived?: boolean;
 }
 

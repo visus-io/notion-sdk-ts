@@ -85,7 +85,7 @@ describe('DataSourcesAPI integration', () => {
       await notion.dataSources.query(dataSourceId, { filter_properties: ['Name', 'Status'] });
     });
 
-    it('should send is_archived in the request body to include archived pages', async () => {
+    it('should send is_archived in the request body to filter for archived-only pages', async () => {
       server.use(
         http.post(
           `${NOTION_TEST_BASE_URL}/v1/data_sources/${dataSourceId}/query`,
