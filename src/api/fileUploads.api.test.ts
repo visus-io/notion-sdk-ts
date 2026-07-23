@@ -145,6 +145,18 @@ describe('FileUploadsAPI', () => {
         body: {},
       });
     });
+
+    it('should accept a relative complete URL without throwing', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockUploadedFileUploadResponse);
+
+      await fileUploadsAPI.complete('/v1/file_uploads/abc123/complete');
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/file_uploads/abc123/complete',
+        body: {},
+      });
+    });
   });
 
   describe('uploadFile', () => {

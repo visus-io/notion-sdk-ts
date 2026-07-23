@@ -89,12 +89,29 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   async complete(completeUrl: string): Promise<FileUpload> {
     const response = await this.client.request<NotionFileUpload>({
       method: 'POST',
-      path: new URL(completeUrl).pathname.replace(/^\/v1/, ''),
+      path: FileUploadsAPI.toRequestPath(completeUrl),
       body: {},
     });
 
     const parsed = fileUploadSchema.parse(response);
     return new FileUpload(parsed);
+  }
+
+  /**
+   * Extracts the request path from a complete URL, accepting both absolute
+   * URLs (e.g. `https://api.notion.com/v1/file_uploads/.../complete`) and
+   * relative paths (e.g. `/v1/file_uploads/.../complete` or the path alone).
+   */
+  private static toRequestPath(completeUrl: string): string {
+    let path: string;
+
+    try {
+      path = new URL(completeUrl).pathname;
+    } catch {
+      path = completeUrl;
+    }
+
+    return path.replace(/^\/v1/, '');
   }
 
   /**
