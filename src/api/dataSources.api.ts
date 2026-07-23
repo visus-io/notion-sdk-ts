@@ -105,8 +105,8 @@ export interface QueryDataSourceOptions extends PaginationParameters {
   /** Filter by result type (for wikis) */
   result_type?: 'page' | 'data_source';
 
-  /** Filter by trash status */
-  in_trash?: boolean;
+  /** Whether to return only archived pages (true) or only non-archived pages (false, default) */
+  is_archived?: boolean;
 }
 
 /**
@@ -135,7 +135,7 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
    * @see https://developers.notion.com/reference/retrieve-a-data-source
    */
   async retrieve(dataSourceId: string, options?: RetrieveDataSourceOptions): Promise<DataSource> {
-    const query: Record<string, string> = {
+    const query: Record<string, string | string[]> = {
       ...this.buildFilterPropertiesQuery(options?.filter_properties),
     };
 
@@ -175,22 +175,20 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
       body.start_cursor = options.start_cursor;
     }
 
-    if (options?.filter_properties) {
-      validateArrayLength(options.filter_properties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
-      body.filter_properties = options.filter_properties;
-    }
-
-    if (options?.in_trash !== undefined) {
-      body.in_trash = options.in_trash;
+    if (options?.is_archived !== undefined) {
+      body.is_archived = options.is_archived;
     }
 
     if (options?.result_type) {
       body.result_type = options.result_type;
     }
 
+    const query = this.buildFilterPropertiesQuery(options?.filter_properties);
+
     const response = await this.client.request<PaginatedList<NotionPage>>({
       method: 'POST',
       path: `/data_sources/${dataSourceId}/query`,
+      query: Object.keys(query).length > 0 ? query : undefined,
       body: Object.keys(body).length > 0 ? body : undefined,
     });
 

@@ -40,29 +40,21 @@ describe('richText helpers', () => {
       expect(segment.annotations.italic).toBe(true);
     });
 
-    it('should apply strikethrough', () => {
-      const [segment] = richText('Strike').strikethrough().build();
-      expect(segment.annotations.strikethrough).toBe(true);
+    it.each([
+      { method: 'strikethrough', build: () => richText('Strike').strikethrough().build() },
+      { method: 'underline', build: () => richText('Underline').underline().build() },
+      { method: 'code', build: () => richText('Code').code().build() },
+    ] as const)('should apply $method', ({ method, build }) => {
+      const [segment] = build();
+      expect(segment.annotations[method]).toBe(true);
     });
 
-    it('should apply underline', () => {
-      const [segment] = richText('Underline').underline().build();
-      expect(segment.annotations.underline).toBe(true);
-    });
-
-    it('should apply code', () => {
-      const [segment] = richText('Code').code().build();
-      expect(segment.annotations.code).toBe(true);
-    });
-
-    it('should apply color', () => {
-      const [segment] = richText('Red').color('red').build();
-      expect(segment.annotations.color).toBe('red');
-    });
-
-    it('should apply background color', () => {
-      const [segment] = richText('Highlighted').color('yellow_background').build();
-      expect(segment.annotations.color).toBe('yellow_background');
+    it.each([
+      { desc: 'color', color: 'red' as const },
+      { desc: 'background color', color: 'yellow_background' as const },
+    ])('should apply $desc', ({ color }) => {
+      const [segment] = richText('Styled').color(color).build();
+      expect(segment.annotations.color).toBe(color);
     });
 
     it('should chain multiple annotations', () => {

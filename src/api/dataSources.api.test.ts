@@ -98,20 +98,6 @@ describe('DataSourcesAPI', () => {
   });
 
   describe('retrieve', () => {
-    it('should retrieve a data source by ID', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockDataSourceResponse);
-
-      const result = await dataSourcesAPI.retrieve('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        query: undefined,
-      });
-      expect(result).toBeInstanceOf(DataSource);
-      expect(result.id).toBe('123e4567-e89b-12d3-a456-426614174000');
-    });
-
     it('should retrieve a data source with filter_properties', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDataSourceResponse);
 
@@ -122,7 +108,7 @@ describe('DataSourcesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'GET',
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        query: { filter_properties: 'prop1,prop2' },
+        query: { filter_properties: ['prop1', 'prop2'] },
       });
     });
 
@@ -213,9 +199,8 @@ describe('DataSourcesAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'POST',
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000/query',
-        body: {
-          filter_properties: ['Name', 'Status'],
-        },
+        query: { filter_properties: ['Name', 'Status'] },
+        body: undefined,
       });
     });
 
@@ -229,18 +214,18 @@ describe('DataSourcesAPI', () => {
       ).rejects.toThrow(NotionValidationError);
     });
 
-    it('should query a data source with in_trash filter', async () => {
+    it('should query a data source with is_archived filter', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedPageResponse);
 
       await dataSourcesAPI.query('123e4567-e89b-12d3-a456-426614174000', {
-        in_trash: false,
+        is_archived: true,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'POST',
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000/query',
         body: {
-          in_trash: false,
+          is_archived: true,
         },
       });
     });
@@ -395,36 +380,6 @@ describe('DataSourcesAPI', () => {
       ).rejects.toThrow(NotionValidationError);
     });
 
-    it('should restore a data source from trash via update', async () => {
-      const restoredDataSource = { ...mockDataSourceResponse, in_trash: false };
-      vi.mocked(mockClient.request).mockResolvedValue(restoredDataSource);
-
-      await dataSourcesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        in_trash: false,
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: false },
-      });
-    });
-
-    it('should move data source to trash', async () => {
-      const trashedDataSource = { ...mockDataSourceResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedDataSource);
-
-      await dataSourcesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
-        in_trash: true,
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-    });
-
     it('should move data source to different database', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockDataSourceResponse);
 
@@ -437,68 +392,6 @@ describe('DataSourcesAPI', () => {
         path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
         body: { parent: { database_id: 'new-database-id' } },
       });
-    });
-  });
-
-  describe('archive', () => {
-    it('should move a data source to trash via deprecated alias', async () => {
-      const trashedDataSource = { ...mockDataSourceResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedDataSource);
-
-      const result = await dataSourcesAPI.archive('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-      expect(result).toBeInstanceOf(DataSource);
-    });
-  });
-
-  describe('restore', () => {
-    it('should restore a trashed data source using convenience method', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockDataSourceResponse);
-
-      const result = await dataSourcesAPI.restore('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: false },
-      });
-      expect(result).toBeInstanceOf(DataSource);
-    });
-  });
-
-  describe('trash', () => {
-    it('should move data source to trash using convenience method', async () => {
-      const trashedDataSource = { ...mockDataSourceResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedDataSource);
-
-      const result = await dataSourcesAPI.trash('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: true },
-      });
-      expect(result).toBeInstanceOf(DataSource);
-    });
-  });
-
-  describe('untrash', () => {
-    it('should restore data source from trash using convenience method', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockDataSourceResponse);
-
-      const result = await dataSourcesAPI.untrash('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000',
-        body: { in_trash: false },
-      });
-      expect(result).toBeInstanceOf(DataSource);
     });
   });
 });

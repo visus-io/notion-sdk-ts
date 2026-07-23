@@ -66,45 +66,47 @@ describe('filter helpers', () => {
   // -----------------------------------------------------------------------
 
   describe('number filter', () => {
-    it('should create equals', () => {
-      expect(filter.number('Score').equals(100)).toEqual({
+    it.each([
+      {
+        desc: 'equals',
+        build: () => filter.number('Score').equals(100),
+        key: 'equals',
+        value: 100,
+      },
+      {
+        desc: 'greaterThan',
+        build: () => filter.number('Score').greaterThan(80),
+        key: 'greater_than',
+        value: 80,
+      },
+      {
+        desc: 'greaterThanOrEqualTo',
+        build: () => filter.number('Score').greaterThanOrEqualTo(80),
+        key: 'greater_than_or_equal_to',
+        value: 80,
+      },
+      {
+        desc: 'lessThan',
+        build: () => filter.number('Score').lessThan(50),
+        key: 'less_than',
+        value: 50,
+      },
+      {
+        desc: 'lessThanOrEqualTo',
+        build: () => filter.number('Score').lessThanOrEqualTo(50),
+        key: 'less_than_or_equal_to',
+        value: 50,
+      },
+      {
+        desc: 'doesNotEqual',
+        build: () => filter.number('Score').doesNotEqual(0),
+        key: 'does_not_equal',
+        value: 0,
+      },
+    ])('should create $desc', ({ build, key, value }) => {
+      expect(build()).toEqual({
         property: 'Score',
-        number: { equals: 100 },
-      });
-    });
-
-    it('should create greaterThan', () => {
-      expect(filter.number('Score').greaterThan(80)).toEqual({
-        property: 'Score',
-        number: { greater_than: 80 },
-      });
-    });
-
-    it('should create greaterThanOrEqualTo', () => {
-      expect(filter.number('Score').greaterThanOrEqualTo(80)).toEqual({
-        property: 'Score',
-        number: { greater_than_or_equal_to: 80 },
-      });
-    });
-
-    it('should create lessThan', () => {
-      expect(filter.number('Score').lessThan(50)).toEqual({
-        property: 'Score',
-        number: { less_than: 50 },
-      });
-    });
-
-    it('should create lessThanOrEqualTo', () => {
-      expect(filter.number('Score').lessThanOrEqualTo(50)).toEqual({
-        property: 'Score',
-        number: { less_than_or_equal_to: 50 },
-      });
-    });
-
-    it('should create doesNotEqual', () => {
-      expect(filter.number('Score').doesNotEqual(0)).toEqual({
-        property: 'Score',
-        number: { does_not_equal: 0 },
+        number: { [key]: value },
       });
     });
 

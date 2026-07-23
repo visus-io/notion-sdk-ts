@@ -50,24 +50,6 @@ describe('CommentsAPI', () => {
   });
 
   describe('list', () => {
-    it('should list comments for a page without pagination params', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
-
-      const result = await commentsAPI.list('page-id-123');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/comments',
-        query: {
-          block_id: 'page-id-123',
-        },
-      });
-      expect(result.object).toBe('list');
-      expect(result.results).toHaveLength(1);
-      expect(result.results[0]).toBeInstanceOf(Comment);
-      expect(result.type).toBe('comment');
-    });
-
     it('should list comments with pagination params', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
 

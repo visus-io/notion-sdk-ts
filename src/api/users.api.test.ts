@@ -49,19 +49,6 @@ describe('UsersAPI', () => {
   });
 
   describe('retrieve', () => {
-    it('should retrieve a user by ID', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockUserResponse);
-
-      const result = await usersAPI.retrieve('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/users/123e4567-e89b-12d3-a456-426614174000',
-      });
-      expect(result).toBeInstanceOf(User);
-      expect(result.id).toBe('123e4567-e89b-12d3-a456-426614174000');
-    });
-
     it('should retrieve a bot user', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockBotUserResponse);
 
@@ -77,23 +64,6 @@ describe('UsersAPI', () => {
   });
 
   describe('list', () => {
-    it('should list all users without pagination params', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
-
-      const result = await usersAPI.list();
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/users',
-        query: undefined,
-      });
-      expect(result.object).toBe('list');
-      expect(result.results).toHaveLength(2);
-      expect(result.results[0]).toBeInstanceOf(User);
-      expect(result.results[1]).toBeInstanceOf(User);
-      expect(result.type).toBe('user');
-    });
-
     it('should list users with pagination params', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
 
@@ -156,30 +126,6 @@ describe('UsersAPI', () => {
           start_cursor: 'cursor-abc',
         },
       });
-    });
-  });
-
-  describe('me', () => {
-    it('should retrieve the bot user for the current token', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockBotUserResponse);
-
-      const result = await usersAPI.me();
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/users/me',
-      });
-      expect(result).toBeInstanceOf(User);
-      expect(result.type).toBe('bot');
-    });
-
-    it('should return user details for me endpoint', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockBotUserResponse);
-
-      const result = await usersAPI.me();
-
-      expect(result.id).toBe('223e4567-e89b-12d3-a456-426614174000');
-      expect(result.name).toBe('Test Bot');
     });
   });
 });

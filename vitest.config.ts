@@ -14,6 +14,7 @@ export default defineConfig({
         '**/*.d.ts',
         '**/test/**',
         '**/__tests__/**',
+        'src/testUtils/**',
       ],
     },
   },

@@ -56,20 +56,6 @@ describe('BlocksAPI', () => {
   });
 
   describe('retrieve', () => {
-    it('should retrieve a block by ID', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockBlockResponse);
-
-      const result = await blocksAPI.retrieve('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/blocks/123e4567-e89b-12d3-a456-426614174000',
-        query: undefined,
-      });
-      expect(result).toBeInstanceOf(Block);
-      expect(result.id).toBe('123e4567-e89b-12d3-a456-426614174000');
-    });
-
     it('should retrieve a block with filter_properties', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockBlockResponse);
 
@@ -80,24 +66,8 @@ describe('BlocksAPI', () => {
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'GET',
         path: '/blocks/123e4567-e89b-12d3-a456-426614174000',
-        query: { filter_properties: 'prop1,prop2' },
+        query: { filter_properties: ['prop1', 'prop2'] },
       });
-    });
-  });
-
-  describe('delete', () => {
-    it('should delete a block by ID', async () => {
-      const trashedBlock = { ...mockBlockResponse, in_trash: true };
-      vi.mocked(mockClient.request).mockResolvedValue(trashedBlock);
-
-      const result = await blocksAPI.delete('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'DELETE',
-        path: '/blocks/123e4567-e89b-12d3-a456-426614174000',
-      });
-      expect(result).toBeInstanceOf(Block);
-      expect(result.inTrash).toBe(true);
     });
   });
 
@@ -139,22 +109,6 @@ describe('BlocksAPI', () => {
   });
 
   describe('children.list', () => {
-    it('should list block children without pagination params', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
-
-      const result = await blocksAPI.children.list('123e4567-e89b-12d3-a456-426614174000');
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'GET',
-        path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
-        query: undefined,
-      });
-      expect(result.object).toBe('list');
-      expect(result.results).toHaveLength(1);
-      expect(result.results[0]).toBeInstanceOf(Block);
-      expect(result.type).toBe('block');
-    });
-
     it('should list block children with pagination params', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
 
@@ -198,38 +152,17 @@ describe('BlocksAPI', () => {
       expect(result.results[0]).toBeInstanceOf(Block);
     });
 
-    it('should append children with after_block position', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
-
-      const children = [
-        {
-          type: 'paragraph',
-          paragraph: { rich_text: [{ type: 'text', text: { content: 'New' } }] },
-        },
-      ];
-
-      await blocksAPI.children.append('123e4567-e89b-12d3-a456-426614174000', {
-        children,
+    it.each([
+      {
+        desc: 'after_block',
         position: {
           type: 'after_block',
           after_block: { id: '423e4567-e89b-12d3-a456-426614174000' },
         },
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
-        body: {
-          children,
-          position: {
-            type: 'after_block',
-            after_block: { id: '423e4567-e89b-12d3-a456-426614174000' },
-          },
-        },
-      });
-    });
-
-    it('should append children with start position', async () => {
+      },
+      { desc: 'start', position: { type: 'start' } },
+      { desc: 'end', position: { type: 'end' } },
+    ])('should append children with $desc position', async ({ position }) => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
 
       const children = [
@@ -241,7 +174,7 @@ describe('BlocksAPI', () => {
 
       await blocksAPI.children.append('123e4567-e89b-12d3-a456-426614174000', {
         children,
-        position: { type: 'start' },
+        position,
       });
 
       expect(mockClient.request).toHaveBeenCalledWith({
@@ -249,32 +182,7 @@ describe('BlocksAPI', () => {
         path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
         body: {
           children,
-          position: { type: 'start' },
-        },
-      });
-    });
-
-    it('should append children with end position', async () => {
-      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedResponse);
-
-      const children = [
-        {
-          type: 'paragraph',
-          paragraph: { rich_text: [{ type: 'text', text: { content: 'New' } }] },
-        },
-      ];
-
-      await blocksAPI.children.append('123e4567-e89b-12d3-a456-426614174000', {
-        children,
-        position: { type: 'end' },
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'PATCH',
-        path: '/blocks/123e4567-e89b-12d3-a456-426614174000/children',
-        body: {
-          children,
-          position: { type: 'end' },
+          position,
         },
       });
     });

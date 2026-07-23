@@ -119,100 +119,34 @@ describe('NotionAPIError', () => {
   });
 
   describe('isServerError', () => {
-    it('should return true for 500 status', () => {
-      const response = createErrorResponse('internal_server_error', 500);
+    it.each([
+      { status: 500, expected: true },
+      { status: 503, expected: true },
+      { status: 504, expected: true },
+      { status: 599, expected: true },
+      { status: 400, expected: false },
+      { status: 404, expected: false },
+      { status: 600, expected: false },
+    ])('should return $expected for $status status', ({ status, expected }) => {
+      const response = createErrorResponse('internal_server_error', status);
       const error = new NotionAPIError(response);
 
-      expect(error.isServerError()).toBe(true);
-    });
-
-    it('should return true for 503 status', () => {
-      const response = createErrorResponse('service_unavailable', 503);
-      const error = new NotionAPIError(response);
-
-      expect(error.isServerError()).toBe(true);
-    });
-
-    it('should return true for 504 status', () => {
-      const response = createErrorResponse('gateway_timeout', 504);
-      const error = new NotionAPIError(response);
-
-      expect(error.isServerError()).toBe(true);
-    });
-
-    it('should return true for 599 status (edge of 5xx range)', () => {
-      const response: NotionErrorResponse = {
-        object: 'error',
-        status: 599,
-        code: 'internal_server_error',
-        message: 'Test error',
-      };
-      const error = new NotionAPIError(response);
-
-      expect(error.isServerError()).toBe(true);
-    });
-
-    it('should return false for 400 status', () => {
-      const response = createErrorResponse('invalid_request', 400);
-      const error = new NotionAPIError(response);
-
-      expect(error.isServerError()).toBe(false);
-    });
-
-    it('should return false for 404 status', () => {
-      const response = createErrorResponse('object_not_found', 404);
-      const error = new NotionAPIError(response);
-
-      expect(error.isServerError()).toBe(false);
-    });
-
-    it('should return false for 600 status (outside 5xx range)', () => {
-      const response: NotionErrorResponse = {
-        object: 'error',
-        status: 600,
-        code: 'internal_server_error',
-        message: 'Test error',
-      };
-      const error = new NotionAPIError(response);
-
-      expect(error.isServerError()).toBe(false);
+      expect(error.isServerError()).toBe(expected);
     });
   });
 
   describe('isRetryable', () => {
-    it('should return true for rate_limited error', () => {
-      const response = createErrorResponse('rate_limited', 429);
+    it.each([
+      { code: 'rate_limited', status: 429, expected: true },
+      { code: 'internal_server_error', status: 500, expected: true },
+      { code: 'service_unavailable', status: 503, expected: true },
+      { code: 'invalid_request', status: 400, expected: false },
+      { code: 'object_not_found', status: 404, expected: false },
+    ] as const)('should return $expected for $code ($status)', ({ code, status, expected }) => {
+      const response = createErrorResponse(code, status);
       const error = new NotionAPIError(response);
 
-      expect(error.isRetryable()).toBe(true);
-    });
-
-    it('should return true for server error (500)', () => {
-      const response = createErrorResponse('internal_server_error', 500);
-      const error = new NotionAPIError(response);
-
-      expect(error.isRetryable()).toBe(true);
-    });
-
-    it('should return true for server error (503)', () => {
-      const response = createErrorResponse('service_unavailable', 503);
-      const error = new NotionAPIError(response);
-
-      expect(error.isRetryable()).toBe(true);
-    });
-
-    it('should return false for client error (400)', () => {
-      const response = createErrorResponse('invalid_request', 400);
-      const error = new NotionAPIError(response);
-
-      expect(error.isRetryable()).toBe(false);
-    });
-
-    it('should return false for not found error', () => {
-      const response = createErrorResponse('object_not_found', 404);
-      const error = new NotionAPIError(response);
-
-      expect(error.isRetryable()).toBe(false);
+      expect(error.isRetryable()).toBe(expected);
     });
   });
 });

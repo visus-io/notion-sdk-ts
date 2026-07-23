@@ -31,93 +31,35 @@ describe('FileUpload', () => {
     expect(fileUpload.fileImportResult).toBe('file://path/to/file');
   });
 
-  it('should identify pending uploads', () => {
-    const fileUploadData = {
-      object: 'file_upload' as const,
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      created_time: '2023-01-01T00:00:00.000Z',
-      expiry_time: null,
-      status: 'pending' as const,
-      filename: 'test.txt',
-      content_type: null,
-      content_length: null,
-      upload_url: 'https://example.com/upload',
-      complete_url: 'https://example.com/complete',
-      file_import_result: '',
-    };
+  it.each([
+    { status: 'pending', isPending: true, isUploaded: false, isExpired: false, isFailed: false },
+    { status: 'uploaded', isPending: false, isUploaded: true, isExpired: false, isFailed: false },
+    { status: 'expired', isPending: false, isUploaded: false, isExpired: true, isFailed: false },
+    { status: 'failed', isPending: false, isUploaded: false, isExpired: false, isFailed: true },
+  ] as const)(
+    'should identify $status uploads',
+    ({ status, isPending, isUploaded, isExpired, isFailed }) => {
+      const fileUploadData = {
+        object: 'file_upload' as const,
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        created_time: '2023-01-01T00:00:00.000Z',
+        expiry_time: null,
+        status,
+        filename: 'test.txt',
+        content_type: null,
+        content_length: null,
+        upload_url: 'https://example.com/upload',
+        complete_url: 'https://example.com/complete',
+        file_import_result: '',
+      };
 
-    const fileUpload = new FileUpload(fileUploadData);
-    expect(fileUpload.isPending()).toBe(true);
-    expect(fileUpload.isUploaded()).toBe(false);
-    expect(fileUpload.isExpired()).toBe(false);
-    expect(fileUpload.isFailed()).toBe(false);
-  });
-
-  it('should identify uploaded files', () => {
-    const fileUploadData = {
-      object: 'file_upload' as const,
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      created_time: '2023-01-01T00:00:00.000Z',
-      expiry_time: null,
-      status: 'uploaded' as const,
-      filename: 'test.txt',
-      content_type: 'text/plain',
-      content_length: 1024,
-      upload_url: 'https://example.com/upload',
-      complete_url: 'https://example.com/complete',
-      file_import_result: 'file://path/to/file',
-    };
-
-    const fileUpload = new FileUpload(fileUploadData);
-    expect(fileUpload.isUploaded()).toBe(true);
-    expect(fileUpload.isPending()).toBe(false);
-    expect(fileUpload.isExpired()).toBe(false);
-    expect(fileUpload.isFailed()).toBe(false);
-  });
-
-  it('should identify expired uploads', () => {
-    const fileUploadData = {
-      object: 'file_upload' as const,
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      created_time: '2023-01-01T00:00:00.000Z',
-      expiry_time: '2023-01-02T00:00:00.000Z',
-      status: 'expired' as const,
-      filename: 'test.txt',
-      content_type: null,
-      content_length: null,
-      upload_url: 'https://example.com/upload',
-      complete_url: 'https://example.com/complete',
-      file_import_result: '',
-    };
-
-    const fileUpload = new FileUpload(fileUploadData);
-    expect(fileUpload.isExpired()).toBe(true);
-    expect(fileUpload.isPending()).toBe(false);
-    expect(fileUpload.isUploaded()).toBe(false);
-    expect(fileUpload.isFailed()).toBe(false);
-  });
-
-  it('should identify failed uploads', () => {
-    const fileUploadData = {
-      object: 'file_upload' as const,
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      created_time: '2023-01-01T00:00:00.000Z',
-      expiry_time: null,
-      status: 'failed' as const,
-      filename: 'test.txt',
-      content_type: null,
-      content_length: null,
-      upload_url: 'https://example.com/upload',
-      complete_url: 'https://example.com/complete',
-      file_import_result: '',
-    };
-
-    const fileUpload = new FileUpload(fileUploadData);
-    expect(fileUpload.isFailed()).toBe(true);
-    expect(fileUpload.isPending()).toBe(false);
-    expect(fileUpload.isUploaded()).toBe(false);
-    expect(fileUpload.isExpired()).toBe(false);
-  });
+      const fileUpload = new FileUpload(fileUploadData);
+      expect(fileUpload.isPending()).toBe(isPending);
+      expect(fileUpload.isUploaded()).toBe(isUploaded);
+      expect(fileUpload.isExpired()).toBe(isExpired);
+      expect(fileUpload.isFailed()).toBe(isFailed);
+    },
+  );
 
   it('should handle null expiry time', () => {
     const fileUploadData = {

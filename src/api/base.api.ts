@@ -51,29 +51,6 @@ export abstract class BaseAPI<TResponse, TModel> {
   }
 
   /**
-   * Build filter_properties body parameter from an array of property names.
-   *
-   * @param filterProperties - Optional array of property names to include in the response
-   * @returns Body object with filter_properties parameter for API requests
-   *
-   * @throws {NotionValidationError} If array exceeds LIMITS.ARRAY_ELEMENTS
-   * @example
-   * const body = this.buildFilterPropertiesBody(['Name', 'Status']);
-   * // body will be: { filter_properties: ['Name', 'Status'] }
-   */
-  protected buildFilterPropertiesBody(filterProperties?: string[]): Record<string, unknown> {
-    const body: Record<string, unknown> = {};
-
-    if (filterProperties) {
-      validateArrayLength(filterProperties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
-
-      body.filter_properties = filterProperties;
-    }
-
-    return body;
-  }
-
-  /**
    * Build pagination body parameters from PaginationParameters.
    *
    * @param params - Optional pagination parameters
@@ -100,6 +77,9 @@ export abstract class BaseAPI<TResponse, TModel> {
   /**
    * Build filter_properties query parameter from an array of property names.
    *
+   * Notion sends this as a repeated query key (`filter_properties=a&filter_properties=b`),
+   * not a single comma-joined value, so the array is preserved for `NotionClient` to expand.
+   *
    * @param filterProperties - Optional array of property names to include in the response
    * @returns Query object with filter_properties parameter for API requests
    *
@@ -107,15 +87,15 @@ export abstract class BaseAPI<TResponse, TModel> {
    *
    * @example
    * const query = this.buildFilterPropertiesQuery(['Name', 'Status']);
-   * // query will be: { filter_properties: 'Name,Status' }
+   * // query will be: { filter_properties: ['Name', 'Status'] }
    */
-  protected buildFilterPropertiesQuery(filterProperties?: string[]): Record<string, string> {
-    const query: Record<string, string> = {};
+  protected buildFilterPropertiesQuery(filterProperties?: string[]): Record<string, string[]> {
+    const query: Record<string, string[]> = {};
 
     if (filterProperties) {
       validateArrayLength(filterProperties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
 
-      query.filter_properties = filterProperties.join(',');
+      query.filter_properties = filterProperties;
     }
 
     return query;
@@ -180,7 +160,7 @@ export abstract class BaseAPI<TResponse, TModel> {
    */
   protected async retrieveResource(
     resourcePath: string,
-    query?: Record<string, string>,
+    query?: Record<string, string | string[]>,
   ): Promise<TModel> {
     const response = await this.client.request<TResponse>({
       method: 'GET',
@@ -206,7 +186,7 @@ export abstract class BaseAPI<TResponse, TModel> {
    */
   protected async listResources(
     resourcePath: string,
-    query?: Record<string, string>,
+    query?: Record<string, string | string[]>,
   ): Promise<PaginatedList<TModel>> {
     const response = await this.client.request<PaginatedList<TResponse>>({
       method: 'GET',

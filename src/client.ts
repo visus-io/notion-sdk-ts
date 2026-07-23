@@ -40,7 +40,7 @@ export interface NotionClientOptions {
 export interface RequestOptions {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   path: string;
-  query?: Record<string, string | number | boolean | undefined>;
+  query?: Record<string, string | number | boolean | string[] | undefined>;
   body?: unknown;
 }
 
@@ -169,13 +169,19 @@ export class NotionClient {
    */
   private buildUrl(
     path: string,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, string | number | boolean | string[] | undefined>,
   ): string {
     const url = new URL(`${this.baseUrl}/v1${path}`);
 
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
-        if (value !== undefined) {
+        if (value === undefined) {
+          return;
+        }
+
+        if (Array.isArray(value)) {
+          value.forEach((item) => url.searchParams.append(key, item));
+        } else {
           url.searchParams.append(key, String(value));
         }
       });

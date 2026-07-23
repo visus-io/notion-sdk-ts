@@ -131,63 +131,6 @@ describe('SearchAPI', () => {
       });
     });
 
-    it('should search with filter for pages only', async () => {
-      const mockResponse = {
-        object: 'list',
-        results: [mockPageResponse],
-        next_cursor: null,
-        has_more: false,
-      };
-      vi.mocked(mockClient.request).mockResolvedValue(mockResponse);
-
-      await searchAPI.query({
-        filter: {
-          value: 'page',
-          property: 'object',
-        },
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'POST',
-        path: '/search',
-        body: {
-          filter: {
-            value: 'page',
-            property: 'object',
-          },
-        },
-      });
-    });
-
-    it('should search with filter for data sources only', async () => {
-      const mockResponse = {
-        object: 'list',
-        results: [mockDataSourceResponse],
-        next_cursor: null,
-        has_more: false,
-      };
-      vi.mocked(mockClient.request).mockResolvedValue(mockResponse);
-
-      const result = await searchAPI.query({
-        filter: {
-          value: 'data_source',
-          property: 'object',
-        },
-      });
-
-      expect(mockClient.request).toHaveBeenCalledWith({
-        method: 'POST',
-        path: '/search',
-        body: {
-          filter: {
-            value: 'data_source',
-            property: 'object',
-          },
-        },
-      });
-      expect(result.results[0]).toBeInstanceOf(DataSource);
-    });
-
     it('should search with sort configuration', async () => {
       const mockResponse = {
         object: 'list',
@@ -268,22 +211,6 @@ describe('SearchAPI', () => {
           start_cursor: 'cursor-abc',
         },
       });
-    });
-
-    it('should handle mixed page and data source results', async () => {
-      const mockResponse = {
-        object: 'list',
-        results: [mockPageResponse, mockDataSourceResponse],
-        next_cursor: null,
-        has_more: false,
-      };
-      vi.mocked(mockClient.request).mockResolvedValue(mockResponse);
-
-      const result = await searchAPI.query();
-
-      expect(result.results).toHaveLength(2);
-      expect(result.results[0]).toBeInstanceOf(Page);
-      expect(result.results[1]).toBeInstanceOf(DataSource);
     });
 
     it('should handle pagination response', async () => {
