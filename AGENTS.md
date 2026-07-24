@@ -56,6 +56,11 @@ Rules live in `eslint.config.mjs` (`tseslint.configs.recommendedTypeChecked` + `
 - `no-console` only allows `console.warn` / `console.error`.
 - No `.js` extensions in import/export paths.
 
+## YAML and Workflow Files
+
+- Before finishing any change that touches a `.yml`/`.yaml` file, check whether `yamllint` is available (`command -v yamllint`) and, if so, run it against the changed file(s) (config lives at `.yamllint.yml`). Skip silently only if the tool is not installed.
+- If the changed `.yml` file is a GitHub Actions workflow under `.github/workflows/`, additionally check whether `actionlint` is available (`command -v actionlint`) and, if so, run it against the changed file(s). Skip silently only if the tool is not installed.
+
 ## What NOT to Do
 
 - No default exports anywhere -- named exports only.
