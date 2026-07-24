@@ -107,6 +107,14 @@ export interface QueryDataSourceOptions extends PaginationParameters {
 
   /** Whether to return only archived pages (true) or only non-archived pages (false, default) */
   is_archived?: boolean;
+
+  /**
+   * Filter by trash status.
+   *
+   * @deprecated Use `is_archived` instead. Kept as an alias for backwards
+   * compatibility; if both are provided, `is_archived` takes precedence.
+   */
+  in_trash?: boolean;
 }
 
 /**
@@ -175,8 +183,16 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
       body.start_cursor = options.start_cursor;
     }
 
-    if (options?.is_archived !== undefined) {
-      body.is_archived = options.is_archived;
+    if (options?.in_trash !== undefined && options?.is_archived === undefined) {
+      console.warn(
+        '[notion-sdk-ts] QueryDataSourceOptions.in_trash is deprecated, use is_archived instead.',
+      );
+    }
+
+    const isArchived = options?.is_archived ?? options?.in_trash;
+
+    if (isArchived !== undefined) {
+      body.is_archived = isArchived;
     }
 
     if (options?.result_type) {

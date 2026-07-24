@@ -230,6 +230,49 @@ describe('DataSourcesAPI', () => {
       });
     });
 
+    it('should query a data source with the deprecated in_trash filter aliased to is_archived', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedPageResponse);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await dataSourcesAPI.query('123e4567-e89b-12d3-a456-426614174000', {
+        in_trash: true,
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000/query',
+        body: {
+          is_archived: true,
+        },
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[notion-sdk-ts] QueryDataSourceOptions.in_trash is deprecated, use is_archived instead.',
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should prefer is_archived over in_trash and not warn when both are provided', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedPageResponse);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await dataSourcesAPI.query('123e4567-e89b-12d3-a456-426614174000', {
+        is_archived: false,
+        in_trash: true,
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000/query',
+        body: {
+          is_archived: false,
+        },
+      });
+      expect(warnSpy).not.toHaveBeenCalled();
+
+      warnSpy.mockRestore();
+    });
+
     it('should query a data source with result_type filter', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedPageResponse);
 
