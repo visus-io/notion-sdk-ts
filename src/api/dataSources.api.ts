@@ -109,10 +109,10 @@ export interface QueryDataSourceOptions extends PaginationParameters {
   is_archived?: boolean;
 
   /**
-   * Filter by trash status.
+   * Whether to return only trashed pages (true) or only non-trashed pages (false).
    *
-   * @deprecated Use `is_archived` instead. Kept as an alias for backwards
-   * compatibility; if both are provided, `is_archived` takes precedence.
+   * @deprecated Use `is_archived` instead. Kept as an alias forwarded into
+   * `is_archived`; if both are provided, `is_archived` takes precedence.
    */
   in_trash?: boolean;
 }
