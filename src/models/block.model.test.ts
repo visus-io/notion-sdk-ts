@@ -115,6 +115,31 @@ describe('Block', () => {
     expect(block.canHaveChildren()).toBe(true);
   });
 
+  it('should identify tab blocks as able to have children', () => {
+    const blockData = {
+      object: 'block',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      parent: { type: 'page_id', page_id: '223e4567-e89b-12d3-a456-426614174000' },
+      type: 'tab',
+      created_time: '2023-01-01T00:00:00.000Z',
+      created_by: {
+        object: 'user',
+        id: '323e4567-e89b-12d3-a456-426614174000',
+      },
+      last_edited_time: '2023-01-02T00:00:00.000Z',
+      last_edited_by: {
+        object: 'user',
+        id: '323e4567-e89b-12d3-a456-426614174000',
+      },
+      in_trash: false,
+      has_children: true,
+      tab: {},
+    };
+
+    const block = new Block(blockData);
+    expect(block.canHaveChildren()).toBe(true);
+  });
+
   it('should handle non-text blocks', () => {
     const blockData = {
       object: 'block',

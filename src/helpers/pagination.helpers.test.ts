@@ -1,13 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  collectAllDataSourceRows,
   paginate,
   paginateIterator,
   paginateWithMetadata,
   type PaginatedFetchFunction,
+  type WindowedFetchFunction,
 } from './pagination.helpers';
 import type { PaginatedList } from '../schemas';
 
 type MockItem = { id: string };
+type MockRow = { id: string; createdTime: Date };
 
 describe('pagination helpers', () => {
   describe('paginate', () => {
@@ -338,6 +341,107 @@ describe('pagination helpers', () => {
         pageCount: 3,
         totalCount: 6,
       });
+    });
+  });
+
+  describe('collectAllDataSourceRows', () => {
+    it('should behave like normal pagination when no window is capped', async () => {
+      const mockFetch = vi
+        .fn<WindowedFetchFunction<MockRow>>()
+        .mockResolvedValueOnce({
+          object: 'list',
+          results: [{ id: '1', createdTime: new Date('2026-01-01T00:00:00.000Z') }],
+          next_cursor: 'cursor-1',
+          has_more: true,
+          type: 'page',
+        })
+        .mockResolvedValueOnce({
+          object: 'list',
+          results: [{ id: '2', createdTime: new Date('2026-01-02T00:00:00.000Z') }],
+          next_cursor: null,
+          has_more: false,
+          type: 'page',
+        });
+
+      const rows = await collectAllDataSourceRows(mockFetch);
+
+      expect(rows.map((r) => r.id)).toEqual(['1', '2']);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenNthCalledWith(1, undefined, undefined);
+      expect(mockFetch).toHaveBeenNthCalledWith(2, 'cursor-1', undefined);
+    });
+
+    it('should start a new window scoped to created_time when a query is capped', async () => {
+      const lastCreatedTime = new Date('2026-01-05T00:00:00.000Z');
+
+      const mockFetch = vi
+        .fn<WindowedFetchFunction<MockRow>>()
+        .mockResolvedValueOnce({
+          object: 'list',
+          results: [{ id: '1', createdTime: lastCreatedTime }],
+          next_cursor: null,
+          has_more: false,
+          type: 'page',
+          request_status: { type: 'incomplete', incomplete_reason: 'query_result_limit_reached' },
+        })
+        .mockResolvedValueOnce({
+          object: 'list',
+          results: [{ id: '2', createdTime: new Date('2026-01-06T00:00:00.000Z') }],
+          next_cursor: null,
+          has_more: false,
+          type: 'page',
+        });
+
+      const rows = await collectAllDataSourceRows(mockFetch);
+
+      expect(rows.map((r) => r.id)).toEqual(['1', '2']);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenNthCalledWith(2, undefined, lastCreatedTime.toISOString());
+    });
+
+    it('should de-duplicate a row that appears at both ends of a window boundary', async () => {
+      const boundaryTime = new Date('2026-01-05T00:00:00.000Z');
+
+      const mockFetch = vi
+        .fn<WindowedFetchFunction<MockRow>>()
+        .mockResolvedValueOnce({
+          object: 'list',
+          results: [{ id: '1', createdTime: boundaryTime }],
+          next_cursor: null,
+          has_more: false,
+          type: 'page',
+          request_status: { type: 'incomplete', incomplete_reason: 'query_result_limit_reached' },
+        })
+        .mockResolvedValueOnce({
+          object: 'list',
+          // Boundary row '1' re-appears (created_time >= filter includes it again), plus new row '2'.
+          results: [
+            { id: '1', createdTime: boundaryTime },
+            { id: '2', createdTime: new Date('2026-01-06T00:00:00.000Z') },
+          ],
+          next_cursor: null,
+          has_more: false,
+          type: 'page',
+        });
+
+      const rows = await collectAllDataSourceRows(mockFetch);
+
+      expect(rows.map((r) => r.id)).toEqual(['1', '2']);
+    });
+
+    it('should terminate after the expected number of calls once a window finishes normally', async () => {
+      const mockFetch = vi.fn<WindowedFetchFunction<MockRow>>().mockResolvedValueOnce({
+        object: 'list',
+        results: [{ id: '1', createdTime: new Date('2026-01-01T00:00:00.000Z') }],
+        next_cursor: null,
+        has_more: false,
+        type: 'page',
+      });
+
+      const rows = await collectAllDataSourceRows(mockFetch);
+
+      expect(rows).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 });

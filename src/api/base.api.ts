@@ -255,6 +255,7 @@ export abstract class BaseAPI<TResponse, TModel> {
       next_cursor: parsed.next_cursor,
       has_more: parsed.has_more,
       type: this.config.listType || ('unknown' as PaginatedListType),
+      request_status: parsed.request_status,
     };
   }
 }

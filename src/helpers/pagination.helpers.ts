@@ -194,3 +194,102 @@ export async function paginateWithMetadata<T>(fetchPage: PaginatedFetchFunction<
     totalCount: items.length,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Windowed collection for capped data source / view queries
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch function for windowed row collection. Same as {@link PaginatedFetchFunction} plus
+ * a second parameter carrying the ISO 8601 `created_time` lower bound for the *next*
+ * window, present once the previous window was capped at the query result limit
+ * (`request_status.type === 'incomplete'`). The caller merges this into their own
+ * created_time-ascending query, e.g. `filter.createdTime('Created time').onOrAfter(createdTimeCursor)`.
+ */
+export type WindowedFetchFunction<T extends { id: string; createdTime: Date }> = (
+  cursor: string | undefined,
+  createdTimeCursor: string | undefined,
+) => Promise<PaginatedList<T>>;
+
+/**
+ * Iterates over every row of a data source query, transparently working around the
+ * API's 10,000-result-per-query cap.
+ *
+ * Data source (and view) queries cap at 10,000 results; when capped, the response's
+ * `has_more` is still `false`, so following `next_cursor`/`has_more` alone silently
+ * truncates the result set. When a window is capped (`request_status.type ===
+ * 'incomplete'`), this starts a new query filtered to `created_time >=` the last row
+ * seen, de-duplicating by `id` across the window boundary. Requires the query to be
+ * sorted by `created_time` ascending.
+ *
+ * @param fetchWindow - Function that fetches one page, given the current cursor and
+ * (once a window has been capped) a `created_time` lower bound for the next window
+ * @yields Individual rows across all windows
+ *
+ * @example
+ * ```typescript
+ * const rows = collectAllDataSourceRows((cursor, createdTimeCursor) =>
+ *   notion.dataSources.query(dataSourceId, {
+ *     start_cursor: cursor,
+ *     sorts: [{ timestamp: 'created_time', direction: 'ascending' }],
+ *     filter: createdTimeCursor
+ *       ? filter.and(baseFilter, filter.createdTime('Created time').onOrAfter(createdTimeCursor))
+ *       : baseFilter,
+ *   }),
+ * );
+ * ```
+ */
+export async function* iterateAllDataSourceRows<T extends { id: string; createdTime: Date }>(
+  fetchWindow: WindowedFetchFunction<T>,
+): AsyncGenerator<T, void, undefined> {
+  const seenIds = new Set<string>();
+  let cursor: string | undefined;
+  let createdTimeCursor: string | undefined;
+  let lastCreatedTime: Date | undefined;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await fetchWindow(cursor, createdTimeCursor);
+
+    for (const item of response.results) {
+      if (seenIds.has(item.id)) {
+        continue;
+      }
+      seenIds.add(item.id);
+      lastCreatedTime = item.createdTime;
+      yield item;
+    }
+
+    if (response.request_status?.type === 'incomplete' && lastCreatedTime) {
+      // has_more is false here, so normal cursor pagination would silently stop short.
+      // Start a fresh window scoped to created_time >= the last row seen, de-duping by
+      // id across the boundary (created_time, not last_edited_time -- the latter shifts
+      // rows between windows).
+      cursor = undefined;
+      createdTimeCursor = lastCreatedTime.toISOString();
+      hasMore = true;
+    } else {
+      cursor = response.next_cursor ?? undefined;
+      hasMore = cursor !== undefined;
+    }
+  }
+}
+
+/**
+ * Collects every row of a data source query into an array, transparently working
+ * around the API's 10,000-result-per-query cap. See {@link iterateAllDataSourceRows}
+ * for the windowing behavior.
+ *
+ * @param fetchWindow - Function that fetches one page, given the current cursor and
+ * (once a window has been capped) a `created_time` lower bound for the next window
+ * @returns Array containing all rows across all windows
+ */
+export async function collectAllDataSourceRows<T extends { id: string; createdTime: Date }>(
+  fetchWindow: WindowedFetchFunction<T>,
+): Promise<T[]> {
+  const all: T[] = [];
+  for await (const item of iterateAllDataSourceRows(fetchWindow)) {
+    all.push(item);
+  }
+  return all;
+}

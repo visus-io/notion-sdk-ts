@@ -738,6 +738,42 @@ describe('blockSchema', () => {
     });
   });
 
+  describe('tab blocks', () => {
+    it('should parse a minimal tab block', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'tab',
+        tab: {},
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+
+    it.each([
+      { type: 'emoji' as const, emoji: '📎' },
+      externalFile,
+      { type: 'icon' as const, icon: { name: 'star', color: 'blue' as const } },
+      {
+        type: 'custom_emoji' as const,
+        custom_emoji: { id: '123e4567-e89b-12d3-a456-426614174009' },
+      },
+    ])('should parse a paragraph with a %j icon', (icon) => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'paragraph',
+        paragraph: {
+          rich_text: richTextArray,
+          color: 'default',
+          icon,
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('template and meeting_notes blocks', () => {
     it('should parse template block', () => {
       const block: NotionBlock = {
@@ -752,8 +788,44 @@ describe('blockSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should parse meeting_notes block', () => {
+    it('should parse a minimal meeting_notes block', () => {
       const block: NotionBlock = {
+        ...baseBlock,
+        type: 'meeting_notes',
+        meeting_notes: {
+          title: richTextArray,
+          status: 'in_progress',
+          children: {},
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+
+    it('should parse a meeting_notes block with calendar_event and recording', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'meeting_notes',
+        meeting_notes: {
+          title: richTextArray,
+          status: 'succeeded',
+          children: {
+            summary_block_id: '123e4567-e89b-12d3-a456-426614174010',
+            notes_block_id: '123e4567-e89b-12d3-a456-426614174011',
+            transcript_block_id: '123e4567-e89b-12d3-a456-426614174012',
+          },
+          calendar_event: { start_time: '2026-01-01T10:00:00.000Z' },
+          recording: { start_time: '2026-01-01T10:00:00.000Z' },
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject the old rich_text-based meeting_notes shape (breaking change)', () => {
+      const block = {
         ...baseBlock,
         type: 'meeting_notes',
         meeting_notes: {
@@ -762,7 +834,7 @@ describe('blockSchema', () => {
       };
 
       const result = blockSchema.safeParse(block);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
   });
 });

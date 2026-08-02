@@ -2,9 +2,16 @@ export { block } from './block.helpers';
 export type { RichTextInput } from './block.helpers';
 export { cover, icon, notionFile } from './file.helpers';
 export { filter } from './filter.helpers';
-export { paginate, paginateIterator, paginateWithMetadata } from './pagination.helpers';
-export type { PaginatedFetchFunction } from './pagination.helpers';
+export {
+  collectAllDataSourceRows,
+  iterateAllDataSourceRows,
+  paginate,
+  paginateIterator,
+  paginateWithMetadata,
+} from './pagination.helpers';
+export type { PaginatedFetchFunction, WindowedFetchFunction } from './pagination.helpers';
 export { parent } from './parent.helpers';
 export { prop } from './property.helpers';
 export { RichTextBuilder, richText } from './richText.helpers';
 export { sort } from './sort.helpers';
+export { webhook } from './webhook.helpers';

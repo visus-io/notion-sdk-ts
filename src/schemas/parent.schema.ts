@@ -11,7 +11,7 @@ import * as z from 'zod';
  */
 
 /** Database parent. */
-const databaseParentSchema = z.object({
+export const databaseParentSchema = z.object({
   type: z.literal('database_id'),
   database_id: z.uuid(),
 });

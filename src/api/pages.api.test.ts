@@ -201,6 +201,44 @@ describe('PagesAPI', () => {
         },
       });
     });
+
+    it('should create a page from markdown', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
+
+      await pagesAPI.create({
+        parent: { page_id: 'parent-page-id' },
+        markdown: '# Title\n\nSome content.',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/pages',
+        body: {
+          parent: { page_id: 'parent-page-id' },
+          markdown: '# Title\n\nSome content.',
+        },
+      });
+    });
+
+    it('should throw validation error when markdown is combined with properties', async () => {
+      await expect(
+        pagesAPI.create({
+          parent: { page_id: 'parent-page-id' },
+          properties: {},
+          markdown: '# Title',
+        }),
+      ).rejects.toThrow(NotionValidationError);
+    });
+
+    it('should throw validation error when markdown is combined with children', async () => {
+      await expect(
+        pagesAPI.create({
+          parent: { page_id: 'parent-page-id' },
+          children: [],
+          markdown: '# Title',
+        }),
+      ).rejects.toThrow(NotionValidationError);
+    });
   });
 
   describe('update', () => {
@@ -288,6 +326,101 @@ describe('PagesAPI', () => {
         path: '/pages/123e4567-e89b-12d3-a456-426614174000/move',
         body: { parent: { type: 'data_source_id', data_source_id: 'new-data-source-id' } },
       });
+    });
+  });
+
+  describe('getMarkdown', () => {
+    const mockMarkdownResponse = {
+      object: 'page_markdown',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      markdown: '# Title\n\nContent.',
+      truncated: false,
+      unknown_block_ids: [],
+    };
+
+    it('should retrieve a page as markdown', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockMarkdownResponse);
+
+      const result = await pagesAPI.getMarkdown('123e4567-e89b-12d3-a456-426614174000');
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'GET',
+        path: '/pages/123e4567-e89b-12d3-a456-426614174000/markdown',
+        query: undefined,
+      });
+      expect(result.markdown).toBe('# Title\n\nContent.');
+    });
+
+    it('should send include_transcript as a query param', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockMarkdownResponse);
+
+      await pagesAPI.getMarkdown('123e4567-e89b-12d3-a456-426614174000', {
+        include_transcript: true,
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'GET',
+        path: '/pages/123e4567-e89b-12d3-a456-426614174000/markdown',
+        query: { include_transcript: 'true' },
+      });
+    });
+  });
+
+  describe('updateMarkdown', () => {
+    const mockMarkdownResponse = {
+      object: 'page_markdown',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      markdown: 'Updated content.',
+      truncated: false,
+      unknown_block_ids: [],
+    };
+
+    it.each([
+      {
+        type: 'update_content' as const,
+        content_updates: [{ old_str: 'foo', new_str: 'bar' }],
+      },
+      { type: 'replace_content' as const, new_str: 'Replaced content' },
+      {
+        type: 'insert_content' as const,
+        content: 'Inserted content',
+        position: { type: 'end' as const },
+      },
+      {
+        type: 'replace_content_range' as const,
+        content: 'Ranged content',
+        content_range: { start: 0, end: 10 },
+      },
+    ])('should serialize a $type markdown update', async (options) => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockMarkdownResponse);
+
+      const result = await pagesAPI.updateMarkdown('123e4567-e89b-12d3-a456-426614174000', options);
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'PATCH',
+        path: '/pages/123e4567-e89b-12d3-a456-426614174000/markdown',
+        body: options,
+      });
+      expect(result.object).toBe('page_markdown');
+    });
+
+    it('should parse an async_task response when allow_async is set', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue({
+        object: 'async_task',
+        id: '223e4567-e89b-12d3-a456-426614174000',
+        status: 'queued',
+        status_url: 'https://api.notion.com/v1/async_tasks/223e4567-e89b-12d3-a456-426614174000',
+        created_time: '2026-01-01T00:00:00.000Z',
+        operation: { surface: 'rest', name: 'update_page_markdown' },
+      });
+
+      const result = await pagesAPI.updateMarkdown('123e4567-e89b-12d3-a456-426614174000', {
+        type: 'replace_content',
+        new_str: 'Replaced content',
+        allow_async: true,
+      });
+
+      expect(result.object).toBe('async_task');
     });
   });
 });

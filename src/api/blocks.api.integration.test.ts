@@ -119,6 +119,85 @@ describe('BlocksAPI integration', () => {
     });
   });
 
+  describe('meetingNotes.query', () => {
+    it('should query meeting notes with filter, sort, and limit', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/blocks/meeting_notes/query`, async ({ request }) => {
+          const body = (await request.json()) as {
+            filter?: unknown;
+            sort?: unknown;
+            limit?: number;
+          };
+          expect(body.filter).toEqual({
+            operator: 'and',
+            filters: [{ property: 'title', filter: { operator: 'contains', value: 'sync' } }],
+          });
+          expect(body.sort).toEqual([{ property: 'created_time', direction: 'descending' }]);
+          expect(body.limit).toBe(10);
+
+          return HttpResponse.json({
+            results: [
+              buildBlockResponse({
+                type: 'meeting_notes',
+                meeting_notes: {
+                  title: [],
+                  status: 'in_progress',
+                  children: {},
+                },
+              }),
+            ],
+            has_more: false,
+          });
+        }),
+      );
+
+      const result = await notion.blocks.meetingNotes.query({
+        filter: {
+          operator: 'and',
+          filters: [{ property: 'title', filter: { operator: 'contains', value: 'sync' } }],
+        },
+        sort: [{ property: 'created_time', direction: 'descending' }],
+        limit: 10,
+      });
+
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]).toBeInstanceOf(Block);
+      expect(result.hasMore).toBe(false);
+    });
+
+    it('should return an empty result set when there are no matches', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/blocks/meeting_notes/query`, () =>
+          HttpResponse.json({ results: [], has_more: false }),
+        ),
+      );
+
+      const result = await notion.blocks.meetingNotes.query();
+
+      expect(result.results).toHaveLength(0);
+      expect(result.hasMore).toBe(false);
+    });
+
+    it('should propagate request_status when capped at the result limit', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/blocks/meeting_notes/query`, () =>
+          HttpResponse.json({
+            results: [],
+            has_more: false,
+            request_status: { type: 'incomplete', incomplete_reason: 'query_result_limit_reached' },
+          }),
+        ),
+      );
+
+      const result = await notion.blocks.meetingNotes.query();
+
+      expect(result.requestStatus).toEqual({
+        type: 'incomplete',
+        incomplete_reason: 'query_result_limit_reached',
+      });
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------

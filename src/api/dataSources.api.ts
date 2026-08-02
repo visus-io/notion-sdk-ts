@@ -254,6 +254,7 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
       next_cursor: parsed.next_cursor,
       has_more: parsed.has_more,
       type: 'page',
+      request_status: parsed.request_status,
     };
   }
 

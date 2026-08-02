@@ -104,6 +104,112 @@ describe('PagesAPI integration', () => {
     });
   });
 
+  describe('markdown', () => {
+    it('should get a page as markdown and send include_transcript as a query param', async () => {
+      server.use(
+        http.get(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/markdown`, ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('include_transcript')).toBe('true');
+          return HttpResponse.json({
+            object: 'page_markdown',
+            id: pageId,
+            markdown: '# Title\n\nContent.',
+            truncated: false,
+            unknown_block_ids: [],
+          });
+        }),
+      );
+
+      const result = await notion.pages.getMarkdown(pageId, { include_transcript: true });
+
+      expect(result.markdown).toBe('# Title\n\nContent.');
+    });
+
+    it('should update page markdown content synchronously', async () => {
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/markdown`, async ({ request }) => {
+          const body = (await request.json()) as { type: string };
+          expect(body.type).toBe('update_content');
+          return HttpResponse.json({
+            object: 'page_markdown',
+            id: pageId,
+            markdown: 'Updated content.',
+            truncated: false,
+            unknown_block_ids: [],
+          });
+        }),
+      );
+
+      const result = await notion.pages.updateMarkdown(pageId, {
+        type: 'update_content',
+        content_updates: [{ old_str: 'foo', new_str: 'bar' }],
+      });
+
+      expect(result.object).toBe('page_markdown');
+    });
+
+    it('should return an async_task when the write is processed asynchronously', async () => {
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/markdown`, () =>
+          HttpResponse.json({
+            object: 'async_task',
+            id: '223e4567-e89b-12d3-a456-426614174000',
+            status: 'queued',
+            status_url: `${NOTION_TEST_BASE_URL}/v1/async_tasks/223e4567-e89b-12d3-a456-426614174000`,
+            created_time: '2026-01-01T00:00:00.000Z',
+            operation: { surface: 'rest', name: 'update_page_markdown' },
+          }),
+        ),
+      );
+
+      const result = await notion.pages.updateMarkdown(pageId, {
+        type: 'replace_content',
+        new_str: 'Replaced content',
+        allow_async: true,
+      });
+
+      expect(result.object).toBe('async_task');
+    });
+
+    it('should create a page from a markdown body', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/pages`, async ({ request }) => {
+          const body = (await request.json()) as { markdown?: string };
+          expect(body.markdown).toBe('# New Page\n\nContent.');
+          return HttpResponse.json(buildPageResponse());
+        }),
+      );
+
+      const result = await notion.pages.create({
+        parent: { page_id: 'parent-page-id' },
+        markdown: '# New Page\n\nContent.',
+      });
+
+      expect(result).toBeInstanceOf(Page);
+    });
+
+    it('should surface a validation_error when a markdown edit cannot find old_str', async () => {
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/markdown`, () =>
+          HttpResponse.json(buildErrorBody(400, 'validation_error', 'old_str not found'), {
+            status: 400,
+          }),
+        ),
+      );
+
+      try {
+        await notion.pages.updateMarkdown(pageId, {
+          type: 'update_content',
+          content_updates: [{ old_str: 'missing', new_str: 'bar' }],
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).isValidationError()).toBe(true);
+      }
+    });
+  });
+
   describe('trash / restore', () => {
     it('should move a page to trash and back', async () => {
       server.use(

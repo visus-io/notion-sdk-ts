@@ -214,4 +214,12 @@ describe('BlocksAPI', () => {
       expect(result.has_more).toBe(true);
     });
   });
+
+  describe('meetingNotes.query', () => {
+    it('should throw a validation error when sort exceeds 100 items', async () => {
+      const sort = new Array(101).fill({ property: 'title', direction: 'ascending' });
+
+      await expect(blocksAPI.meetingNotes.query({ sort })).rejects.toThrow(NotionValidationError);
+    });
+  });
 });

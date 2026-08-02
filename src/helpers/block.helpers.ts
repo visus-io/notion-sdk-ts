@@ -60,6 +60,12 @@ interface BlockObject {
 // Text blocks
 // ---------------------------------------------------------------------------
 
+/** Options for paragraph blocks. */
+interface ParagraphOptions extends TextBlockOptions {
+  /** Icon shown alongside the paragraph. Only meaningful for paragraphs used as tab items. */
+  icon?: unknown;
+}
+
 /**
  * Create a paragraph block.
  *
@@ -69,13 +75,14 @@ interface BlockObject {
  * block.paragraph(richText('Hello').bold(), { color: 'blue' })
  * ```
  */
-function paragraph(text: RichTextInput, options?: TextBlockOptions): BlockObject {
+function paragraph(text: RichTextInput, options?: ParagraphOptions): BlockObject {
   return {
     object: 'block',
     type: 'paragraph',
     paragraph: {
       rich_text: resolveRichText(text),
       color: options?.color ?? 'default',
+      ...(options?.icon ? { icon: options.icon } : {}),
       ...(options?.children ? { children: options.children } : {}),
     },
   };
@@ -245,6 +252,14 @@ function template(text: RichTextInput, options?: { children?: unknown[] }): Bloc
   };
 }
 
+/**
+ * @deprecated Meeting-notes blocks are server-managed -- their real shape (`title`,
+ * `status`, and child block IDs for the summary/notes/transcript) is populated by
+ * Notion, not hand-constructed by clients. This helper's `rich_text`-based output no
+ * longer matches `blockSchema`'s `meeting_notes` shape and is not a valid way to
+ * create a meeting-notes block. Kept only to avoid an abrupt removal from the helper
+ * surface; do not use for new code.
+ */
 function meetingNotes(text: RichTextInput, options?: { children?: unknown[] }): BlockObject {
   return {
     object: 'block',
@@ -474,6 +489,39 @@ function column(children: unknown[]): BlockObject {
   };
 }
 
+/** A single tab: its label becomes the tab's paragraph rich text, `children` its content. */
+interface TabItem {
+  label: RichTextInput;
+  icon?: unknown;
+  color?: NotionColor;
+  children?: unknown[];
+}
+
+/**
+ * Create a tab block. Only `paragraph` blocks may be direct children of a tab block --
+ * each tab is modeled as one paragraph, whose rich text is the tab label and whose
+ * `children` hold the tab's content.
+ *
+ * @example
+ * ```ts
+ * block.tab([
+ *   { label: 'Overview', children: [block.paragraph('Intro text')] },
+ *   { label: 'Details', icon: icon.emoji('📋'), children: [block.paragraph('More info')] },
+ * ])
+ * ```
+ */
+function tab(tabs: TabItem[]): BlockObject {
+  return {
+    object: 'block',
+    type: 'tab',
+    tab: {
+      children: tabs.map((item) =>
+        paragraph(item.label, { color: item.color, icon: item.icon, children: item.children }),
+      ),
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Synced blocks
 // ---------------------------------------------------------------------------
@@ -569,6 +617,7 @@ export const block = {
   tableRow,
   columnList,
   column,
+  tab,
 
   // Synced
   syncedBlock,

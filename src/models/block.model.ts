@@ -82,6 +82,7 @@ export class Block extends BaseModel<NotionBlock> {
       'synced_block',
       'column',
       'column_list',
+      'tab',
       'table',
     ].includes(this.data.type);
   }
