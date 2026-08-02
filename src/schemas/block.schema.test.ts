@@ -698,6 +698,30 @@ describe('blockSchema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should preserve nested column children instead of stripping them (regression)', () => {
+      const block = {
+        ...baseBlock,
+        type: 'column_list' as const,
+        column_list: {
+          children: [
+            {
+              ...baseBlock,
+              id: '123e4567-e89b-12d3-a456-426614174007',
+              type: 'column' as const,
+              column: {},
+            },
+          ],
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const columnList = result.data.column_list as { children?: unknown[] };
+        expect(columnList.children).toHaveLength(1);
+      }
+    });
+
     it('should parse column block with width_ratio', () => {
       const block: NotionBlock = {
         ...baseBlock,
@@ -748,6 +772,30 @@ describe('blockSchema', () => {
 
       const result = blockSchema.safeParse(block);
       expect(result.success).toBe(true);
+    });
+
+    it('should preserve nested children instead of stripping them (regression)', () => {
+      const block = {
+        ...baseBlock,
+        type: 'tab' as const,
+        tab: {
+          children: [
+            {
+              ...baseBlock,
+              id: '123e4567-e89b-12d3-a456-426614174008',
+              type: 'paragraph' as const,
+              paragraph: { rich_text: richTextArray, color: 'default' as const },
+            },
+          ],
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const tab = result.data.tab as { children?: unknown[] };
+        expect(tab.children).toHaveLength(1);
+      }
     });
 
     it.each([

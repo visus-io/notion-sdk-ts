@@ -46,7 +46,7 @@ import {
  *
  * const fileUpload = await notion.fileUploads.uploadFile('image.png', buffer, 'image/png');
  *
- * const views = await notion.views.list({ dataSourceId: 'data-source-id' });
+ * const views = await notion.views.list({ data_source_id: 'data-source-id' });
  * const queryResult = await notion.views.queries.create(views.results[0].id);
  *
  * const markdown = await notion.pages.getMarkdown('page-id');

@@ -138,7 +138,13 @@ export const blockSchema = z.object({
       language: z.enum(CODE_BLOCK_LANGUAGES),
     })
     .optional(),
-  column_list: z.object({}).optional(),
+  column_list: z
+    .object({
+      get children() {
+        return getChildrenSchema();
+      },
+    })
+    .optional(),
   column: z
     .object({
       width_ratio: z.number().min(0).max(1).optional(),
@@ -228,7 +234,13 @@ export const blockSchema = z.object({
       },
     })
     .optional(),
-  tab: z.object({}).optional(),
+  tab: z
+    .object({
+      get children() {
+        return getChildrenSchema();
+      },
+    })
+    .optional(),
   table: z
     .object({
       table_width: z.int(),
