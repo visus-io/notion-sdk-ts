@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
+import { iconSchema } from './icon.schema';
 import { parentSchema } from './parent.schema';
 import { paginatedListSchema } from './pagination.schema';
 import { databaseSchema } from './database.schema';
@@ -83,6 +84,60 @@ describe('fileSchema', () => {
   });
 });
 
+describe('iconSchema', () => {
+  it('should parse a native icon with color', () => {
+    const icon = {
+      type: 'icon' as const,
+      icon: { name: 'star circle', color: 'blue' as const },
+    };
+
+    const result = iconSchema.safeParse(icon);
+    expect(result.success).toBe(true);
+  });
+
+  it('should parse a native icon without color', () => {
+    const icon = {
+      type: 'icon' as const,
+      icon: { name: 'token' },
+    };
+
+    const result = iconSchema.safeParse(icon);
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject an invalid native icon color', () => {
+    const icon = {
+      type: 'icon' as const,
+      icon: { name: 'token', color: 'not-a-color' },
+    };
+
+    const result = iconSchema.safeParse(icon);
+    expect(result.success).toBe(false);
+  });
+
+  it('should parse a custom emoji icon', () => {
+    const icon = {
+      type: 'custom_emoji' as const,
+      custom_emoji: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'party-parrot',
+        url: 'https://example.com/emoji.png',
+      },
+    };
+
+    const result = iconSchema.safeParse(icon);
+    expect(result.success).toBe(true);
+  });
+
+  it('should still parse emoji and file icons', () => {
+    expect(iconSchema.safeParse({ type: 'emoji', emoji: '🎉' }).success).toBe(true);
+    expect(
+      iconSchema.safeParse({ type: 'external', external: { url: 'https://example.com/i.png' } })
+        .success,
+    ).toBe(true);
+  });
+});
+
 describe('parentSchema', () => {
   it('should parse database parent', () => {
     const parent = {
@@ -129,6 +184,16 @@ describe('parentSchema', () => {
     const parent = {
       type: 'block_id' as const,
       block_id: '123e4567-e89b-12d3-a456-426614174004',
+    };
+
+    const result = parentSchema.safeParse(parent);
+    expect(result.success).toBe(true);
+  });
+
+  it('should parse agent parent', () => {
+    const parent = {
+      type: 'agent_id' as const,
+      agent_id: '123e4567-e89b-12d3-a456-426614174005',
     };
 
     const result = parentSchema.safeParse(parent);

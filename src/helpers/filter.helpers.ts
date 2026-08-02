@@ -103,11 +103,11 @@ class CheckboxFilter {
 class SelectFilter {
   constructor(private readonly property: string) {}
 
-  equals(value: string): FilterCondition {
+  equals(value: string | string[]): FilterCondition {
     return { property: this.property, select: { equals: value } };
   }
 
-  doesNotEqual(value: string): FilterCondition {
+  doesNotEqual(value: string | string[]): FilterCondition {
     return { property: this.property, select: { does_not_equal: value } };
   }
 
@@ -124,11 +124,11 @@ class SelectFilter {
 class MultiSelectFilter {
   constructor(private readonly property: string) {}
 
-  contains(value: string): FilterCondition {
+  contains(value: string | string[]): FilterCondition {
     return { property: this.property, multi_select: { contains: value } };
   }
 
-  doesNotContain(value: string): FilterCondition {
+  doesNotContain(value: string | string[]): FilterCondition {
     return { property: this.property, multi_select: { does_not_contain: value } };
   }
 
@@ -145,11 +145,11 @@ class MultiSelectFilter {
 class StatusFilter {
   constructor(private readonly property: string) {}
 
-  equals(value: string): FilterCondition {
+  equals(value: string | string[]): FilterCondition {
     return { property: this.property, status: { equals: value } };
   }
 
-  doesNotEqual(value: string): FilterCondition {
+  doesNotEqual(value: string | string[]): FilterCondition {
     return { property: this.property, status: { does_not_equal: value } };
   }
 

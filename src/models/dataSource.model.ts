@@ -2,8 +2,8 @@ import { BaseModel } from './base.model';
 import {
   dataSourceSchema,
   type NotionDataSource,
-  type NotionEmoji,
   type NotionFile,
+  type NotionIcon,
   type NotionParent,
   type NotionPropertiesObject,
   type NotionPropertyObject,
@@ -99,9 +99,9 @@ export class DataSource extends BaseModel<NotionDataSource> {
   }
 
   /**
-   * Returns the data source icon (file or emoji).
+   * Returns the data source icon (file, emoji, native icon, or custom emoji).
    */
-  get icon(): NotionFile | NotionEmoji | null {
+  get icon(): NotionIcon | null {
     return this.data.icon;
   }
 

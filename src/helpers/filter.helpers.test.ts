@@ -161,6 +161,17 @@ describe('filter helpers', () => {
       });
     });
 
+    it('should accept an array of values for equals/doesNotEqual', () => {
+      expect(filter.select('Priority').equals(['High', 'Medium'])).toEqual({
+        property: 'Priority',
+        select: { equals: ['High', 'Medium'] },
+      });
+      expect(filter.select('Priority').doesNotEqual(['Low', 'None'])).toEqual({
+        property: 'Priority',
+        select: { does_not_equal: ['Low', 'None'] },
+      });
+    });
+
     it('should create isEmpty/isNotEmpty', () => {
       expect(filter.select('Priority').isEmpty()).toEqual({
         property: 'Priority',
@@ -192,6 +203,17 @@ describe('filter helpers', () => {
       });
     });
 
+    it('should accept an array of values for contains/doesNotContain', () => {
+      expect(filter.multiSelect('Tags').contains(['urgent', 'frontend'])).toEqual({
+        property: 'Tags',
+        multi_select: { contains: ['urgent', 'frontend'] },
+      });
+      expect(filter.multiSelect('Tags').doesNotContain(['archive', 'stale'])).toEqual({
+        property: 'Tags',
+        multi_select: { does_not_contain: ['archive', 'stale'] },
+      });
+    });
+
     it('should create isEmpty/isNotEmpty', () => {
       expect(filter.multiSelect('Tags').isEmpty()).toEqual({
         property: 'Tags',
@@ -220,6 +242,17 @@ describe('filter helpers', () => {
       expect(filter.status('Status').doesNotEqual('Archived')).toEqual({
         property: 'Status',
         status: { does_not_equal: 'Archived' },
+      });
+    });
+
+    it('should accept an array of values for equals/doesNotEqual', () => {
+      expect(filter.status('Status').equals(['Active', 'In Progress'])).toEqual({
+        property: 'Status',
+        status: { equals: ['Active', 'In Progress'] },
+      });
+      expect(filter.status('Status').doesNotEqual(['Archived', 'Done'])).toEqual({
+        property: 'Status',
+        status: { does_not_equal: ['Archived', 'Done'] },
       });
     });
 

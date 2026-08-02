@@ -121,6 +121,9 @@ export interface UpdateDatabaseOptions {
   /** Move to trash or restore from trash */
   in_trash?: boolean;
 
+  /** Lock or unlock the database from editing */
+  is_locked?: boolean;
+
   /** Whether the database is inline */
   is_inline?: boolean;
 

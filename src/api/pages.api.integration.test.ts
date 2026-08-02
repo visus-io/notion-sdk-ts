@@ -77,6 +77,33 @@ describe('PagesAPI integration', () => {
     });
   });
 
+  describe('move', () => {
+    it('should move a page to a new page parent', async () => {
+      const newParentId = '923e4567-e89b-12d3-a456-426614174000';
+
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/move`, async ({ request }) => {
+          const body = (await request.json()) as { parent: unknown };
+          expect(body.parent).toEqual({ type: 'page_id', page_id: newParentId });
+          return HttpResponse.json(
+            buildPageResponse({
+              id: pageId,
+              parent: { type: 'page_id', page_id: newParentId },
+            }),
+          );
+        }),
+      );
+
+      const result = await notion.pages.move(pageId, {
+        type: 'page_id',
+        page_id: newParentId,
+      });
+
+      expect(result).toBeInstanceOf(Page);
+      expect(result.id).toBe(pageId);
+    });
+  });
+
   describe('trash / restore', () => {
     it('should move a page to trash and back', async () => {
       server.use(

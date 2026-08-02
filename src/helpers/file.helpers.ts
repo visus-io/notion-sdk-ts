@@ -1,3 +1,5 @@
+import type { NativeIconColor } from '../schemas/icon.schema';
+
 // ---------------------------------------------------------------------------
 // Return types
 // ---------------------------------------------------------------------------
@@ -15,6 +17,16 @@ interface ExternalRef {
 interface FileUploadRef {
   type: 'file_upload';
   file_upload: { id: string };
+}
+
+interface NativeIconRef {
+  type: 'icon';
+  icon: { name: string; color?: NativeIconColor };
+}
+
+interface CustomEmojiIconRef {
+  type: 'custom_emoji';
+  custom_emoji: { id: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -58,7 +70,32 @@ function fileUploadIcon(id: string): FileUploadRef {
 }
 
 /**
- * Helpers for constructing icon objects (emoji, external URL, or file upload).
+ * Create a native (icon-picker) icon object.
+ *
+ * @example
+ * ```ts
+ * icon.native('star circle', 'blue')
+ * ```
+ */
+function nativeIcon(name: string, color?: NativeIconColor): NativeIconRef {
+  return { type: 'icon', icon: { name, ...(color ? { color } : {}) } };
+}
+
+/**
+ * Create a custom emoji icon object, referencing a workspace custom emoji by id.
+ *
+ * @example
+ * ```ts
+ * icon.customEmoji('emoji-id')
+ * ```
+ */
+function customEmojiIcon(id: string): CustomEmojiIconRef {
+  return { type: 'custom_emoji', custom_emoji: { id } };
+}
+
+/**
+ * Helpers for constructing icon objects (emoji, external URL, file upload,
+ * native icon, or custom emoji).
  *
  * @example
  * ```ts
@@ -75,6 +112,8 @@ export const icon = {
   emoji: emojiIcon,
   external: externalIcon,
   fileUpload: fileUploadIcon,
+  native: nativeIcon,
+  customEmoji: customEmojiIcon,
 };
 
 // ---------------------------------------------------------------------------

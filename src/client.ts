@@ -74,11 +74,11 @@ export class NotionClient {
       try {
         return await this.makeRequest<T>(options);
       } catch (error) {
-        // Only retry on rate limit errors if retry is enabled
+        // Retry rate-limited requests (if enabled) and service-overload (529)
+        // responses, which the API recommends always retrying.
         if (
           error instanceof NotionAPIError &&
-          error.isRateLimited() &&
-          this.retryOnRateLimit &&
+          ((error.isRateLimited() && this.retryOnRateLimit) || error.isServiceOverloaded()) &&
           attempt < this.maxRetries
         ) {
           // Prefer the server-supplied Retry-After value; fall back to

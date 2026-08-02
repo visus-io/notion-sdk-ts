@@ -29,6 +29,14 @@ export class Page extends BaseModel<NotionPage> {
     return this.data.in_trash;
   }
 
+  get isArchived(): boolean {
+    return this.data.is_archived ?? false;
+  }
+
+  get isLocked(): boolean {
+    return this.data.is_locked ?? false;
+  }
+
   get url(): string {
     return this.data.url;
   }

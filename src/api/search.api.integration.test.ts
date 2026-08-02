@@ -60,6 +60,24 @@ describe('SearchAPI integration', () => {
 
       await notion.search.query({ filter: { value: 'data_source', property: 'object' } });
     });
+
+    it('should send a standalone in_trash filter in the request body', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/search`, async ({ request }) => {
+          const body = (await request.json()) as { filter: unknown };
+          expect(body.filter).toEqual({ in_trash: true });
+          return HttpResponse.json({
+            object: 'list',
+            results: [],
+            next_cursor: null,
+            has_more: false,
+            type: 'page_or_data_source',
+          });
+        }),
+      );
+
+      await notion.search.query({ filter: { in_trash: true } });
+    });
   });
 
   // ---------------------------------------------------------------------------

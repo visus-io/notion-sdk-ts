@@ -127,6 +127,19 @@ function heading3(text: RichTextInput, options?: HeadingOptions): BlockObject {
   };
 }
 
+function heading4(text: RichTextInput, options?: HeadingOptions): BlockObject {
+  return {
+    object: 'block',
+    type: 'heading_4',
+    heading_4: {
+      rich_text: resolveRichText(text),
+      color: options?.color ?? 'default',
+      is_toggleable: options?.isToggleable ?? false,
+      ...(options?.children ? { children: options.children } : {}),
+    },
+  };
+}
+
 function bulletedListItem(text: RichTextInput, options?: TextBlockOptions): BlockObject {
   return {
     object: 'block',
@@ -522,6 +535,7 @@ export const block = {
   heading1,
   heading2,
   heading3,
+  heading4,
   bulletedListItem,
   numberedListItem,
   toDo,

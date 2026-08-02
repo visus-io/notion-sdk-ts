@@ -49,6 +49,12 @@ export interface CreatePageOptions {
 }
 
 /**
+ * Parent for moving a page.
+ */
+export type MovePageParent =
+  { type: 'page_id'; page_id: string } | { type: 'data_source_id'; data_source_id: string };
+
+/**
  * Options for updating a page.
  */
 export interface UpdatePageOptions {
@@ -132,6 +138,19 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    */
   async update(pageId: string, options: UpdatePageOptions): Promise<Page> {
     return this.updateResource(`/pages/${pageId}`, options);
+  }
+
+  /**
+   * Move a page to a new parent page or data source.
+   *
+   * @param pageId - The ID of the page to move
+   * @param parent - The new parent (a page or a data source)
+   * @returns The moved page wrapped in a Page model
+   *
+   * @see https://developers.notion.com/reference/move-page
+   */
+  async move(pageId: string, parent: MovePageParent): Promise<Page> {
+    return this.createResource(`/pages/${pageId}/move`, { parent });
   }
 
   /**

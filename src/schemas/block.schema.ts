@@ -1,8 +1,8 @@
 import * as z from 'zod';
 import { CODE_BLOCK_LANGUAGES } from './codeLanguages';
 import { NOTION_COLORS } from './colors';
-import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
+import { iconSchema } from './icon.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
 import { notionDateStringSchema } from './shared.schema';
@@ -67,6 +67,7 @@ export const blockSchema = z.object({
     'heading_1',
     'heading_2',
     'heading_3',
+    'heading_4',
     'image',
     'link_preview',
     'numbered_list_item',
@@ -112,7 +113,7 @@ export const blockSchema = z.object({
   callout: z
     .object({
       rich_text: richTextSchema,
-      icon: z.union([emojiSchema, fileSchema]),
+      icon: iconSchema,
       color: z.enum(NOTION_COLORS),
       get children() {
         return getChildrenSchema();
@@ -170,6 +171,7 @@ export const blockSchema = z.object({
   heading_1: headingsObjectSchema.optional(),
   heading_2: headingsObjectSchema.optional(),
   heading_3: headingsObjectSchema.optional(),
+  heading_4: headingsObjectSchema.optional(),
   image: fileSchema.optional(),
   link_preview: z.object({ url: z.url() }).optional(),
   numbered_list_item: z

@@ -257,4 +257,37 @@ describe('PagesAPI', () => {
       });
     });
   });
+
+  describe('move', () => {
+    it('should move a page to a new parent page', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
+
+      const result = await pagesAPI.move('123e4567-e89b-12d3-a456-426614174000', {
+        type: 'page_id',
+        page_id: 'new-parent-page-id',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/pages/123e4567-e89b-12d3-a456-426614174000/move',
+        body: { parent: { type: 'page_id', page_id: 'new-parent-page-id' } },
+      });
+      expect(result).toBeInstanceOf(Page);
+    });
+
+    it('should move a page to a new data source', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockPageResponse);
+
+      await pagesAPI.move('123e4567-e89b-12d3-a456-426614174000', {
+        type: 'data_source_id',
+        data_source_id: 'new-data-source-id',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/pages/123e4567-e89b-12d3-a456-426614174000/move',
+        body: { parent: { type: 'data_source_id', data_source_id: 'new-data-source-id' } },
+      });
+    });
+  });
 });

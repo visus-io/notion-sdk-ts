@@ -78,6 +78,14 @@ describe('block helpers', () => {
       const result = block.heading3('Section');
       expect(result.type).toBe('heading_3');
     });
+
+    it('should create heading_4', () => {
+      const result = block.heading4('Sub-section', { color: 'green', isToggleable: true });
+      expect(result.type).toBe('heading_4');
+      const h = result.heading_4 as { is_toggleable: boolean; color: string };
+      expect(h.is_toggleable).toBe(true);
+      expect(h.color).toBe('green');
+    });
   });
 
   describe('list items', () => {

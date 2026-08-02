@@ -108,6 +108,36 @@ describe('DataSourcesAPI integration', () => {
     });
   });
 
+  describe('listTemplates', () => {
+    it('should list templates for a data source and send name as a query parameter', async () => {
+      server.use(
+        http.get(
+          `${NOTION_TEST_BASE_URL}/v1/data_sources/${dataSourceId}/templates`,
+          ({ request }) => {
+            const url = new URL(request.url);
+            expect(url.searchParams.get('name')).toBe('Meeting');
+            return HttpResponse.json({
+              templates: [
+                {
+                  id: '623e4567-e89b-12d3-a456-426614174000',
+                  name: 'Meeting notes',
+                  is_default: true,
+                },
+              ],
+              has_more: false,
+              next_cursor: null,
+            });
+          },
+        ),
+      );
+
+      const result = await notion.dataSources.listTemplates(dataSourceId, { name: 'Meeting' });
+
+      expect(result.templates).toHaveLength(1);
+      expect(result.templates[0].name).toBe('Meeting notes');
+    });
+  });
+
   describe('create', () => {
     it('should create a data source under a database', async () => {
       server.use(

@@ -41,12 +41,19 @@ const blockParentSchema = z.object({
   block_id: z.uuid(),
 });
 
+/** Agent parent. */
+const agentParentSchema = z.object({
+  type: z.literal('agent_id'),
+  agent_id: z.uuid(),
+});
+
 export const parentSchema = z.discriminatedUnion('type', [
   databaseParentSchema,
   dataSourceParentSchema,
   pageParentSchema,
   workspaceParentSchema,
   blockParentSchema,
+  agentParentSchema,
 ]);
 
 export type NotionParent = z.infer<typeof parentSchema>;
@@ -55,3 +62,4 @@ export type DataSourceParent = z.infer<typeof dataSourceParentSchema>;
 export type PageParent = z.infer<typeof pageParentSchema>;
 export type WorkspaceParent = z.infer<typeof workspaceParentSchema>;
 export type BlockParent = z.infer<typeof blockParentSchema>;
+export type AgentParent = z.infer<typeof agentParentSchema>;

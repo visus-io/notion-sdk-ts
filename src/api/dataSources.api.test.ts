@@ -123,6 +123,48 @@ describe('DataSourcesAPI', () => {
     });
   });
 
+  describe('listTemplates', () => {
+    const mockTemplateListResponse = {
+      templates: [
+        { id: '623e4567-e89b-12d3-a456-426614174000', name: 'Weekly Report', is_default: true },
+      ],
+      has_more: false,
+      next_cursor: null,
+    };
+
+    it('should list templates with default options', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockTemplateListResponse);
+
+      const result = await dataSourcesAPI.listTemplates('123e4567-e89b-12d3-a456-426614174000');
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'GET',
+        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000/templates',
+        query: undefined,
+      });
+      expect(result.templates).toHaveLength(1);
+      expect(result.templates[0].name).toBe('Weekly Report');
+      expect(result.has_more).toBe(false);
+      expect(result.next_cursor).toBeNull();
+    });
+
+    it('should list templates with name filter and pagination', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockTemplateListResponse);
+
+      await dataSourcesAPI.listTemplates('123e4567-e89b-12d3-a456-426614174000', {
+        name: 'Weekly',
+        page_size: 10,
+        start_cursor: 'cursor123',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'GET',
+        path: '/data_sources/123e4567-e89b-12d3-a456-426614174000/templates',
+        query: { name: 'Weekly', page_size: '10', start_cursor: 'cursor123' },
+      });
+    });
+  });
+
   describe('query', () => {
     it('should query a data source without options', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(mockPaginatedPageResponse);

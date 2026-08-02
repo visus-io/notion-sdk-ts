@@ -1,6 +1,8 @@
 import type { NotionClient } from '../client';
 import {
   dataSourceSchema,
+  type DataSourceTemplateList,
+  dataSourceTemplateListSchema,
   type NotionDataSource,
   type NotionPage,
   pageSchema,
@@ -60,6 +62,14 @@ export interface UpdateDataSourceOptions {
 export interface RetrieveDataSourceOptions {
   /** Filter properties to include in the response */
   filter_properties?: string[];
+}
+
+/**
+ * Options for listing a data source's templates.
+ */
+export interface ListDataSourceTemplatesOptions extends PaginationParameters {
+  /** Filter templates by name (case-insensitive substring match) */
+  name?: string;
 }
 
 /**
@@ -148,6 +158,33 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
     };
 
     return this.retrieveResource(`/data_sources/${dataSourceId}`, query);
+  }
+
+  /**
+   * List the templates available for a data source.
+   *
+   * @param dataSourceId - The ID of the data source
+   * @param options - Options for filtering by name and paginating results
+   * @returns The list of templates, along with pagination metadata
+   *
+   * @see https://developers.notion.com/reference/list-data-source-templates
+   */
+  async listTemplates(
+    dataSourceId: string,
+    options?: ListDataSourceTemplatesOptions,
+  ): Promise<DataSourceTemplateList> {
+    const query: Record<string, string> = {
+      ...(options?.name ? { name: options.name } : {}),
+      ...this.buildPaginationQuery(options),
+    };
+
+    const response = await this.client.request<unknown>({
+      method: 'GET',
+      path: `/data_sources/${dataSourceId}/templates`,
+      query: Object.keys(query).length > 0 ? query : undefined,
+    });
+
+    return dataSourceTemplateListSchema.parse(response);
   }
 
   /**

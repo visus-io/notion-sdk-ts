@@ -1,6 +1,6 @@
 import * as z from 'zod';
-import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
+import { iconSchema } from './icon.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
 import { notionDateStringSchema } from './shared.schema';
@@ -34,12 +34,13 @@ export const databaseSchema = z.object({
   last_edited_by: userSchema,
   title: richTextSchema,
   description: richTextSchema,
-  icon: z.nullable(z.union([fileSchema, emojiSchema])),
+  icon: z.nullable(iconSchema),
   cover: z.nullable(fileSchema),
   parent: parentSchema,
   url: z.url(),
   in_trash: z.boolean(),
   is_inline: z.boolean(),
+  is_locked: z.boolean().optional(),
   public_url: z.nullable(z.url()),
 });
 
