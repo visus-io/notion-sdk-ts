@@ -15,6 +15,8 @@ import { propertiesObjectSchema } from './propertyObjects.schema';
  *
  * Notion API reference:
  * https://developers.notion.com/reference/data-source
+ *
+ * @category Databases & Data Sources
  */
 export const dataSourceSchema = z.object({
   /** Always "data_source" */
@@ -32,13 +34,13 @@ export const dataSourceSchema = z.object({
   /** Information about the database's parent (the data source's grandparent) */
   database_parent: parentSchema,
 
-  /** Date and time when this data source was created (ISO 8601) */
+  /** Creation date and time for this data source, in ISO 8601 format */
   created_time: notionDateStringSchema,
 
   /** User who created the data source */
   created_by: userSchema,
 
-  /** Date and time when this data source was updated (ISO 8601) */
+  /** Last edited date and time for this data source, in ISO 8601 format */
   last_edited_time: notionDateStringSchema,
 
   /** User who last edited the data source */
@@ -69,14 +71,19 @@ export const dataSourceSchema = z.object({
   in_trash: z.boolean(),
 });
 
+/**
+ * @category Databases & Data Sources
+ */
 export type NotionDataSource = z.infer<typeof dataSourceSchema>;
 
 /**
- * A single data source template reference, as returned by the
- * List data source templates endpoint.
+ * A single data source template reference. The List data source templates endpoint
+ * returns an array of these.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/list-data-source-templates
+ *
+ * @category Databases & Data Sources
  */
 export const dataSourceTemplateSchema = z.object({
   id: z.uuid(),
@@ -84,13 +91,22 @@ export const dataSourceTemplateSchema = z.object({
   is_default: z.boolean(),
 });
 
+/**
+ * @category Databases & Data Sources
+ */
 export type DataSourceTemplate = z.infer<typeof dataSourceTemplateSchema>;
 
-/** Response shape of the List data source templates endpoint. */
+/** Response shape of the List data source templates endpoint.
+ *
+ * @category Databases & Data Sources
+ */
 export const dataSourceTemplateListSchema = z.object({
   templates: z.array(dataSourceTemplateSchema),
   has_more: z.boolean(),
   next_cursor: z.string().trim().nullable(),
 });
 
+/**
+ * @category Databases & Data Sources
+ */
 export type DataSourceTemplateList = z.infer<typeof dataSourceTemplateListSchema>;

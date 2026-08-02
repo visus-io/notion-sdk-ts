@@ -9,6 +9,8 @@ import { asyncTaskSchema } from './asyncTask.schema';
  *
  * Notion API reference:
  * https://developers.notion.com/guides/data-apis/working-with-markdown-content
+ *
+ * @category Pages
  */
 
 export const pageMarkdownSchema = z.object({
@@ -19,16 +21,25 @@ export const pageMarkdownSchema = z.object({
   truncated: z.boolean(),
   unknown_block_ids: z.array(z.uuid()).max(100),
 });
+/**
+ * @category Pages
+ */
 export type PageMarkdown = z.infer<typeof pageMarkdownSchema>;
 
 /**
- * `PATCH /v1/pages/{page_id}/markdown` returns `pageMarkdownSchema` synchronously, or
- * (when `allow_async: true` triggers async processing) an `async_task` handle to poll
- * via {@link AsyncTasksAPI}. Both response bodies carry a literal `object` field, so
- * they discriminate cleanly without needing the HTTP status code.
+ * `PATCH /v1/pages/{page_id}/markdown` returns `pageMarkdownSchema` synchronously. If
+ * `allow_async: true` triggers async processing, it returns an `async_task` handle
+ * instead. Poll the handle through {@link AsyncTasksAPI}. Both response bodies carry a
+ * literal `object` field, so you can discriminate between them without checking the
+ * HTTP status code.
+ *
+ * @category Pages
  */
 export const markdownContentResponseSchema = z.discriminatedUnion('object', [
   pageMarkdownSchema,
   asyncTaskSchema,
 ]);
+/**
+ * @category Pages
+ */
 export type MarkdownContentResponse = z.infer<typeof markdownContentResponseSchema>;

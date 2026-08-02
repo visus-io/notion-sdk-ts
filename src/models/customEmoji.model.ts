@@ -3,6 +3,8 @@ import { customEmojiSchema, type NotionCustomEmoji } from '../schemas';
 
 /**
  * Custom Emoji model class with helper methods.
+ *
+ * @category Custom Emoji & Icons
  */
 export class CustomEmoji extends BaseModel<NotionCustomEmoji> {
   constructor(data: NotionCustomEmoji) {
@@ -12,9 +14,9 @@ export class CustomEmoji extends BaseModel<NotionCustomEmoji> {
   /**
    * Returns "custom_emoji" - the object type.
    *
-   * Note: individual custom emoji list items have no `object` field of their own in
-   * the API response (only the paginated list wrapper does) -- this getter is
-   * synthetic, not sourced from the payload, to satisfy {@link BaseModel}'s contract.
+   * Note: A custom emoji list item has no `object` field in the API response. Only
+   * the paginated list wrapper has that field. This getter returns a synthetic
+   * value, not data from the payload, to meet the {@link BaseModel} contract.
    */
   get object(): 'custom_emoji' {
     return 'custom_emoji';

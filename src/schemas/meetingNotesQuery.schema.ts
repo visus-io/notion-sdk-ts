@@ -7,6 +7,8 @@ import { requestStatusSchema } from './pagination.schema';
  *
  * Notion API reference:
  * https://developers.notion.com/reference/query-meeting-notes
+ *
+ * @category Pages
  */
 
 export const MEETING_NOTES_QUERY_PROPERTIES = [
@@ -17,15 +19,24 @@ export const MEETING_NOTES_QUERY_PROPERTIES = [
   'last_edited_time',
   'last_edited_by',
 ] as const;
+/**
+ * @category Pages
+ */
 export type MeetingNotesQueryProperty = (typeof MEETING_NOTES_QUERY_PROPERTIES)[number];
 
 /**
- * Response shape is genuinely non-standard: no `object` field, no `next_cursor` at
- * all -- pagination is controlled purely by `limit` (max 50 per request, no cursor).
+ * This response shape is non-standard. It has no `object` field and no `next_cursor`
+ * field. The `limit` parameter alone controls pagination, up to 50 results per request,
+ * with no cursor.
+ *
+ * @category Pages
  */
 export const meetingNotesQueryResponseSchema = z.object({
   results: z.array(blockSchema),
   has_more: z.boolean(),
   request_status: requestStatusSchema.optional(),
 });
+/**
+ * @category Pages
+ */
 export type MeetingNotesQueryResponse = z.infer<typeof meetingNotesQueryResponseSchema>;

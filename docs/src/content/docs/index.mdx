@@ -1,0 +1,111 @@
+---
+title: notion-sdk-ts
+description: A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, and ergonomic helpers.
+template: splash
+hero:
+  tagline: A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, and ergonomic helpers.
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/visus-io/notion-sdk-ts
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Key Features
+
+<CardGrid stagger>
+  <Card title="Type-safe" icon="approve-check">
+    Zod v4 runtime validation on every API response, plus full TypeScript declarations.
+  </Card>
+  <Card title="Complete API coverage" icon="document">
+    Pages, Blocks, Databases, Data Sources, Comments, Search, Users, File Uploads, Async Tasks,
+    Custom Emojis, Views.
+  </Card>
+  <Card title="Ergonomic helpers" icon="puzzle">
+    `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, and `paginate`
+    factories eliminate verbose JSON.
+  </Card>
+  <Card title="OOP models" icon="star">
+    `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText` with
+    convenience methods.
+  </Card>
+  <Card title="Automatic pagination" icon="seti:folder">
+    `paginate()` and `paginateIterator()` helpers automatically fetch all pages for you.
+  </Card>
+  <Card title="Zero bloat" icon="rocket">
+    Single runtime dependency (`zod`); uses the built-in `fetch` (Node.js 18+).
+  </Card>
+</CardGrid>
+
+## Installation
+
+```bash
+npm install @visus-io/notion-sdk-ts
+```
+
+**Requirements:** Node.js 18+ (uses native `fetch`)
+
+## Quick Example
+
+```typescript
+import { Notion, block, richText, filter, sort, prop, parent } from '@visus-io/notion-sdk-ts';
+
+const notion = new Notion({ auth: process.env.NOTION_TOKEN });
+
+// Retrieve a page
+const page = await notion.pages.retrieve('page-id');
+console.log(page.getTitle());
+
+// Create a page in a database
+const database = await notion.databases.retrieve('database-id');
+const dataSourceId = database.dataSources[0].id;
+
+await notion.pages.create({
+  parent: parent.dataSource(dataSourceId, database.id),
+  properties: {
+    Name: prop.title('New Task'),
+    Status: prop.status('In Progress'),
+    Priority: prop.select('High'),
+  },
+});
+
+// Query a database with filters
+const results = await notion.databases.query('database-id', {
+  filter: filter.and(
+    filter.status('Status').equals('In Progress'),
+    filter.select('Priority').equals('High'),
+  ),
+  sorts: [sort.property('Due Date').ascending()],
+});
+```
+
+## Need Help?
+
+<CardGrid>
+  <Card title="Common Use Cases" icon="open-book">
+    Practical examples and workflows — see the [Common Use Cases](/guides/common-use-cases/) guide.
+  </Card>
+  <Card title="API Reference" icon="setting">
+    Full generated reference for every class and method — browse the [API Reference](/api/).
+  </Card>
+  <Card title="Error Handling" icon="warning">
+    Troubleshooting tips — see the [Error Handling](/guides/error-handling/) guide.
+  </Card>
+  <Card title="Migration Guide" icon="up-caret">
+    Upgrading from an older version? See the [Migration Guide](/migration-guide/).
+  </Card>
+</CardGrid>
+
+## Contributing
+
+We welcome contributions! See
+[CONTRIBUTING.md](https://github.com/visus-io/notion-sdk-ts/blob/main/CONTRIBUTING.md) for how to
+get started, and
+[ARCHITECTURE.md](https://github.com/visus-io/notion-sdk-ts/blob/main/ARCHITECTURE.md) for project
+structure and architecture.

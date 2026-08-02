@@ -14,7 +14,10 @@ import {
 } from './api';
 
 /**
- * Main Notion SDK class.
+ * The public entry point for the SDK.
+ *
+ * Create one `Notion` instance, then call its API properties, such as
+ * `pages` or `blocks`, to reach Notion endpoints.
  *
  * @example
  * ```typescript
@@ -59,6 +62,8 @@ import {
  *
  * const emojis = await notion.customEmojis.list();
  * ```
+ *
+ * @category Client & Core
  */
 export class Notion {
   private readonly client: NotionClient;

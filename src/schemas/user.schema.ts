@@ -3,8 +3,8 @@ import * as z from 'zod';
 /**
  * Notion user object schemas.
  *
- * Users can be people, bots, or partial user objects (just id and object type).
- * Used throughout the API for created_by and last_edited_by fields.
+ * Users can be people, bots, or partial user objects (only id and object type).
+ * The created_by and last_edited_by fields use this schema throughout the API.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/user
@@ -59,9 +59,24 @@ const partialUserSchema = z.object({
   id: z.uuid(),
 });
 
+/**
+ * @category Users
+ */
 export const userSchema = z.union([personUserSchema, botUserSchema, partialUserSchema]);
 
+/**
+ * @category Users
+ */
 export type NotionUser = z.infer<typeof userSchema>;
+/**
+ * @category Users
+ */
 export type PersonUser = z.infer<typeof personUserSchema>;
+/**
+ * @category Users
+ */
 export type BotUser = z.infer<typeof botUserSchema>;
+/**
+ * @category Users
+ */
 export type PartialUser = z.infer<typeof partialUserSchema>;

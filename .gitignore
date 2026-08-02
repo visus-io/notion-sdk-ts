@@ -45,3 +45,7 @@ pnpm-debug.log*
 
 # Reports
 reports/
+
+# Docs site (Starlight/Astro)
+docs/.astro/
+docs/src/content/docs/api/

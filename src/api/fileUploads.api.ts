@@ -24,6 +24,8 @@ export type FileData = Buffer | ArrayBuffer | Blob | ReadableStream;
 
 /**
  * FileUploads API client for uploading files to Notion.
+ *
+ * @category File Uploads
  */
 export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   protected config = {
@@ -56,7 +58,8 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
 
   /**
    * Upload file data to the upload URL.
-   * This is a direct PUT request to the upload URL (not through Notion API).
+   * This method sends a PUT request directly to the upload URL. It does not go
+   * through the Notion API.
    *
    * @param uploadUrl - The upload URL from initiate()
    * @param fileData - The file data to upload
@@ -98,9 +101,9 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   }
 
   /**
-   * Extracts the request path from a complete URL, accepting both absolute
-   * URLs (e.g. `https://api.notion.com/v1/file_uploads/.../complete`) and
-   * relative paths (e.g. `/v1/file_uploads/.../complete` or the path alone).
+   * Extract the request path from a complete URL.
+   * Accept absolute URLs, for example `https://api.notion.com/v1/file_uploads/.../complete`.
+   * Accept relative paths too, for example `/v1/file_uploads/.../complete` or the path alone.
    */
   private static toRequestPath(completeUrl: string): string {
     let path: string;

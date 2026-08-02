@@ -1,8 +1,8 @@
 import * as z from 'zod';
 
 /**
- * Data source property objects define the schema/configuration for a data source.
- * These are different from page property values (which contain the actual data).
+ * Data source property objects define the schema and configuration for a data source.
+ * Page property values contain the actual data instead.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/property-object
@@ -309,7 +309,7 @@ const statusPropertySchema = z.object({
   }),
 });
 
-/** Title property configuration (empty object) - all data sources require exactly one */
+/** Title property configuration (empty object). Every data source requires exactly one. */
 const titlePropertySchema = z.object({
   type: z.literal('title'),
   id: z.string().trim(),
@@ -340,7 +340,9 @@ const uniqueIdPropertySchema = z.object({
 
 /**
  * Discriminated union of all data source property object types.
- * These define the schema/configuration for a data source (not the values).
+ * Together they define the configuration for a data source, not the values.
+ *
+ * @category Page Properties
  */
 export const propertyObjectSchema = z.discriminatedUnion('type', [
   checkboxPropertySchema,
@@ -367,32 +369,107 @@ export const propertyObjectSchema = z.discriminatedUnion('type', [
   uniqueIdPropertySchema,
 ]);
 
-/** Record of property objects keyed by property name */
+/** Record of property objects keyed by property name
+ *
+ * @category Page Properties
+ */
 export const propertiesObjectSchema = z.record(z.string().trim(), propertyObjectSchema);
 
+/**
+ * @category Page Properties
+ */
 export type NotionPropertyObject = z.infer<typeof propertyObjectSchema>;
+/**
+ * @category Page Properties
+ */
 export type NotionPropertiesObject = z.infer<typeof propertiesObjectSchema>;
 
 // Export individual property types for convenience
+/**
+ * @category Page Properties
+ */
 export type CheckboxPropertyObject = z.infer<typeof checkboxPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type CreatedByPropertyObject = z.infer<typeof createdByPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type CreatedTimePropertyObject = z.infer<typeof createdTimePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type DatePropertyObject = z.infer<typeof datePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type EmailPropertyObject = z.infer<typeof emailPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type FilesPropertyObject = z.infer<typeof filesPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type FormulaPropertyObject = z.infer<typeof formulaPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type LastEditedByPropertyObject = z.infer<typeof lastEditedByPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type LastEditedTimePropertyObject = z.infer<typeof lastEditedTimePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type MultiSelectPropertyObject = z.infer<typeof multiSelectPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type NumberPropertyObject = z.infer<typeof numberPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type PeoplePropertyObject = z.infer<typeof peoplePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type PhoneNumberPropertyObject = z.infer<typeof phoneNumberPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type PlacePropertyObject = z.infer<typeof placePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type RelationPropertyObject = z.infer<typeof relationPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type RichTextPropertyObject = z.infer<typeof richTextPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type RollupPropertyObject = z.infer<typeof rollupPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type SelectPropertyObject = z.infer<typeof selectPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type StatusPropertyObject = z.infer<typeof statusPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type TitlePropertyObject = z.infer<typeof titlePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type UrlPropertyObject = z.infer<typeof urlPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type UniqueIdPropertyObject = z.infer<typeof uniqueIdPropertySchema>;

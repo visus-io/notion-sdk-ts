@@ -6,9 +6,9 @@ import { userSchema } from './user.schema';
 /**
  * Notion rich text object schema.
  *
- * Rich text is used throughout the API for formatted text content. It supports
- * three types: text (with optional links), mentions (users, pages, dates, etc.),
- * and equations (LaTeX). All types support styling via annotations.
+ * Notion uses rich text throughout the API for formatted text content. It supports
+ * three types: text with optional links, mentions of users, pages, dates, and other
+ * objects, and equations in LaTeX. You can style all types with annotations.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/rich-text
@@ -127,11 +127,26 @@ const equationRichTextSchema = z.object({
   href: z.url().nullable(),
 });
 
+/**
+ * @category Rich Text
+ */
 export const richTextSchema = z.array(
   z.discriminatedUnion('type', [textRichTextSchema, mentionRichTextSchema, equationRichTextSchema]),
 );
 
+/**
+ * @category Rich Text
+ */
 export type NotionRichText = z.infer<typeof richTextSchema>;
+/**
+ * @category Rich Text
+ */
 export type TextRichText = z.infer<typeof textRichTextSchema>;
+/**
+ * @category Rich Text
+ */
 export type MentionRichText = z.infer<typeof mentionRichTextSchema>;
+/**
+ * @category Rich Text
+ */
 export type EquationRichText = z.infer<typeof equationRichTextSchema>;

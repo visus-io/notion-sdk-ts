@@ -76,6 +76,8 @@ function validateCommentContent(options: { rich_text?: unknown[]; markdown?: str
 
 /**
  * Comments API client for working with Notion comments.
+ *
+ * @category Comments
  */
 export class CommentsAPI extends BaseAPI<NotionComment, Comment> {
   protected config = {

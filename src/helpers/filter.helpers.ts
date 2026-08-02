@@ -362,6 +362,8 @@ function or(...conditions: FilterCondition[]): FilterCondition {
  *   ),
  * });
  * ```
+ *
+ * @category Helpers
  */
 export const filter = {
   // Property filters

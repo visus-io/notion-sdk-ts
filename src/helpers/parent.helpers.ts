@@ -28,8 +28,8 @@ function database(databaseId: string): { database_id: string } {
 
 /**
  * Create a data source parent object.
- * Both data_source_id and database_id are required when creating a page
- * with a data source parent.
+ * A page with a data source parent needs both `data_source_id` and
+ * `database_id`.
  *
  * @example
  * ```ts
@@ -61,7 +61,7 @@ function workspace(): { workspace: true } {
 }
 
 /**
- * Create a block parent object (used for comments on blocks).
+ * Create a block parent object for comments on blocks.
  *
  * @example
  * ```ts
@@ -101,6 +101,8 @@ function blockParent(blockId: string): { block_id: string } {
  *   rich_text: [...],
  * });
  * ```
+ *
+ * @category Helpers
  */
 export const parent = {
   page,

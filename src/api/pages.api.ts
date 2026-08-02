@@ -157,6 +157,8 @@ export interface UpdatePageOptions {
 
 /**
  * Pages API client for working with Notion pages.
+ *
+ * @category Pages
  */
 export class PagesAPI extends BaseAPI<NotionPage, Page> {
   protected config = {
@@ -230,9 +232,9 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
   /**
    * Update a page's content as markdown.
    *
-   * When `allow_async: true` is set and the write is large, the API may return an
-   * `async_task` handle instead of completing synchronously -- poll it via
-   * `notion.asyncTasks.poll(task.id)`.
+   * Set `allow_async: true` to allow asynchronous processing for large writes.
+   * In that case, the API returns an `async_task` handle instead of the completed
+   * content. Poll the task with `notion.asyncTasks.poll(task.id)`.
    *
    * @param pageId - The ID of the page to update
    * @param options - The markdown update to apply

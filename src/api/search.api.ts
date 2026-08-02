@@ -18,8 +18,8 @@ export type SearchFilterObject = 'page' | 'data_source';
 /**
  * Search filter configuration.
  *
- * `in_trash` can be combined with the object filter (`property`/`value`) or
- * used on its own to list only trashed content.
+ * Combine `in_trash` with the object filter (`property`/`value`), or use it alone
+ * to list only trashed content.
  */
 export type SearchFilter =
   | {
@@ -70,6 +70,8 @@ export type SearchResult = Page | DataSource;
 
 /**
  * Search API client for searching across the workspace.
+ *
+ * @category Search
  */
 export class SearchAPI {
   constructor(private readonly client: NotionClient) {}

@@ -3,7 +3,7 @@ import zod from 'eslint-plugin-zod';
 
 export default [
   {
-    ignores: ['dist', 'node_modules', 'coverage', '**/*.test.ts', '**/*.spec.ts'],
+    ignores: ['dist', 'node_modules', 'coverage', 'docs', '**/*.test.ts', '**/*.spec.ts'],
   },
   ...tseslint.configs.recommendedTypeChecked,
   zod.configs.recommended,

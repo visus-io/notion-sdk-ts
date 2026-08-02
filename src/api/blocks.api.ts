@@ -107,6 +107,8 @@ export interface UpdateBlockOptions {
 
 /**
  * Blocks API client for working with Notion blocks.
+ *
+ * @category Blocks
  */
 export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
   protected config = {

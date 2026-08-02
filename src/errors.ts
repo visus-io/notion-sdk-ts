@@ -1,5 +1,7 @@
 /**
  * Notion API error codes based on official documentation.
+ *
+ * @category Errors
  */
 export type NotionErrorCode =
   | 'invalid_json'
@@ -20,6 +22,8 @@ export type NotionErrorCode =
 
 /**
  * Notion API error response structure.
+ *
+ * @category Errors
  */
 export interface NotionErrorResponse {
   object: 'error';
@@ -29,7 +33,9 @@ export interface NotionErrorResponse {
 }
 
 /**
- * Custom error class for Notion API errors.
+ * Thrown when the Notion API returns an error response.
+ *
+ * @category Errors
  */
 export class NotionAPIError extends Error {
   readonly status: number;
@@ -77,7 +83,7 @@ export class NotionAPIError extends Error {
   }
 
   /**
-   * Check if the error is a not found error.
+   * Check if the API could not find the requested object.
    */
   isNotFound(): boolean {
     return this.code === 'object_not_found';
@@ -106,7 +112,9 @@ export class NotionAPIError extends Error {
 }
 
 /**
- * Request timeout error.
+ * Thrown when a request exceeds its timeout.
+ *
+ * @category Errors
  */
 export class NotionRequestTimeoutError extends Error {
   constructor(message: string = 'Request timed out') {
@@ -124,7 +132,9 @@ export class NotionRequestTimeoutError extends Error {
 }
 
 /**
- * Network error (connectivity issues, DNS failure, etc.).
+ * Thrown when a network problem, such as a DNS failure, blocks a request.
+ *
+ * @category Errors
  */
 export class NotionNetworkError extends Error {
   readonly cause?: Error;

@@ -3,6 +3,8 @@ import { type BotUser, type NotionUser, type PersonUser, userSchema } from '../s
 
 /**
  * User model wrapping a validated Notion user object with helper methods.
+ *
+ * @category Users
  */
 export class User extends BaseModel<NotionUser> {
   constructor(data: unknown) {

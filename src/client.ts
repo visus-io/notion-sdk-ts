@@ -6,13 +6,17 @@ import {
 } from './errors';
 
 /**
- * The Notion API version targeted by this SDK.
- * All schemas, request bodies, helpers, and models are coupled to this version.
+ * The Notion API version this SDK uses.
+ * All schemas, request bodies, helpers, and models depend on this version.
+ *
+ * @category Client & Core
  */
 export const NOTION_VERSION = '2026-03-11' as const;
 
 /**
  * Configuration options for the Notion client.
+ *
+ * @category Client & Core
  */
 export interface NotionClientOptions {
   /** Notion integration token (Bearer token) */
@@ -65,7 +69,8 @@ export class NotionClient {
   }
 
   /**
-   * Makes an HTTP request to the Notion API with retry logic for rate limits.
+   * Send a request to the Notion API.
+   * Retry automatically on rate-limited and overloaded responses.
    */
   async request<T>(options: RequestOptions): Promise<T> {
     let lastError: Error | undefined;
@@ -99,7 +104,7 @@ export class NotionClient {
   }
 
   /**
-   * Makes a single HTTP request to the Notion API.
+   * Send one HTTP request to the Notion API.
    */
   private async makeRequest<T>(options: RequestOptions): Promise<T> {
     const url = this.buildUrl(options.path, options.query);
@@ -148,8 +153,8 @@ export class NotionClient {
   }
 
   /**
-   * Computes a fallback retry delay using exponential backoff.
-   * Used when the `Retry-After` response header is absent.
+   * Calculate a fallback retry delay with exponential backoff.
+   * Use this delay when the response has no `Retry-After` header.
    * Formula: 2^attempt * 1000 ms, capped at 60 seconds.
    */
   private getRetryAfter(attempt: number): number {
@@ -158,14 +163,14 @@ export class NotionClient {
   }
 
   /**
-   * Sleeps for the specified duration in milliseconds.
+   * Pause for the given duration, in milliseconds.
    */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
-   * Builds the full URL with query parameters.
+   * Build the full URL with query parameters.
    */
   private buildUrl(
     path: string,
@@ -191,7 +196,7 @@ export class NotionClient {
   }
 
   /**
-   * Builds request headers.
+   * Build the request headers.
    */
   private buildHeaders(): Record<string, string> {
     return {
@@ -202,9 +207,8 @@ export class NotionClient {
   }
 
   /**
-   * Parses the `Retry-After` response header into milliseconds.
-   * Returns `undefined` when the header is absent or not a valid
-   * non-negative integer.
+   * Parse the `Retry-After` response header into milliseconds.
+   * Return `undefined` if the header is missing or not a valid non-negative number.
    */
   private parseRetryAfterHeader(response: Response): number | undefined {
     const header = response.headers.get('Retry-After');
@@ -221,7 +225,7 @@ export class NotionClient {
   }
 
   /**
-   * Handles error responses from the API.
+   * Handle an error response from the API.
    */
   private async handleErrorResponse(response: Response): Promise<never> {
     const retryAfterMs = this.parseRetryAfterHeader(response);

@@ -3,14 +3,17 @@ import * as z from 'zod';
 /**
  * Notion parent object schemas.
  *
- * Parent objects define the location/container of pages and blocks within Notion.
+ * Parent objects identify the container of a page or block within Notion.
  * A parent can be a database, data source, page, workspace, or block.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/parent-object
  */
 
-/** Database parent. */
+/** Database parent.
+ *
+ * @category Shared Types
+ */
 export const databaseParentSchema = z.object({
   type: z.literal('database_id'),
   database_id: z.uuid(),
@@ -47,6 +50,9 @@ const agentParentSchema = z.object({
   agent_id: z.uuid(),
 });
 
+/**
+ * @category Shared Types
+ */
 export const parentSchema = z.discriminatedUnion('type', [
   databaseParentSchema,
   dataSourceParentSchema,
@@ -56,10 +62,31 @@ export const parentSchema = z.discriminatedUnion('type', [
   agentParentSchema,
 ]);
 
+/**
+ * @category Shared Types
+ */
 export type NotionParent = z.infer<typeof parentSchema>;
+/**
+ * @category Shared Types
+ */
 export type DatabaseParent = z.infer<typeof databaseParentSchema>;
+/**
+ * @category Shared Types
+ */
 export type DataSourceParent = z.infer<typeof dataSourceParentSchema>;
+/**
+ * @category Shared Types
+ */
 export type PageParent = z.infer<typeof pageParentSchema>;
+/**
+ * @category Shared Types
+ */
 export type WorkspaceParent = z.infer<typeof workspaceParentSchema>;
+/**
+ * @category Shared Types
+ */
 export type BlockParent = z.infer<typeof blockParentSchema>;
+/**
+ * @category Shared Types
+ */
 export type AgentParent = z.infer<typeof agentParentSchema>;

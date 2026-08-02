@@ -3,6 +3,8 @@ import { fileUploadSchema, type NotionFileUpload } from '../schemas';
 
 /**
  * FileUpload model class with helper methods.
+ *
+ * @category File Uploads
  */
 export class FileUpload extends BaseModel<NotionFileUpload> {
   constructor(data: NotionFileUpload) {
@@ -66,14 +68,14 @@ export class FileUpload extends BaseModel<NotionFileUpload> {
   }
 
   /**
-   * Returns the upload URL for uploading the file.
+   * Returns the URL to upload the file.
    */
   get uploadUrl(): string {
     return this.data.upload_url;
   }
 
   /**
-   * Returns the complete URL for finalizing the upload.
+   * Returns the URL to complete the upload.
    */
   get completeUrl(): string {
     return this.data.complete_url;

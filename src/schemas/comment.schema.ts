@@ -20,15 +20,24 @@ const commentAttachmentFileSchema = z.object({
   expiry_time: notionDateStringSchema,
 });
 
-/** Comment attachment schema. */
+/** Comment attachment schema.
+ *
+ * @category Comments
+ */
 export const commentAttachmentSchema = z.object({
   category: z.enum(['image', 'video', 'file', 'audio', 'pdf']),
   file: commentAttachmentFileSchema,
 });
 
+/**
+ * @category Comments
+ */
 export type CommentAttachment = z.infer<typeof commentAttachmentSchema>;
 
-/** Comment display name schema (user or custom). */
+/** Comment display name schema (user or custom).
+ *
+ * @category Comments
+ */
 export const commentDisplayNameSchema = z.union([
   z.object({
     type: z.literal('user'),
@@ -40,8 +49,14 @@ export const commentDisplayNameSchema = z.union([
   }),
 ]);
 
+/**
+ * @category Comments
+ */
 export type CommentDisplayName = z.infer<typeof commentDisplayNameSchema>;
 
+/**
+ * @category Comments
+ */
 export const commentSchema = z.object({
   object: z.literal('comment'),
   id: z.uuid(),
@@ -55,4 +70,7 @@ export const commentSchema = z.object({
   display_name: commentDisplayNameSchema.optional(),
 });
 
+/**
+ * @category Comments
+ */
 export type NotionComment = z.infer<typeof commentSchema>;

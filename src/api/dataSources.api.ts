@@ -74,7 +74,7 @@ export interface ListDataSourceTemplatesOptions extends PaginationParameters {
 
 /**
  * Filter condition for data source queries.
- * This is a simplified type - the actual Notion API supports many filter types.
+ * This type is simplified. The Notion API supports many more filter types.
  * See: https://developers.notion.com/reference/filter-data-source-entries
  */
 export type DataSourceFilter = Record<string, unknown>;
@@ -121,8 +121,8 @@ export interface QueryDataSourceOptions extends PaginationParameters {
   /**
    * Whether to return only trashed pages (true) or only non-trashed pages (false).
    *
-   * @deprecated Use `is_archived` instead. Kept as an alias forwarded into
-   * `is_archived`; if both are provided, `is_archived` takes precedence.
+   * @deprecated Use `is_archived` instead. This field is an alias that forwards
+   * into `is_archived`. If you provide both fields, `is_archived` takes precedence.
    */
   in_trash?: boolean;
 }
@@ -132,6 +132,8 @@ export interface QueryDataSourceOptions extends PaginationParameters {
  *
  * Data sources are individual tables of data that live under a Notion database.
  * As of API version 2025-09-03, data sources have their own API endpoints.
+ *
+ * @category Databases & Data Sources
  */
 export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
   protected config = {

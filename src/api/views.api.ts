@@ -27,8 +27,8 @@ export interface ListViewsOptions extends PaginationParameters {
 }
 
 /**
- * Options for creating a view. Exactly one of `database_id`/`view_id`/`create_database`
- * must be provided to select the parent context.
+ * Options for creating a view. Provide exactly one of
+ * `database_id`/`view_id`/`create_database` to select the parent context.
  */
 export interface CreateViewOptions {
   /** The data source the view displays */
@@ -66,8 +66,8 @@ export interface CreateViewOptions {
 }
 
 /**
- * Options for updating a view. All fields optional; passing `null` for
- * filter/sorts/quick_filters clears the existing value.
+ * Options for updating a view. All fields are optional.
+ * Pass `null` for `filter`, `sorts`, or `quick_filters` to clear the existing value.
  */
 export interface UpdateViewOptions {
   /** Rename the view */
@@ -98,9 +98,9 @@ export interface CreateViewQueryOptions extends PaginationParameters {
 }
 
 /**
- * Result of a view query. Non-standard pagination shape distinct from
- * {@link PaginatedList} -- includes `totalCount` and an `expiresAt` after which the
- * query can no longer be retrieved via {@link ViewsAPI.queries.get}.
+ * Result of a view query. This shape differs from {@link PaginatedList}.
+ * It includes `totalCount` and `expiresAt`. After `expiresAt` passes,
+ * {@link ViewsAPI.queries.get} can no longer retrieve the query.
  */
 export interface ViewQueryResult {
   id: string;
@@ -133,6 +133,8 @@ function toViewQueryResult(response: unknown): ViewQueryResult {
  *
  * Views control how a database/data source's rows are displayed (table, board,
  * calendar, etc.). Requires API version 2025-09-03 or later.
+ *
+ * @category Views
  */
 export class ViewsAPI extends BaseAPI<NotionView, View> {
   protected config = {
@@ -223,9 +225,9 @@ export class ViewsAPI extends BaseAPI<NotionView, View> {
   /**
    * Delete a view.
    *
-   * Note: unlike other delete methods, Notion's delete-view response only includes
-   * `object`/`id`/`parent`/`type` (not the full view shape), so this returns the raw
-   * parsed result rather than a full {@link View} model.
+   * Notion's delete-view response differs from other delete methods. It includes
+   * only `object`/`id`/`parent`/`type`, not the full view shape. This method
+   * returns the raw parsed result instead of a full {@link View} model.
    *
    * @param viewId - The ID of the view to delete
    * @returns The partial view object returned by the API
@@ -242,9 +244,9 @@ export class ViewsAPI extends BaseAPI<NotionView, View> {
   }
 
   /**
-   * Sub-resource for querying a view's rows. View queries are non-standard: they
-   * return a `total_count` and `expires_at`, and the query result itself expires
-   * roughly 15 minutes after creation.
+   * Sub-resource to query a view's rows. View queries are non-standard.
+   * Each query returns a `total_count` and an `expires_at` value. The query
+   * result expires about 15 minutes after creation.
    */
   readonly queries = {
     /**

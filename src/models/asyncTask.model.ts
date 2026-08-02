@@ -2,10 +2,12 @@ import { BaseModel } from './base.model';
 import { asyncTaskSchema, type NotionAsyncTask } from '../schemas';
 
 /**
- * Async Task model class with helper methods.
+ * AsyncTask model class with helper methods.
  *
- * Represents a long-running operation (e.g. an async markdown write) that must be
- * polled until it reaches a terminal status.
+ * Represents a long-running operation, for example an async markdown write. Poll the
+ * task until it reaches a terminal status.
+ *
+ * @category Async Tasks
  */
 export class AsyncTask extends BaseModel<NotionAsyncTask> {
   constructor(data: NotionAsyncTask) {
@@ -34,7 +36,7 @@ export class AsyncTask extends BaseModel<NotionAsyncTask> {
   }
 
   /**
-   * Returns the URL that can be polled for task status.
+   * Returns the URL to poll for the task status.
    */
   get statusUrl(): string {
     return this.data.status_url;

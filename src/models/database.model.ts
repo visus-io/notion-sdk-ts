@@ -12,6 +12,8 @@ import {
 
 /**
  * Database model class with helper methods.
+ *
+ * @category Databases & Data Sources
  */
 export class Database extends BaseModel<NotionDatabase> {
   constructor(data: NotionDatabase) {

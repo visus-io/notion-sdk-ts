@@ -76,92 +76,15 @@ const results = await notion.databases.query('database-id', {
 
 ## Documentation
 
-Comprehensive documentation is available in the [**GitHub Wiki**](https://github.com/visus-io/notion-sdk-ts/wiki):
+Full documentation — guides plus a generated API reference — is hosted at [nts.projects.visus.io](https://nts.projects.visus.io). Source lives in [`docs/`](./docs); run it locally:
 
-### Getting Started
-
-- [**Getting Started**](https://github.com/visus-io/notion-sdk-ts/wiki/Getting-Started) - Installation, quick start, and basic configuration
-- [**Migration Guide**](https://github.com/visus-io/notion-sdk-ts/wiki/Migration-Guide) - Migrating between API versions
-- [**Common Use Cases**](https://github.com/visus-io/notion-sdk-ts/wiki/Common-Use-Cases) - Practical examples and workflows
-
-### Core Concepts
-
-- [**Helpers**](https://github.com/visus-io/notion-sdk-ts/wiki/Helpers) - Rich Text, Block Builder, Properties, Filters, Sorting
-- [**Models**](https://github.com/visus-io/notion-sdk-ts/wiki/Models) - Page, Block, Database, DataSource, User, Comment, FileUpload
-- [**API Reference**](https://github.com/visus-io/notion-sdk-ts/wiki/API-Reference) - Complete API endpoint documentation
-
-### Configuration & Advanced Topics
-
-- [**Configuration & Features**](https://github.com/visus-io/notion-sdk-ts/wiki/Configuration) - Client options, rate limiting, retries
-- [**Error Handling**](https://github.com/visus-io/notion-sdk-ts/wiki/Error-Handling) - Error types, codes, and handling patterns
-- [**Pagination**](https://github.com/visus-io/notion-sdk-ts/wiki/Pagination) - Automatic pagination helpers
-- [**Request Size Limits**](https://github.com/visus-io/notion-sdk-ts/wiki/Request-Size-Limits) - Notion API size limits
-
-### Development
-
-- [**TypeScript Support**](https://github.com/visus-io/notion-sdk-ts/wiki/TypeScript-Support) - Types, schemas, and type safety
-- [**Development & Contributing**](https://github.com/visus-io/notion-sdk-ts/wiki/Development) - Project structure and architecture
+```bash
+bun run docs:dev
+```
 
 ## Migration Notice
 
-**This SDK now targets Notion API version `2026-03-11`** (upgraded from `2025-09-03` in v3.x; originally `2022-06-28` in v1.x). The API version is fixed — it cannot be overridden via client options.
-
-### Key Changes (v3.x — 2026-03-11)
-
-- **`archived` → `in_trash`**: Field renamed across all schemas, models, and API request bodies
-- **`after` → `position` object**: `blocks.children.append()` now accepts a typed `position` union
-- **`transcription` → `meeting_notes`**: Block type and helper renamed (`block.meetingNotes()` is itself now deprecated — meeting-notes blocks are server-managed, not client-constructed)
-- **`notionVersion` removed**: Use the exported `NOTION_VERSION` constant to inspect the target version
-
-### Quick Migration Example (v2.x → v3.x)
-
-```typescript
-// OLD (v2.x / 2025-09-03)
-console.log(page.archived);
-await notion.blocks.children.append('page-id', {
-  children: [block.paragraph('text')],
-  after: 'block-id',
-});
-block.transcription('Transcription text');
-
-// NEW (v3.x / 2026-03-11)
-import { NOTION_VERSION } from '@visus-io/notion-sdk-ts';
-console.log(page.inTrash);
-await notion.blocks.children.append('page-id', {
-  children: [block.paragraph('text')],
-  position: { type: 'after_block', after_block: { id: 'block-id' } },
-});
-// Meeting notes are server-managed — read them instead of constructing them:
-await notion.blocks.meetingNotes.query();
-```
-
-### Key Changes (v2.x — 2025-09-03)
-
-- **Database creation**: Properties moved to `initial_data_source.properties`
-- **Database updates**: Use Data Sources API for property changes
-- **Page creation**: Requires both data source ID and database ID
-- **Search API**: Returns `DataSource` objects instead of `Database`
-
-### Quick Migration Example (v1.x → v2.x)
-
-```typescript
-// OLD (v1.x / 2022-06-28)
-await notion.pages.create({
-  parent: parent.database('database-id'),
-  properties: { Name: prop.title('Task') },
-});
-
-// NEW (v2.x / 2025-09-03)
-const db = await notion.databases.retrieve('database-id');
-const dataSourceId = db.dataSources[0].id;
-
-await notion.pages.create({
-  parent: parent.dataSource(dataSourceId, db.id),
-  properties: { Name: prop.title('Task') },
-});
-```
-
-See the [**Migration Guide**](https://github.com/visus-io/notion-sdk-ts/wiki/Migration-Guide) for complete details.
+**This SDK now targets Notion API version `2026-03-11`** (upgraded from `2025-09-03` in v3.x; originally `2022-06-28` in v1.x). The API version is fixed — it cannot be overridden via client options. See the [Migration Guide](./docs/src/content/docs/migration-guide.md) for complete upgrade details.
 
 ## Development
 
@@ -188,15 +111,22 @@ bun run test:coverage    # Coverage report
 bun run lint             # ESLint
 bun run lint:fix         # Auto-fix
 bun run format           # Prettier
+
+bun run docs:dev         # Run the docs site locally
+bun run docs:build       # Build the docs site
 ```
 
 > **Note:** While this project uses Bun for development, the published package works with both Node.js 18+ and Bun 1.3.10+.
 
-See [**Development & Contributing**](https://github.com/visus-io/notion-sdk-ts/wiki/Development) for more details.
+See [**ARCHITECTURE.md**](./ARCHITECTURE.md) for project structure and architecture.
+
+## Contributing
+
+Contributions are welcome! See [**CONTRIBUTING.md**](./CONTRIBUTING.md) for how to get started.
 
 ## Links
 
-- [**Documentation Wiki**](https://github.com/visus-io/notion-sdk-ts/wiki)
+- [**Documentation**](https://nts.projects.visus.io)
 - [**GitHub Repository**](https://github.com/visus-io/notion-sdk-ts)
 - [**npm Package**](https://www.npmjs.com/package/@visus-io/notion-sdk-ts)
 - [**Notion API Documentation**](https://developers.notion.com/reference/intro)

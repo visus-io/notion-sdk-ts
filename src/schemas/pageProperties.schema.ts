@@ -7,9 +7,9 @@ import { userSchema } from './user.schema';
 /**
  * Page property value schemas.
  *
- * These define the actual data values stored in page properties (database columns).
- * Different from property objects which define the schema/configuration.
- * Supports 23 property types including title, rich text, number, select, etc.
+ * These schemas define the data values in page properties (database columns).
+ * Property objects define the schema and configuration instead.
+ * This file supports 23 property types, including title, rich text, number, and select.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/page-property-values
@@ -266,6 +266,9 @@ const verificationPropertySchema = z.object({
     .nullable(),
 });
 
+/**
+ * @category Page Properties
+ */
 export const pagePropertiesSchema = z.discriminatedUnion('type', [
   checkboxPropertySchema,
   createdByPropertySchema,
@@ -291,26 +294,95 @@ export const pagePropertiesSchema = z.discriminatedUnion('type', [
   verificationPropertySchema,
 ]);
 
+/**
+ * @category Page Properties
+ */
 export type NotionPageProperties = z.infer<typeof pagePropertiesSchema>;
+/**
+ * @category Page Properties
+ */
 export type CheckboxProperty = z.infer<typeof checkboxPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type CreatedByProperty = z.infer<typeof createdByPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type CreatedTimeProperty = z.infer<typeof createdTimePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type DateProperty = z.infer<typeof datePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type EmailProperty = z.infer<typeof emailPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type FilesProperty = z.infer<typeof filesPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type FormulaProperty = z.infer<typeof formulaPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type LastEditedByProperty = z.infer<typeof lastEditedByPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type LastEditedTimeProperty = z.infer<typeof lastEditedTimePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type MultiSelectProperty = z.infer<typeof multiSelectPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type NumberProperty = z.infer<typeof numberPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type PeopleProperty = z.infer<typeof peoplePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type PhoneNumberProperty = z.infer<typeof phoneNumberPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type RelationProperty = z.infer<typeof relationPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type RichTextProperty = z.infer<typeof richTextPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type RollupProperty = z.infer<typeof rollupPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type SelectProperty = z.infer<typeof selectPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type StatusProperty = z.infer<typeof statusPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type TitleProperty = z.infer<typeof titlePropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type UrlProperty = z.infer<typeof urlPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type UniqueIdProperty = z.infer<typeof uniqueIdPropertySchema>;
+/**
+ * @category Page Properties
+ */
 export type VerificationProperty = z.infer<typeof verificationPropertySchema>;
