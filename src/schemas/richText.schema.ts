@@ -44,7 +44,7 @@ const dateMentionSchema = z.object({
   date: z.object({
     start: notionDateStringSchema,
     end: notionDateStringSchema.nullable(),
-    time_zone: z.string().trim().nullable().optional(),
+    time_zone: z.string().trim().nullish(),
   }),
 });
 

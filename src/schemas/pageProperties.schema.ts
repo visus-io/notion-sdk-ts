@@ -185,15 +185,14 @@ const rollupPropertySchema = z.object({
       'unchecked',
       'unique',
     ]),
-    number: z.number().nullable().optional(),
+    number: z.number().nullish(),
     date: z
       .object({
         start: notionDateStringSchema,
         end: notionDateStringSchema.nullable(),
         time_zone: z.string().trim().nullable(),
       })
-      .nullable()
-      .optional(),
+      .nullish(),
     array: z.array(z.unknown()).optional(),
   }),
 });
