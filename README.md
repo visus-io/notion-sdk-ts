@@ -13,10 +13,10 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 ## Features
 
 - **Type-safe** Zod v4 runtime validation on every API response; full TypeScript declarations
-- **Complete API coverage** Pages, Blocks, Databases, Data Sources, Comments, Search, Users, File Uploads
-- **Ergonomic helpers** `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `paginate` factories eliminate verbose JSON
-- **OOP models** `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText` with convenience methods
-- **Automatic pagination** `paginate()` and `paginateIterator()` helpers automatically fetch all pages
+- **Complete API coverage** Pages, Blocks, Databases, Data Sources, Comments, Search, Users, File Uploads, Async Tasks, Custom Emojis, Views
+- **Ergonomic helpers** `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `paginate` factories and a `webhook` signature-verification helper eliminate verbose JSON and boilerplate
+- **OOP models** `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText`, `AsyncTask`, `CustomEmoji`, `View` with convenience methods
+- **Automatic pagination** `paginate()`, `paginateIterator()`, and `paginateWithMetadata()` helpers automatically fetch all pages, plus `iterateAllDataSourceRows()`/`collectAllDataSourceRows()` to work around the 10,000-result query cap
 - **Automatic rate limiting** Respects `Retry-After` header with exponential backoff fallback (configurable)
 - **Client-side size validation** Enforces Notion API size limits before sending requests
 - **Zero bloat** Single runtime dependency (`zod`); uses built-in `fetch` (Node 18+)
@@ -110,7 +110,7 @@ Comprehensive documentation is available in the [**GitHub Wiki**](https://github
 
 - **`archived` → `in_trash`**: Field renamed across all schemas, models, and API request bodies
 - **`after` → `position` object**: `blocks.children.append()` now accepts a typed `position` union
-- **`transcription` → `meeting_notes`**: Block type and helper renamed
+- **`transcription` → `meeting_notes`**: Block type and helper renamed (`block.meetingNotes()` is itself now deprecated — meeting-notes blocks are server-managed, not client-constructed)
 - **`notionVersion` removed**: Use the exported `NOTION_VERSION` constant to inspect the target version
 
 ### Quick Migration Example (v2.x → v3.x)
@@ -131,7 +131,8 @@ await notion.blocks.children.append('page-id', {
   children: [block.paragraph('text')],
   position: { type: 'after_block', after_block: { id: 'block-id' } },
 });
-block.meetingNotes('Meeting notes text');
+// Meeting notes are server-managed — read them instead of constructing them:
+await notion.blocks.meetingNotes.query();
 ```
 
 ### Key Changes (v2.x — 2025-09-03)
