@@ -15,6 +15,8 @@ import {
  * Data Source model class with helper methods.
  *
  * Data sources are individual tables of data that live under a Notion database.
+ *
+ * @category Databases & Data Sources
  */
 export class DataSource extends BaseModel<NotionDataSource> {
   constructor(data: NotionDataSource) {

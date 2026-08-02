@@ -9,7 +9,7 @@ import type {
 import { LIMITS, validateStringLength } from '../validation';
 
 /**
- * Default annotations object with no formatting applied.
+ * Default annotations object with no formatting.
  */
 const DEFAULT_ANNOTATIONS: TextRichText['annotations'] = {
   bold: false,
@@ -26,8 +26,9 @@ const DEFAULT_ANNOTATIONS: TextRichText['annotations'] = {
  * Do not instantiate directly — use the {@link richText} factory function or
  * the static helpers on it (`richText.mentionPage`, `richText.equation`, etc.).
  *
- * Call `.build()` to produce a `NotionRichText` array (single-element),
- * or pass builders directly to `richText.join()` which calls `.build()` for you.
+ * Call `.build()` to produce a single-element `NotionRichText`.
+ * Alternatively, pass builders directly to `richText.join()`. This method
+ * calls `.build()` for you.
  *
  * @example
  * ```ts
@@ -47,6 +48,8 @@ const DEFAULT_ANNOTATIONS: TextRichText['annotations'] = {
  *   richText('!'),
  * );
  * ```
+ *
+ * @category Rich Text
  */
 export class RichTextBuilder {
   /** @internal */
@@ -112,7 +115,7 @@ export class RichTextBuilder {
   }
 
   /**
-   * Build a single-element `NotionRichText` array from this builder.
+   * Build a single-element `NotionRichText` from this builder.
    */
   build(): NotionRichText {
     return [{ ...this.segment, annotations: { ...this.annotations } }];
@@ -251,8 +254,8 @@ function equation(expression: string): RichTextBuilder {
 }
 
 /**
- * Combine multiple rich text builders (or pre-built `NotionRichText` arrays)
- * into a single `NotionRichText` array.
+ * Combine multiple rich text builders (or pre-built `NotionRichText` values)
+ * into a single `NotionRichText`.
  *
  * @example
  * ```ts
@@ -303,6 +306,8 @@ function join(...parts: Array<RichTextBuilder | NotionRichText>): NotionRichText
  *   richText('italic').italic(),
  * );
  * ```
+ *
+ * @category Rich Text
  */
 export const richText = Object.assign(createRichText, {
   mentionPage,

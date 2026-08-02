@@ -16,14 +16,23 @@ import { userSchema } from './user.schema';
  * https://developers.notion.com/reference/database
  */
 
-/** Data source reference with id and name. */
+/** Data source reference with id and name.
+ *
+ * @category Databases & Data Sources
+ */
 export const dataSourceRefSchema = z.object({
   id: z.uuid(),
   name: z.string().trim(),
 });
 
+/**
+ * @category Databases & Data Sources
+ */
 export type DataSourceRef = z.infer<typeof dataSourceRefSchema>;
 
+/**
+ * @category Databases & Data Sources
+ */
 export const databaseSchema = z.object({
   object: z.literal('database'),
   id: z.uuid(),
@@ -44,4 +53,7 @@ export const databaseSchema = z.object({
   public_url: z.nullable(z.url()),
 });
 
+/**
+ * @category Databases & Data Sources
+ */
 export type NotionDatabase = z.infer<typeof databaseSchema>;

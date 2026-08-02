@@ -22,7 +22,7 @@ export interface RetrieveDatabaseOptions {
 
 /**
  * Filter condition for database queries.
- * This is a simplified type - the actual Notion API supports many filter types.
+ * This type is simplified. The Notion API supports many more filter types.
  * See: https://developers.notion.com/reference/post-database-query-filter
  */
 export type DatabaseFilter = Record<string, unknown>;
@@ -80,8 +80,8 @@ export interface InitialDataSource {
 
 /**
  * Options for creating a database.
- * As of API version 2025-09-03, databases are created with an initial_data_source
- * containing the properties schema, rather than properties at the top level.
+ * As of API version 2025-09-03, databases require an `initial_data_source` object.
+ * This object holds the properties schema. It replaces top-level properties.
  */
 export interface CreateDatabaseOptions {
   /** The parent object (page or workspace) */
@@ -105,8 +105,8 @@ export interface CreateDatabaseOptions {
 
 /**
  * Options for updating a database.
- * As of API version 2025-09-03, properties are managed at the data source level.
- * Use the DataSourcesAPI to update properties.
+ * As of API version 2025-09-03, manage properties at the data source level.
+ * Use DataSourcesAPI to update properties.
  */
 export interface UpdateDatabaseOptions {
   /** Update the database title */
@@ -133,6 +133,8 @@ export interface UpdateDatabaseOptions {
 
 /**
  * Databases API client for working with Notion databases.
+ *
+ * @category Databases & Data Sources
  */
 export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
   protected config = {

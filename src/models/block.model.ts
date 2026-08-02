@@ -3,6 +3,8 @@ import { blockSchema, type NotionBlock } from '../schemas';
 
 /**
  * Block model wrapping a validated Notion block object with helper methods.
+ *
+ * @category Blocks
  */
 export class Block extends BaseModel<NotionBlock> {
   constructor(data: unknown) {

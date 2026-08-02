@@ -14,6 +14,8 @@ import { userSchema } from './user.schema';
  *
  * Notion API reference:
  * https://developers.notion.com/reference/page
+ *
+ * @category Pages
  */
 
 export const pageSchema = z.object({
@@ -34,4 +36,7 @@ export const pageSchema = z.object({
   public_url: z.url().nullable(),
 });
 
+/**
+ * @category Pages
+ */
 export type NotionPage = z.infer<typeof pageSchema>;

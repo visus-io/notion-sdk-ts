@@ -3,6 +3,8 @@ import { type NotionPage, type NotionPageProperties, pageSchema } from '../schem
 
 /**
  * Page model wrapping a validated Notion page object with helper methods.
+ *
+ * @category Pages
  */
 export class Page extends BaseModel<NotionPage> {
   constructor(data: unknown) {

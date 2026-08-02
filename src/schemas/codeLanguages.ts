@@ -1,4 +1,7 @@
-/** All programming languages supported by Notion code blocks. */
+/** All programming languages supported by Notion code blocks.
+ *
+ * @category Blocks
+ */
 export const CODE_BLOCK_LANGUAGES = [
   'abap',
   'arduino',
@@ -74,4 +77,7 @@ export const CODE_BLOCK_LANGUAGES = [
   'java/c/c++/c#',
 ] as const;
 
+/**
+ * @category Blocks
+ */
 export type CodeBlockLanguage = (typeof CODE_BLOCK_LANGUAGES)[number];

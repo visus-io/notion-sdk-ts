@@ -11,6 +11,8 @@ import {
 
 /**
  * Comment model class with helper methods.
+ *
+ * @category Comments
  */
 export class Comment extends BaseModel<NotionComment> {
   constructor(data: NotionComment) {

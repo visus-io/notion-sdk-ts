@@ -94,8 +94,8 @@ function customEmojiIcon(id: string): CustomEmojiIconRef {
 }
 
 /**
- * Helpers for constructing icon objects (emoji, external URL, file upload,
- * native icon, or custom emoji).
+ * Helpers that create icon objects: emoji, external URL, file upload, native
+ * icon, or custom emoji.
  *
  * @example
  * ```ts
@@ -107,6 +107,8 @@ function customEmojiIcon(id: string): CustomEmojiIconRef {
  *   // ...
  * });
  * ```
+ *
+ * @category Helpers
  */
 export const icon = {
   emoji: emojiIcon,
@@ -145,7 +147,7 @@ function fileUploadCover(id: string): FileUploadRef {
 }
 
 /**
- * Helpers for constructing cover image objects.
+ * Helpers that create cover image objects.
  *
  * @example
  * ```ts
@@ -157,6 +159,8 @@ function fileUploadCover(id: string): FileUploadRef {
  *   // ...
  * });
  * ```
+ *
+ * @category Helpers
  */
 export const cover = {
   external: externalCover,
@@ -192,10 +196,10 @@ function uploadFile(id: string): FileUploadRef {
 }
 
 /**
- * Helpers for constructing general Notion file objects.
+ * Helpers that create general Notion file objects.
  *
- * Useful for file blocks, image blocks, audio blocks, video blocks,
- * and file property entries.
+ * Use these helpers for file blocks, image blocks, audio blocks, video
+ * blocks, and file property entries.
  *
  * @example
  * ```ts
@@ -204,6 +208,8 @@ function uploadFile(id: string): FileUploadRef {
  * notionFile.external('https://example.com/doc.pdf')
  * notionFile.upload('upload-id')
  * ```
+ *
+ * @category Helpers
  */
 export const notionFile = {
   external: externalFile,

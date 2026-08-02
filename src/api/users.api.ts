@@ -10,6 +10,8 @@ import { BaseAPI } from './base.api';
 
 /**
  * Users API client for working with Notion users.
+ *
+ * @category Users
  */
 export class UsersAPI extends BaseAPI<NotionUser, User> {
   protected config = {

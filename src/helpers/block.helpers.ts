@@ -8,11 +8,13 @@ import { RichTextBuilder } from './richText.helpers';
 
 /**
  * Accepted rich text input: a plain string, a {@link RichTextBuilder}, or
- * a pre-built `NotionRichText` array.
+ * a pre-built `NotionRichText`.
+ *
+ * @category Rich Text
  */
 export type RichTextInput = string | RichTextBuilder | NotionRichText;
 
-/** Resolve a {@link RichTextInput} into a `NotionRichText` array. */
+/** Resolve a {@link RichTextInput} into a `NotionRichText`. */
 function resolveRichText(input: RichTextInput): NotionRichText {
   if (typeof input === 'string') {
     validateStringLength(input, LIMITS.RICH_TEXT_CONTENT, 'Rich text content');
@@ -49,7 +51,7 @@ interface TextBlockOptions {
 // Block object type — the shape returned by every helper
 // ---------------------------------------------------------------------------
 
-/** The minimal block object accepted by the Notion API for creation. */
+/** The Notion API accepts this minimal block object for creation. */
 interface BlockObject {
   object: 'block';
   type: string;
@@ -62,7 +64,7 @@ interface BlockObject {
 
 /** Options for paragraph blocks. */
 interface ParagraphOptions extends TextBlockOptions {
-  /** Icon shown alongside the paragraph. Only meaningful for paragraphs used as tab items. */
+  /** Icon for the paragraph. Applies only to paragraphs used as tab items. */
   icon?: unknown;
 }
 
@@ -253,12 +255,12 @@ function template(text: RichTextInput, options?: { children?: unknown[] }): Bloc
 }
 
 /**
- * @deprecated Meeting-notes blocks are server-managed -- their real shape (`title`,
- * `status`, and child block IDs for the summary/notes/transcript) is populated by
- * Notion, not hand-constructed by clients. This helper's `rich_text`-based output no
- * longer matches `blockSchema`'s `meeting_notes` shape and is not a valid way to
- * create a meeting-notes block. Kept only to avoid an abrupt removal from the helper
- * surface; do not use for new code.
+ * @deprecated Notion manages meeting-notes blocks on the server. Notion populates the
+ * real shape (`title`, `status`, and child block IDs for the summary, notes, and
+ * transcript). Clients do not construct this shape by hand. This helper's
+ * `rich_text`-based output no longer matches the `meeting_notes` shape in
+ * `blockSchema`. Do not use this helper to create a meeting-notes block. It remains
+ * only to avoid an abrupt removal from the helper surface. Do not use it in new code.
  */
 function meetingNotes(text: RichTextInput, options?: { children?: unknown[] }): BlockObject {
   return {
@@ -489,7 +491,10 @@ function column(children: unknown[]): BlockObject {
   };
 }
 
-/** A single tab: its label becomes the tab's paragraph rich text, `children` its content. */
+/**
+ * A single tab. Its label becomes the tab's paragraph rich text.
+ * Its `children` become the tab's content.
+ */
 interface TabItem {
   label: RichTextInput;
   icon?: unknown;
@@ -498,9 +503,9 @@ interface TabItem {
 }
 
 /**
- * Create a tab block. Only `paragraph` blocks may be direct children of a tab block --
- * each tab is modeled as one paragraph, whose rich text is the tab label and whose
- * `children` hold the tab's content.
+ * Create a tab block. A tab block accepts only `paragraph` blocks as direct children.
+ * Each tab is one paragraph. The paragraph's rich text holds the tab label. The
+ * paragraph's `children` hold the tab's content.
  *
  * @example
  * ```ts
@@ -548,9 +553,9 @@ function syncedBlock(options?: { syncedFrom?: string; children?: unknown[] }): B
 // ---------------------------------------------------------------------------
 
 /**
- * Factory functions for constructing Notion block objects.
+ * Factory functions that create Notion block objects.
  *
- * Every function returns a plain object ready to pass to
+ * Every function returns a plain object. Pass this object to
  * `blocks.children.append()` or `pages.create()`.
  *
  * @example
@@ -576,6 +581,8 @@ function syncedBlock(options?: { syncedFrom?: string; children?: unknown[] }): B
  *   }),
  * ];
  * ```
+ *
+ * @category Helpers
  */
 export const block = {
   // Text blocks

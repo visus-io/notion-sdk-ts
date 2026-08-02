@@ -26,7 +26,9 @@ const getChildrenSchema = (): z.ZodOptional<z.ZodArray<z.ZodTypeAny>> => {
 };
 
 /**
- * Position for inserting block children in the Append Block Children endpoint.
+ * Position to insert block children in the Append Block Children endpoint.
+ *
+ * @category Blocks
  */
 export const blockPositionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('after_block'), after_block: z.object({ id: z.uuid() }) }),
@@ -34,6 +36,9 @@ export const blockPositionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('end') }),
 ]);
 
+/**
+ * @category Blocks
+ */
 export type BlockPosition = z.infer<typeof blockPositionSchema>;
 
 const headingsObjectSchema = z.object({
@@ -45,6 +50,9 @@ const headingsObjectSchema = z.object({
   },
 });
 
+/**
+ * @category Blocks
+ */
 export const blockSchema = z.object({
   object: z.literal('block'),
   id: z.uuid(),
@@ -306,4 +314,7 @@ export const blockSchema = z.object({
   video: fileSchema.optional(),
 });
 
+/**
+ * @category Blocks
+ */
 export type NotionBlock = z.infer<typeof blockSchema>;

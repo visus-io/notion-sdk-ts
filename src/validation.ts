@@ -1,7 +1,9 @@
 /**
- * Notion API request size limits.
+ * Maximum sizes the Notion API allows in a request.
  *
  * @see https://developers.notion.com/reference/request-limits#size-limits
+ *
+ * @category Client & Core
  */
 export const LIMITS = {
   /** Maximum characters in a single rich text `text.content` field. */
@@ -47,9 +49,10 @@ export const LIMITS = {
 /**
  * Thrown when a value exceeds a Notion API size limit.
  *
- * This error is raised client-side *before* the request is sent, giving
- * callers an early, actionable error message instead of a generic 400 from
- * the API.
+ * The SDK throws this error before it sends the request. This gives you an
+ * early, actionable message instead of a generic 400 response from the API.
+ *
+ * @category Errors
  */
 export class NotionValidationError extends Error {
   constructor(message: string) {
@@ -74,6 +77,8 @@ export class NotionValidationError extends Error {
  * Assert that a string does not exceed `maxLength` characters.
  *
  * @throws {NotionValidationError}
+ *
+ * @category Client & Core
  */
 export function validateStringLength(value: string, maxLength: number, label: string): void {
   if (value.length > maxLength) {
@@ -91,6 +96,8 @@ export function validateStringLength(value: string, maxLength: number, label: st
  * Assert that an array does not exceed `maxLength` elements.
  *
  * @throws {NotionValidationError}
+ *
+ * @category Client & Core
  */
 export function validateArrayLength(array: unknown[], maxLength: number, label: string): void {
   if (array.length > maxLength) {

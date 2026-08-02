@@ -18,6 +18,8 @@ export interface ListCustomEmojisOptions extends PaginationParameters {
 
 /**
  * Custom Emojis API client for working with Notion workspace custom emojis.
+ *
+ * @category Custom Emoji & Icons
  */
 export class CustomEmojisAPI extends BaseAPI<NotionCustomEmoji, CustomEmoji> {
   protected config = {

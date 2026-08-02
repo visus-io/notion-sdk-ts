@@ -15,7 +15,10 @@ import { fileSchema } from './file.schema';
  * https://developers.notion.com/reference/emoji-object
  */
 
-/** Colors available for native (icon-picker) icons. */
+/** Colors available for native (icon-picker) icons.
+ *
+ * @category Custom Emoji & Icons
+ */
 export const NATIVE_ICON_COLORS = [
   'gray',
   'lightgray',
@@ -29,9 +32,15 @@ export const NATIVE_ICON_COLORS = [
   'red',
 ] as const;
 
+/**
+ * @category Custom Emoji & Icons
+ */
 export type NativeIconColor = (typeof NATIVE_ICON_COLORS)[number];
 
-/** Native (icon-picker) icon. */
+/** Native (icon-picker) icon.
+ *
+ * @category Custom Emoji & Icons
+ */
 export const nativeIconSchema = z.object({
   type: z.literal('icon'),
   icon: z.object({
@@ -40,9 +49,15 @@ export const nativeIconSchema = z.object({
   }),
 });
 
+/**
+ * @category Custom Emoji & Icons
+ */
 export type NativeIcon = z.infer<typeof nativeIconSchema>;
 
-/** Custom emoji icon. */
+/** Custom emoji icon.
+ *
+ * @category Custom Emoji & Icons
+ */
 export const customEmojiIconSchema = z.object({
   type: z.literal('custom_emoji'),
   custom_emoji: z.object({
@@ -52,9 +67,15 @@ export const customEmojiIconSchema = z.object({
   }),
 });
 
+/**
+ * @category Custom Emoji & Icons
+ */
 export type CustomEmojiIcon = z.infer<typeof customEmojiIconSchema>;
 
-/** Shared icon schema covering all icon object variants. */
+/** Shared icon schema covering all icon object variants.
+ *
+ * @category Custom Emoji & Icons
+ */
 export const iconSchema = z.union([
   fileSchema,
   emojiSchema,
@@ -62,4 +83,7 @@ export const iconSchema = z.union([
   customEmojiIconSchema,
 ]);
 
+/**
+ * @category Custom Emoji & Icons
+ */
 export type NotionIcon = z.infer<typeof iconSchema>;

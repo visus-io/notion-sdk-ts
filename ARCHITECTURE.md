@@ -1,6 +1,9 @@
 # Architecture
 
-`@visus-io/notion-sdk-ts` wraps the full Notion REST API with Zod v4 runtime validation, OOP model classes, and ergonomic helper factories. Single runtime dependency: `zod`. Uses Node 18+ built-in `fetch`. Targets Notion API version `2026-03-11` (fixed; cannot be overridden).
+`@visus-io/notion-sdk-ts` wraps the full Notion REST API. It uses Zod v4 for runtime validation.
+It provides object-oriented model classes and helper factories. The SDK has one runtime
+dependency: `zod`. It uses the built-in `fetch` function in Node 18 and later. The SDK uses Notion
+API version `2026-03-11`. You cannot change this version.
 
 ```
 Notion (facade) --> *API classes (endpoint logic + Zod parsing) --> NotionClient (HTTP + retry)
@@ -10,7 +13,10 @@ Notion (facade) --> *API classes (endpoint logic + Zod parsing) --> NotionClient
                               Model classes (OOP wrappers)
 ```
 
-`Notion` is the public entry point. It creates a `NotionClient` (HTTP transport) and instantiates 11 API classes, exposed as `readonly` properties: `pages`, `blocks`, `databases`, `dataSources`, `search`, `users`, `comments`, `fileUploads`, `asyncTasks`, `views`, `customEmojis`.
+`Notion` is the public entry point. It creates one `NotionClient` for HTTP transport. It creates
+11 API classes. Each API class is a `readonly` property: `pages`, `blocks`, `databases`,
+`dataSources`, `search`, `users`, `comments`, `fileUploads`, `asyncTasks`, `views`, and
+`customEmojis`.
 
 ## Project Structure
 
@@ -28,61 +34,109 @@ src/
                             (block, file, filter, pagination, parent, property, richText, sort, webhook)
 ```
 
-Test files are colocated with source using `.test.ts` suffix (e.g., `block.model.test.ts` next to `block.model.ts`).
+Test files stay in the same directory as their source files. Each test file has the suffix
+`.test.ts`. Example: `block.model.test.ts` stays next to `block.model.ts`.
 
-## Layer-by-Layer Patterns
+## Patterns for Each Layer
 
 ### Schemas (`src/schemas/`)
 
-- Sub-schemas as private `const` variables, composed into a main exported schema.
-- Always export the inferred type alongside the schema: `export const fooSchema = z.object({...}); export type Foo = z.infer<typeof fooSchema>;`
-- `z.discriminatedUnion('type', [...])` for polymorphic objects (parent, rich text, file, mentions, page properties).
-- `z.enum([...] as const)` for closed string sets (colors, code languages, block types).
-- `z.iso.datetime()` for datetimes, `z.uuid()` for UUIDs, `z.url()` for URLs.
-- Generic schema factories for reusable patterns (e.g., `paginatedListSchema(resultSchema)`).
+- Define sub-schemas as private `const` variables. Combine them into one exported schema.
+- Always export the inferred type together with the schema:
+  `export const fooSchema = z.object({...}); export type Foo = z.infer<typeof fooSchema>;`
+- Use `z.discriminatedUnion('type', [...])` for polymorphic objects. Examples: parent, rich text,
+  file, mentions, and page properties.
+- Use `z.enum([...] as const)` for closed string sets. Examples: colors, code languages, and block
+  types.
+- Use `z.iso.datetime()` for date-time values. Use `z.uuid()` for UUIDs. Use `z.url()` for URLs.
+- Use generic schema factories for patterns that repeat. Example: `paginatedListSchema(resultSchema)`.
 
 ### API Modules (`src/api/`)
 
-- All API classes extend `BaseAPI<TResponse, TModel>` (`base.api.ts`): holds `protected readonly client: NotionClient`, provides `retrieveResource`, `createResource`, `updateResource`, `deleteResource`, `listResources`, `parseAndWrap`, `parsePaginatedList`.
-- Constructors call `super(client)`.
-- Methods are `async`, take typed options interfaces, return model instances.
-- Request flow: validate inputs -> build body -> `this.client.request<T>()` -> parse with Zod -> wrap in model.
-- Client-side validation runs before the request via `validateArrayLength()` / `validateStringLength()`.
-- Paginated responses use `paginatedListSchema(itemSchema)`, mapping results through model constructors.
-- Convenience methods wrap common patterns (e.g., `trash(id)` calls `update(id, { in_trash: true })`).
-- Sub-resources use object literals with arrow functions: `readonly children = { list: async (...) => {...} }`.
-- Include JSDoc with `@param`, `@returns`, and `@see` links to Notion API docs.
+- All API classes extend `BaseAPI<TResponse, TModel>` in `base.api.ts`. This base class holds
+  `protected readonly client: NotionClient`. It provides these methods: `retrieveResource`,
+  `createResource`, `updateResource`, `deleteResource`, `listResources`, `parseAndWrap`, and
+  `parsePaginatedList`.
+- Each constructor calls `super(client)`.
+- Each method is `async`. Each method takes a typed options interface. Each method returns a
+  model instance.
+- The request flow has 5 steps:
+  1. Validate the inputs.
+  2. Build the request body.
+  3. Call `this.client.request<T>()`.
+  4. Parse the response with Zod.
+  5. Wrap the result in a model.
+- Client-side validation runs before the request. It uses `validateArrayLength()` and
+  `validateStringLength()`.
+- Paginated responses use `paginatedListSchema(itemSchema)`. This schema maps each result through
+  a model constructor.
+- Convenience methods wrap common patterns. Example: `trash(id)` calls
+  `update(id, { in_trash: true })`.
+- Sub-resources use object literals with arrow functions. Example:
+  `readonly children = { list: async (...) => {...} }`.
+- Add JSDoc comments with `@param`, `@returns`, and `@see` tags. The `@see` tag links to the
+  Notion API documentation.
 
 ### Models (`src/models/`)
 
-- Extend `BaseModel<T>` (abstract): takes `data` + `schema`, validates via `schema.parse(data)` on construction.
-- `toJSON(): T` deep-clones via `structuredClone(this.data)`.
-- Abstract getters: `object` and `id`.
-- Expose data as getter properties, converting snake_case API fields to camelCase.
-- Datetime strings converted to `Date` objects in getters.
-- Boolean convenience methods for type checks (e.g., `isTextBlock()`, `isPerson()`, `isInDatabase()`).
-- Text extraction methods (e.g., `getPlainText()`, `getTitle()`).
+- Extend the abstract class `BaseModel<T>`. Its constructor takes `data` and a `schema`. It
+  validates the data with `schema.parse(data)` on construction.
+- The `toJSON(): T` method makes a deep clone with `structuredClone(this.data)`.
+- Define 2 abstract getters: `object` and `id`.
+- Expose data as getter properties. Convert snake_case API fields to camelCase.
+- Getters convert date-time strings to `Date` objects.
+- Use boolean methods for type checks. Examples: `isTextBlock()`, `isPerson()`, and
+  `isInDatabase()`.
+- Use text extraction methods. Examples: `getPlainText()` and `getTitle()`.
 
 ### Helpers (`src/helpers/`)
 
-- Exported as namespace objects: `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `notionFile`, `webhook`.
-- `richText` uses `Object.assign(createFn, { mentionPage, mentionDatabase, ... })` to be both callable and have static methods.
-- `RichTextBuilder` provides a chainable/fluent API; `.build()` produces `NotionRichText[]`.
-- `RichTextInput` union (`string | RichTextBuilder | NotionRichText`) is accepted by all text-accepting helpers, resolved via `resolveRichText()`.
-- Helpers eagerly validate inputs via `validateStringLength()` / `validateArrayLength()`, throwing `NotionValidationError` before any API call.
-- Filter helpers return builders with chainable methods producing `FilterCondition`; compound filters use `filter.and()` / `filter.or()`.
-- Sort helpers return builders with `.ascending()` / `.descending()` terminal methods.
-- Pagination helpers (`paginate`, `paginateIterator`, `paginateWithMetadata`) automate cursor-based pagination for Notion list endpoints; `iterateAllDataSourceRows`/`collectAllDataSourceRows` additionally work around the 10,000-result-per-query cap via `created_time` windowing (see `pagination.schema.ts`'s `request_status`).
+- Export helpers as namespace objects: `block`, `richText`, `filter`, `sort`, `prop`, `parent`,
+  `icon`, `cover`, `notionFile`, and `webhook`.
+- `richText` uses `Object.assign(createFn, { mentionPage, mentionDatabase, ... })`. This makes
+  `richText` callable and gives it static methods.
+- `RichTextBuilder` provides a chainable API. The `.build()` method produces a `NotionRichText`.
+- All text-accepting helpers accept the `RichTextInput` union:
+  `string | RichTextBuilder | NotionRichText`. Each helper resolves this input with
+  `resolveRichText()`.
+- Helpers validate inputs immediately. They use `validateStringLength()` and
+  `validateArrayLength()`. They throw `NotionValidationError` before any API call.
+- Filter helpers return builders with chainable methods. Each builder produces a
+  `FilterCondition`. Compound filters use `filter.and()` and `filter.or()`.
+- Sort helpers return builders. Each builder has 2 terminal methods: `.ascending()` and
+  `.descending()`.
+- Pagination helpers automate cursor-based pagination for Notion list endpoints: `paginate`,
+  `paginateIterator`, and `paginateWithMetadata`. Notion limits each query to 10,000 results.
+  `iterateAllDataSourceRows` and `collectAllDataSourceRows` work around this limit by splitting
+  the query into `created_time` windows. See `request_status` in `pagination.schema.ts` for more
+  information.
 
 ### Error Handling (`src/errors.ts`, `src/validation.ts`)
 
-Four error classes, all extending `Error` and setting `this.name` explicitly:
+The SDK has 4 error classes. Each class extends `Error` and sets `this.name`:
 
-- `NotionAPIError` -- HTTP error responses. Has `status`, `code`, `body`, `retryAfterMs`; helpers `isRateLimited()`, `isServiceOverloaded()`, `isNotFound()`, `isUnauthorized()`, `isValidationError()`, `isServerError()`, `isRetryable()`.
-- `NotionNetworkError` -- connectivity failures, optional `cause`.
-- `NotionRequestTimeoutError` -- timeout exceeded.
-- `NotionValidationError` -- client-side size limit violations, thrown before the request is sent.
+- `NotionAPIError`: an HTTP error response. It has these properties: `status`, `code`, `body`,
+  and `retryAfterMs`. It has these helper methods: `isRateLimited()`, `isServiceOverloaded()`,
+  `isNotFound()`, `isUnauthorized()`, `isValidationError()`, `isServerError()`, and
+  `isRetryable()`.
+- `NotionNetworkError`: a connectivity failure. It has an optional `cause` property.
+- `NotionRequestTimeoutError`: the request exceeded the timeout.
+- `NotionValidationError`: a client-side size limit violation. The SDK throws this error before it
+  sends the request.
 
-The client retries `rate_limited` (429, when `retryOnRateLimit` is enabled) and `service_overload` (529, always) errors, using the `Retry-After` header or exponential backoff (`2^attempt * 1000ms`, capped at 60s).
+The client retries 2 error types. It retries `rate_limited` errors, HTTP status 429, when
+`retryOnRateLimit` is enabled. It always retries `service_overload` errors, HTTP status 529. The
+client uses the `Retry-After` header when the header is present. Otherwise, the client uses
+exponential backoff: `2^attempt * 1000ms`, capped at 60 seconds.
 
-Client-side size limits enforced before requests are defined in the `LIMITS` constant in `validation.ts` (rich text, URLs, email/phone, multi-select/relation/people arrays, comment attachments, payload blocks/bytes) -- read that file for exact values rather than relying on this doc.
+The `LIMITS` constant in `validation.ts` defines client-side size limits. The SDK enforces these
+limits before it sends a request. Limit categories:
+
+- Rich text
+- URLs
+- Email and phone
+- Multi-select, relation, and people arrays
+- Comment attachments
+- Payload blocks and bytes
+
+Read `validation.ts` for the exact values. Do not rely on this document for exact values.

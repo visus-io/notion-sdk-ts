@@ -4,8 +4,9 @@ import { notionDateStringSchema } from './shared.schema';
 /**
  * Notion file object schemas.
  *
- * Files can be Notion-hosted (uploaded through the UI), API-uploaded (via file upload API),
- * or externally hosted (with a URL). Used for page/block icons, covers, and file attachments.
+ * Files can be Notion-hosted (uploaded through the UI), API-uploaded (via the file upload
+ * API), or externally hosted (with a URL). This schema applies to page and block icons,
+ * covers, and file attachments.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/file-object
@@ -36,13 +37,28 @@ const externalFileSchema = z.object({
   }),
 });
 
+/**
+ * @category File Uploads
+ */
 export const fileSchema = z.discriminatedUnion('type', [
   notionFileSchema,
   fileUploadSchema,
   externalFileSchema,
 ]);
 
+/**
+ * @category File Uploads
+ */
 export type NotionFile = z.infer<typeof fileSchema>;
+/**
+ * @category File Uploads
+ */
 export type NotionHostedFile = z.infer<typeof notionFileSchema>;
+/**
+ * @category File Uploads
+ */
 export type UploadedFile = z.infer<typeof fileUploadSchema>;
+/**
+ * @category File Uploads
+ */
 export type ExternalFile = z.infer<typeof externalFileSchema>;

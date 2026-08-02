@@ -43,6 +43,28 @@ bun run format:check     # Check formatting
 - Validation tests use `expect(() => ...).toThrow(ErrorClass | /pattern/)` and include boundary cases (at limit, over limit).
 - No external mocking libraries for unit tests -- only Vitest's built-in `vi`. Integration tests use `msw` to intercept HTTP at the network layer (not to mock arbitrary modules).
 
+## Documentation Style
+
+All documentation and JSDoc comments **must** follow the ASD-STE100 (Simplified Technical
+English) standard. This applies to Markdown docs (`README.md`, `ARCHITECTURE.md`, `AGENTS.md`,
+`docs/`) and to JSDoc comments in source. Key rules:
+
+- Write short sentences. Target 20 words or fewer per sentence.
+- Write one instruction or one fact per sentence.
+- Use active voice. Use simple tenses: simple present, simple past, or imperative.
+- Address the reader directly with imperative mood for instructions (e.g. "Call `retrieve()`
+  first," not "The `retrieve()` method should be called first").
+- Avoid noun clusters (chains of 3+ nouns strung together). Avoid gerunds as nouns when a
+  verb form reads clearer.
+- Use each term consistently. Do not use a synonym for a term already used elsewhere in the same
+  document.
+- Avoid vague qualifiers ("relatively", "fairly", "quite"). State the exact behavior or value.
+
+**Documentation must stay in sync with the code.** If a change adds, removes, or changes the
+behavior of a public API (a method, an option, a return value, an error, a default), update the
+matching JSDoc and any affected Markdown docs (`README.md`, `ARCHITECTURE.md`, `docs/`) in the
+same change. Do not defer doc updates to a later commit.
+
 ## Git Workflow
 
 - Husky `pre-commit` runs `lint-staged`; `commit-msg` runs `commitlint`; `post-checkout` runs `bun install` when `package.json`/`bun.lock` change on branch switch.

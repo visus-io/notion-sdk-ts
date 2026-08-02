@@ -1,7 +1,9 @@
 import { type NotionRichText, richTextSchema } from '../schemas';
 
 /**
- * RichText helper class for working with Notion rich text arrays.
+ * RichText helper class to work with Notion rich text arrays.
+ *
+ * @category Rich Text
  */
 export class RichText {
   private readonly data: NotionRichText;

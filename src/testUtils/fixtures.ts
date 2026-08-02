@@ -35,7 +35,7 @@ function buildPartialUser(id: string = PERSON_USER_ID): NotionUser {
   return { object: 'user', id };
 }
 
-/** Builds a realistic Notion page API response. */
+/** Build a realistic Notion page API response. */
 export function buildPageResponse(overrides: Partial<NotionPage> = {}): NotionPage {
   return {
     object: 'page',
@@ -61,7 +61,7 @@ export function buildPageResponse(overrides: Partial<NotionPage> = {}): NotionPa
   };
 }
 
-/** Builds a realistic Notion block API response (paragraph block). */
+/** Build a realistic Notion block API response (paragraph block). */
 export function buildBlockResponse(overrides: Partial<NotionBlock> = {}): NotionBlock {
   return {
     object: 'block',
@@ -82,7 +82,7 @@ export function buildBlockResponse(overrides: Partial<NotionBlock> = {}): Notion
   };
 }
 
-/** Builds a realistic Notion database API response. */
+/** Build a realistic Notion database API response. */
 export function buildDatabaseResponse(overrides: Partial<NotionDatabase> = {}): NotionDatabase {
   return {
     object: 'database',
@@ -105,7 +105,7 @@ export function buildDatabaseResponse(overrides: Partial<NotionDatabase> = {}): 
   };
 }
 
-/** Builds a realistic Notion data source API response. */
+/** Build a realistic Notion data source API response. */
 export function buildDataSourceResponse(
   overrides: Partial<NotionDataSource> = {},
 ): NotionDataSource {
@@ -133,7 +133,7 @@ export function buildDataSourceResponse(
   };
 }
 
-/** Builds a realistic Notion person-user API response. */
+/** Build a realistic Notion person-user API response. */
 export function buildUserResponse(overrides: Partial<NotionUser> = {}): NotionUser {
   return {
     object: 'user',
@@ -146,7 +146,7 @@ export function buildUserResponse(overrides: Partial<NotionUser> = {}): NotionUs
   };
 }
 
-/** Builds a realistic Notion bot-user API response. */
+/** Build a realistic Notion bot-user API response. */
 export function buildBotUserResponse(overrides: Partial<NotionUser> = {}): NotionUser {
   return {
     object: 'user',
@@ -162,7 +162,7 @@ export function buildBotUserResponse(overrides: Partial<NotionUser> = {}): Notio
   };
 }
 
-/** Builds a realistic Notion comment API response. */
+/** Build a realistic Notion comment API response. */
 export function buildCommentResponse(overrides: Partial<NotionComment> = {}): NotionComment {
   return {
     object: 'comment',
@@ -177,7 +177,7 @@ export function buildCommentResponse(overrides: Partial<NotionComment> = {}): No
   };
 }
 
-/** Builds a realistic Notion file upload API response. */
+/** Build a realistic Notion file upload API response. */
 export function buildFileUploadResponse(
   overrides: Partial<NotionFileUpload> = {},
 ): NotionFileUpload {
@@ -198,7 +198,7 @@ export function buildFileUploadResponse(
   };
 }
 
-/** Builds a Notion API error response body. */
+/** Build a Notion API error response body. */
 export function buildErrorBody(
   status: number,
   code: NotionErrorCode,

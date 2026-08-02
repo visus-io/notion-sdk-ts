@@ -1,8 +1,11 @@
 import type * as z from 'zod';
 
 /**
- * Base model class providing common functionality for all Notion models.
- * Models wrap validated data from schemas with methods and business logic.
+ * Base class for all Notion models.
+ *
+ * This class wraps validated data from a schema. It adds methods and logic for each model.
+ *
+ * @category Client & Core
  */
 export abstract class BaseModel<T> {
   protected readonly data: T;
@@ -19,7 +22,7 @@ export abstract class BaseModel<T> {
   }
 
   /**
-   * Returns the object type (e.g., "page", "block", "user").
+   * Returns the object type, for example "page", "block", or "user".
    */
   abstract get object(): string;
 

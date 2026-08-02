@@ -1,4 +1,7 @@
-/** All color options supported by Notion. */
+/** All color options supported by Notion.
+ *
+ * @category Shared Types
+ */
 export const NOTION_COLORS = [
   'blue',
   'blue_background',
@@ -21,4 +24,7 @@ export const NOTION_COLORS = [
   'yellow_background',
 ] as const;
 
+/**
+ * @category Shared Types
+ */
 export type NotionColor = (typeof NOTION_COLORS)[number];

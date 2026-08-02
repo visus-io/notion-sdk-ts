@@ -5,7 +5,8 @@ import { LIMITS, validateArrayLength } from '../validation';
 import type * as z from 'zod';
 
 /**
- * Configuration for API resource operations, including paths, schemas, and model classes.
+ * Configuration for API resource operations. It defines the schema, model class,
+ * and list type that parse and wrap API responses.
  *
  * @template TResponse - The raw response type from the API
  * @template TModel - The model class type that wraps the response
@@ -77,8 +78,9 @@ export abstract class BaseAPI<TResponse, TModel> {
   /**
    * Build filter_properties query parameter from an array of property names.
    *
-   * Notion sends this as a repeated query key (`filter_properties=a&filter_properties=b`),
-   * not a single comma-joined value, so the array is preserved for `NotionClient` to expand.
+   * Notion sends this parameter as a repeated query key
+   * (`filter_properties=a&filter_properties=b`), not as a single comma-joined value.
+   * This method keeps the array intact so `NotionClient` can expand it.
    *
    * @param filterProperties - Optional array of property names to include in the response
    * @returns Query object with filter_properties parameter for API requests

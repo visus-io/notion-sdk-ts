@@ -11,8 +11,10 @@ import {
 /**
  * View model class with helper methods.
  *
- * Views control how a database/data source's rows are displayed (table, board,
- * calendar, etc.).
+ * A view controls how a database or data source shows its rows, for example as a
+ * table, board, or calendar.
+ *
+ * @category Views
  */
 export class View extends BaseModel<NotionView> {
   constructor(data: NotionView) {
@@ -55,7 +57,7 @@ export class View extends BaseModel<NotionView> {
   }
 
   /**
-   * Returns the view type (table, board, calendar, etc.).
+   * Returns the view type, for example table, board, or calendar.
    */
   get type(): ViewType {
     return this.data.type;
@@ -125,14 +127,14 @@ export class View extends BaseModel<NotionView> {
   }
 
   /**
-   * Returns the dashboard widget ID, if this view is a widget on a dashboard.
+   * Returns the widget ID, if a dashboard shows this view as a widget.
    */
   get dashboardViewId(): string | undefined {
     return this.data.dashboard_view_id;
   }
 
   /**
-   * Returns whether this view is a widget view embedded in a dashboard.
+   * Returns whether a dashboard shows this view as a widget.
    */
   isWidgetView(): boolean {
     return this.data.dashboard_view_id !== undefined;

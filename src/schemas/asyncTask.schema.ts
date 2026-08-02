@@ -10,6 +10,8 @@ import { notionDateStringSchema } from './shared.schema';
  *
  * Notion API reference:
  * https://developers.notion.com/reference/retrieve-async-task
+ *
+ * @category Async Tasks
  */
 
 export const ASYNC_TASK_STATUSES = [
@@ -19,6 +21,9 @@ export const ASYNC_TASK_STATUSES = [
   'succeeded',
   'failed',
 ] as const;
+/**
+ * @category Async Tasks
+ */
 export type AsyncTaskStatus = (typeof ASYNC_TASK_STATUSES)[number];
 
 const asyncTaskOperationSchema = z.object({
@@ -36,6 +41,9 @@ const asyncTaskErrorSchema = z.object({
   message: z.string().trim(),
 });
 
+/**
+ * @category Async Tasks
+ */
 export const asyncTaskSchema = z.object({
   object: z.literal('async_task'),
   id: z.uuid(),
@@ -51,4 +59,7 @@ export const asyncTaskSchema = z.object({
   // Present only when status === 'failed'.
   error: asyncTaskErrorSchema.optional(),
 });
+/**
+ * @category Async Tasks
+ */
 export type NotionAsyncTask = z.infer<typeof asyncTaskSchema>;

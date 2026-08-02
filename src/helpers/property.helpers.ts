@@ -9,7 +9,7 @@ import { RichTextBuilder } from './richText.helpers';
 /** Accepted rich text input for property helpers. */
 type RichTextInput = string | RichTextBuilder | NotionRichText;
 
-/** Resolve rich text input to a `NotionRichText` array. */
+/** Resolve rich text input to a `NotionRichText`. */
 function resolveRichText(input: RichTextInput): NotionRichText {
   if (typeof input === 'string') {
     validateStringLength(input, LIMITS.RICH_TEXT_CONTENT, 'Rich text content');
@@ -344,6 +344,8 @@ function files(entries: FileEntry[]): { files: ExternalFileEntry[] } {
  *   },
  * });
  * ```
+ *
+ * @category Helpers
  */
 export const prop = {
   title,

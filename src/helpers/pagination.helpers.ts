@@ -1,11 +1,11 @@
 import type { PaginatedList } from '../schemas';
 
 /**
- * Pagination helper utilities for collecting all results from paginated Notion API endpoints.
+ * Pagination helpers that collect all results from paginated Notion API endpoints.
  *
- * The Notion API uses cursor-based pagination. All list endpoints return a `PaginatedList<T>`
- * with `results`, `next_cursor`, and `has_more` properties. These helpers automate the process
- * of fetching all pages.
+ * The Notion API uses cursor-based pagination. Each list endpoint returns a
+ * `PaginatedList<T>` object with `results`, `next_cursor`, and `has_more` properties.
+ * These helpers fetch every page automatically.
  *
  * @example
  * ```typescript
@@ -37,15 +37,17 @@ import type { PaginatedList } from '../schemas';
 
 /**
  * Fetch function that returns a paginated list.
- * Receives an optional cursor and returns the next page of results.
+ * This function receives an optional cursor. It returns the next page of results.
+ *
+ * @category Pagination
  */
 export type PaginatedFetchFunction<T> = (cursor?: string) => Promise<PaginatedList<T>>;
 
 /**
  * Collects all results from a paginated endpoint by automatically following cursors.
  *
- * This function will keep fetching pages until `has_more` is `false`, collecting all
- * results into a single array. Use this when you need all results at once.
+ * This function fetches pages until `has_more` is `false`. It collects all results
+ * into one array. Use this function when you need all results at once.
  *
  * @param fetchPage - Function that fetches a single page of results
  * @returns Array containing all results from all pages
@@ -85,6 +87,8 @@ export type PaginatedFetchFunction<T> = (cursor?: string) => Promise<PaginatedLi
  *   })
  * );
  * ```
+ *
+ * @category Pagination
  */
 export async function paginate<T>(fetchPage: PaginatedFetchFunction<T>): Promise<T[]> {
   const all: T[] = [];
@@ -102,9 +106,9 @@ export async function paginate<T>(fetchPage: PaginatedFetchFunction<T>): Promise
 /**
  * Creates an async iterator that yields individual items from paginated results.
  *
- * This function provides memory-efficient iteration over large result sets by fetching
- * one page at a time and yielding items as needed. Use this with `for await...of` when
- * you want to process results one by one without loading everything into memory.
+ * This function iterates over large result sets without loading everything into
+ * memory. It fetches one page at a time and yields items as needed. Use this function
+ * with `for await...of` to process results one at a time.
  *
  * @param fetchPage - Function that fetches a single page of results
  * @yields Individual items from each page
@@ -139,6 +143,8 @@ export async function paginate<T>(fetchPage: PaginatedFetchFunction<T>): Promise
  *   console.log(result.url);
  * }
  * ```
+ *
+ * @category Pagination
  */
 export async function* paginateIterator<T>(
   fetchPage: PaginatedFetchFunction<T>,
@@ -155,10 +161,10 @@ export async function* paginateIterator<T>(
 }
 
 /**
- * Collects all results and returns both the items and pagination metadata.
+ * Collects all results. Returns the items together with pagination metadata.
  *
- * This function is useful when you need to know how many pages were fetched
- * or want to track the total number of API calls made.
+ * Use this function when you need the page count or the total number of API
+ * calls.
  *
  * @param fetchPage - Function that fetches a single page of results
  * @returns Object containing all results and pagination metadata
@@ -171,6 +177,8 @@ export async function* paginateIterator<T>(
  *
  * console.log(`Fetched ${totalCount} blocks across ${pageCount} pages`);
  * ```
+ *
+ * @category Pagination
  */
 export async function paginateWithMetadata<T>(fetchPage: PaginatedFetchFunction<T>): Promise<{
   items: T[];
@@ -200,11 +208,15 @@ export async function paginateWithMetadata<T>(fetchPage: PaginatedFetchFunction<
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch function for windowed row collection. Same as {@link PaginatedFetchFunction} plus
- * a second parameter carrying the ISO 8601 `created_time` lower bound for the *next*
- * window, present once the previous window was capped at the query result limit
- * (`request_status.type === 'incomplete'`). The caller merges this into their own
- * created_time-ascending query, e.g. `filter.createdTime('Created time').onOrAfter(createdTimeCursor)`.
+ * Fetch function for windowed row collection. It extends
+ * {@link PaginatedFetchFunction} with a second parameter: the ISO 8601
+ * `created_time` lower bound for the next window. This parameter appears only
+ * after the previous window hits the query result limit
+ * (`request_status.type === 'incomplete'`). Merge this bound into your own
+ * created_time-ascending query, for example
+ * `filter.createdTime().onOrAfter(createdTimeCursor)`.
+ *
+ * @category Pagination
  */
 export type WindowedFetchFunction<T extends { id: string; createdTime: Date }> = (
   cursor: string | undefined,
@@ -212,18 +224,18 @@ export type WindowedFetchFunction<T extends { id: string; createdTime: Date }> =
 ) => Promise<PaginatedList<T>>;
 
 /**
- * Iterates over every row of a data source query, transparently working around the
- * API's 10,000-result-per-query cap.
+ * Iterates over every row of a data source query. It works around the API's
+ * 10,000-result-per-query cap.
  *
- * Data source (and view) queries cap at 10,000 results; when capped, the response's
- * `has_more` is still `false`, so following `next_cursor`/`has_more` alone silently
- * truncates the result set. When a window is capped (`request_status.type ===
- * 'incomplete'`), this starts a new query filtered to `created_time >=` the last row
- * seen, de-duplicating by `id` across the window boundary. Requires the query to be
- * sorted by `created_time` ascending.
+ * Data source and view queries cap at 10,000 results. When a query hits this cap, the
+ * response's `has_more` field is still `false`. Following `next_cursor` and `has_more`
+ * alone silently truncates the result set. When a window hits the cap
+ * (`request_status.type === 'incomplete'`), this function starts a new query filtered
+ * to `created_time >=` the last row seen. It de-duplicates rows by `id` across the
+ * window boundary. The query must sort by `created_time` in ascending order.
  *
- * @param fetchWindow - Function that fetches one page, given the current cursor and
- * (once a window has been capped) a `created_time` lower bound for the next window
+ * @param fetchWindow - Function that fetches one page. Pass the current cursor. After
+ * a window hits the cap, also pass a `created_time` lower bound for the next window.
  * @yields Individual rows across all windows
  *
  * @example
@@ -233,11 +245,13 @@ export type WindowedFetchFunction<T extends { id: string; createdTime: Date }> =
  *     start_cursor: cursor,
  *     sorts: [{ timestamp: 'created_time', direction: 'ascending' }],
  *     filter: createdTimeCursor
- *       ? filter.and(baseFilter, filter.createdTime('Created time').onOrAfter(createdTimeCursor))
+ *       ? filter.and(baseFilter, filter.createdTime().onOrAfter(createdTimeCursor))
  *       : baseFilter,
  *   }),
  * );
  * ```
+ *
+ * @category Pagination
  */
 export async function* iterateAllDataSourceRows<T extends { id: string; createdTime: Date }>(
   fetchWindow: WindowedFetchFunction<T>,
@@ -287,13 +301,15 @@ export async function* iterateAllDataSourceRows<T extends { id: string; createdT
 }
 
 /**
- * Collects every row of a data source query into an array, transparently working
- * around the API's 10,000-result-per-query cap. See {@link iterateAllDataSourceRows}
- * for the windowing behavior.
+ * Collects every row of a data source query into an array. It works around the API's
+ * 10,000-result-per-query cap. See {@link iterateAllDataSourceRows} for the windowing
+ * behavior.
  *
- * @param fetchWindow - Function that fetches one page, given the current cursor and
- * (once a window has been capped) a `created_time` lower bound for the next window
+ * @param fetchWindow - Function that fetches one page. Pass the current cursor. After
+ * a window hits the cap, also pass a `created_time` lower bound for the next window.
  * @returns Array containing all rows across all windows
+ *
+ * @category Pagination
  */
 export async function collectAllDataSourceRows<T extends { id: string; createdTime: Date }>(
   fetchWindow: WindowedFetchFunction<T>,

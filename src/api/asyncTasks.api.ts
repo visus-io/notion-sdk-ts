@@ -18,6 +18,8 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Async Tasks API client for polling long-running Notion operations.
+ *
+ * @category Async Tasks
  */
 export class AsyncTasksAPI extends BaseAPI<NotionAsyncTask, AsyncTask> {
   protected config = {
@@ -42,9 +44,9 @@ export class AsyncTasksAPI extends BaseAPI<NotionAsyncTask, AsyncTask> {
   }
 
   /**
-   * Poll an async task until it reaches a terminal status (succeeded or failed),
-   * waiting at least `poll_after_seconds` (from the response body, not a header)
-   * between polls, per the API's guidance.
+   * Poll an async task until it reaches a terminal status: succeeded or failed.
+   * Wait at least `poll_after_seconds` between each poll, per the API's guidance.
+   * This value comes from the response body, not a header.
    *
    * @param taskId - The ID of the async task to poll
    * @param options - Polling options

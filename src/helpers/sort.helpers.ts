@@ -62,6 +62,8 @@ class TimestampSortBuilder {
  *   ],
  * });
  * ```
+ *
+ * @category Helpers
  */
 export const sort = {
   /**

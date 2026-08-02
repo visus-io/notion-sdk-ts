@@ -4,11 +4,14 @@ import { notionDateStringSchema } from './shared.schema';
 /**
  * Notion file upload object schema.
  *
- * File uploads represent files uploaded to Notion via the API. They have a temporary
- * upload URL and can be in various states (pending, uploaded, expired, failed).
+ * File uploads represent files uploaded to Notion through the API. Each file upload has
+ * a temporary upload URL. Each file upload has one of these states: pending, uploaded,
+ * expired, or failed.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/file-upload-object
+ *
+ * @category File Uploads
  */
 
 export const fileUploadSchema = z.object({
@@ -25,4 +28,7 @@ export const fileUploadSchema = z.object({
   file_import_result: z.string().trim(),
 });
 
+/**
+ * @category File Uploads
+ */
 export type NotionFileUpload = z.infer<typeof fileUploadSchema>;

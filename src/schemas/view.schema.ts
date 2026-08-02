@@ -8,11 +8,14 @@ import { userSchema } from './user.schema';
 /**
  * View object schema.
  *
- * Views control how a database/data source's rows are displayed (table, board,
- * calendar, etc.). As of API version 2025-09-03, views have their own endpoints.
+ * A view controls how a database or data source displays its rows, for example as a
+ * table, board, or calendar. As of API version 2025-09-03, views have their own
+ * endpoints.
  *
  * Notion API reference:
  * https://developers.notion.com/guides/data-apis/working-with-views
+ *
+ * @category Views
  */
 
 export const VIEW_TYPES = [
@@ -27,21 +30,35 @@ export const VIEW_TYPES = [
   'map',
   'dashboard',
 ] as const;
+/**
+ * @category Views
+ */
 export type ViewType = (typeof VIEW_TYPES)[number];
 
 /**
- * Per-layout view configuration. Exact per-type fields (e.g. table column order, board
- * group-by property) haven't been confirmed against a live response, so this is kept
- * permissive -- tagged on `type`, with all other fields passed through unmodeled -- so
- * unknown fields round-trip instead of being stripped or rejected.
+ * Configuration for a single view layout.
+ *
+ * Notion has not confirmed the exact fields for each view type against a live
+ * response. Examples include the table column order and the board group-by
+ * property. This schema stays permissive. It tags the object by its `type`
+ * field and passes all other fields through without validation. As a result,
+ * unknown fields round-trip unchanged instead of the schema rejecting them.
+ *
+ * @category Views
  */
 export const viewConfigurationSchema = z
   .object({
     type: z.enum(VIEW_TYPES),
   })
   .catchall(z.unknown());
+/**
+ * @category Views
+ */
 export type ViewConfiguration = z.infer<typeof viewConfigurationSchema>;
 
+/**
+ * @category Views
+ */
 export const viewSchema = z.object({
   object: z.literal('view'),
   id: z.uuid(),
@@ -61,20 +78,34 @@ export const viewSchema = z.object({
   // Widget/dashboard views only.
   dashboard_view_id: z.uuid().optional(),
 });
+/**
+ * @category Views
+ */
 export type NotionView = z.infer<typeof viewSchema>;
 
-/** Delete-a-view returns a partial object: only object/id/parent/type. */
+/**
+ * Notion's delete-view response includes only `object`, `id`, `parent`, and `type`.
+ * It omits the rest of the view shape.
+ *
+ * @category Views
+ */
 export const viewDeleteResponseSchema = z.object({
   object: z.literal('view'),
   id: z.uuid(),
   parent: databaseParentSchema,
   type: z.enum(VIEW_TYPES),
 });
+/**
+ * @category Views
+ */
 export type ViewDeleteResult = z.infer<typeof viewDeleteResponseSchema>;
 
 /**
- * View query response schema. Non-standard pagination shape: `object: "view_query"`,
- * plus `expires_at`/`total_count`; queries expire roughly 15 minutes after creation.
+ * View query response schema. This response has a non-standard pagination shape:
+ * `object: "view_query"`, plus `expires_at` and `total_count`. Queries expire
+ * about 15 minutes after creation.
+ *
+ * @category Views
  */
 export const viewQueryResponseSchema = z.object({
   object: z.literal('view_query'),
@@ -87,4 +118,7 @@ export const viewQueryResponseSchema = z.object({
   has_more: z.boolean(),
   request_status: requestStatusSchema.optional(),
 });
+/**
+ * @category Views
+ */
 export type ViewQueryResponse = z.infer<typeof viewQueryResponseSchema>;
