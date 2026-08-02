@@ -62,11 +62,21 @@ export class AsyncTasksAPI extends BaseAPI<NotionAsyncTask, AsyncTask> {
         return task;
       }
 
-      if (Date.now() >= deadline) {
+      const remainingMs = deadline - Date.now();
+      if (remainingMs <= 0) {
         throw new NotionRequestTimeoutError(`Task ${taskId} did not complete within timeout`);
       }
 
-      await sleep(Math.max((task.pollAfterSeconds ?? 1) * 1000, 250));
+      const desiredSleepMs = Math.max((task.pollAfterSeconds ?? 1) * 1000, 250);
+      if (desiredSleepMs >= remainingMs) {
+        // Sleeping the full poll_after_seconds would overshoot the deadline -- cap the
+        // sleep to what's left and time out immediately after, instead of sleeping the
+        // full interval and only detecting the timeout on the next loop iteration.
+        await sleep(remainingMs);
+        throw new NotionRequestTimeoutError(`Task ${taskId} did not complete within timeout`);
+      }
+
+      await sleep(desiredSleepMs);
     }
   }
 }

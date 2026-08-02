@@ -86,6 +86,27 @@ describe('AsyncTasksAPI', () => {
       vi.mocked(mockClient.request).mockResolvedValue({
         ...baseTask,
         status: 'running',
+        poll_after_seconds: 1,
+      });
+
+      let caughtError: unknown;
+      const promise = asyncTasksAPI
+        .poll(baseTask.id, { timeoutMs: 1500 })
+        .catch((error: unknown) => {
+          caughtError = error;
+        });
+
+      await vi.advanceTimersByTimeAsync(2000);
+
+      await promise;
+
+      expect(caughtError).toBeInstanceOf(NotionRequestTimeoutError);
+    });
+
+    it('should not oversleep past timeoutMs when poll_after_seconds is larger than the remaining time (regression)', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue({
+        ...baseTask,
+        status: 'running',
         poll_after_seconds: 100,
       });
 
@@ -96,11 +117,15 @@ describe('AsyncTasksAPI', () => {
           caughtError = error;
         });
 
-      await vi.advanceTimersByTimeAsync(100_000);
+      // If poll() slept the full 100-second poll_after_seconds interval before
+      // checking the deadline, this would not be enough time for the promise to
+      // resolve -- the sleep must be capped to what's left of the 150ms timeout.
+      await vi.advanceTimersByTimeAsync(150);
 
       await promise;
 
       expect(caughtError).toBeInstanceOf(NotionRequestTimeoutError);
+      expect(mockClient.request).toHaveBeenCalledTimes(1);
     });
   });
 });
