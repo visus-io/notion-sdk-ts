@@ -1,3 +1,5 @@
+import type { NativeIconColor } from '../schemas/icon.schema';
+
 // ---------------------------------------------------------------------------
 // Return types
 // ---------------------------------------------------------------------------
@@ -19,7 +21,7 @@ interface FileUploadRef {
 
 interface NativeIconRef {
   type: 'icon';
-  icon: { name: string; color?: string };
+  icon: { name: string; color?: NativeIconColor };
 }
 
 interface CustomEmojiIconRef {
@@ -75,7 +77,7 @@ function fileUploadIcon(id: string): FileUploadRef {
  * icon.native('star circle', 'blue')
  * ```
  */
-function nativeIcon(name: string, color?: string): NativeIconRef {
+function nativeIcon(name: string, color?: NativeIconColor): NativeIconRef {
   return { type: 'icon', icon: { name, ...(color ? { color } : {}) } };
 }
 

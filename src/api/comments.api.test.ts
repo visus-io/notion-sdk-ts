@@ -342,6 +342,12 @@ describe('CommentsAPI', () => {
         }),
       ).rejects.toThrow(NotionValidationError);
     });
+
+    it('should throw validation error when neither rich_text nor markdown is provided', async () => {
+      await expect(commentsAPI.update('123e4567-e89b-12d3-a456-426614174000', {})).rejects.toThrow(
+        NotionValidationError,
+      );
+    });
   });
 
   describe('delete', () => {
