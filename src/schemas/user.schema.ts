@@ -43,7 +43,7 @@ const botUserSchema = z.object({
   avatar_url: z.union([z.url(), z.null()]).optional(),
   bot: z.object({
     owner: botOwnerSchema,
-    workspace_name: z.string().trim().nullable().optional(),
+    workspace_name: z.string().trim().nullish(),
     workspace_id: z.string().trim().optional(),
     workspace_limits: z
       .object({
