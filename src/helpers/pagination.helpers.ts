@@ -250,6 +250,7 @@ export async function* iterateAllDataSourceRows<T extends { id: string; createdT
 
   while (hasMore) {
     const response = await fetchWindow(cursor, createdTimeCursor);
+    let yieldedThisWindow = false;
 
     for (const item of response.results) {
       if (seenIds.has(item.id)) {
@@ -257,6 +258,7 @@ export async function* iterateAllDataSourceRows<T extends { id: string; createdT
       }
       seenIds.add(item.id);
       lastCreatedTime = item.createdTime;
+      yieldedThisWindow = true;
       yield item;
     }
 
@@ -265,6 +267,15 @@ export async function* iterateAllDataSourceRows<T extends { id: string; createdT
       // Start a fresh window scoped to created_time >= the last row seen, de-duping by
       // id across the boundary (created_time, not last_edited_time -- the latter shifts
       // rows between windows).
+      if (!yieldedThisWindow) {
+        // Every row in this capped window was already seen, meaning more rows share
+        // this exact created_time than fit in one window -- the created_time >= filter
+        // can't disambiguate further, so re-querying would return the same page forever.
+        throw new Error(
+          `More than one window's worth of rows share the same created_time (${lastCreatedTime.toISOString()}); ` +
+            'iterateAllDataSourceRows cannot make forward progress past this timestamp.',
+        );
+      }
       cursor = undefined;
       createdTimeCursor = lastCreatedTime.toISOString();
       hasMore = true;

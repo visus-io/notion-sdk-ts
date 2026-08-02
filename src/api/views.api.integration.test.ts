@@ -58,7 +58,7 @@ describe('ViewsAPI integration', () => {
         }),
       );
 
-      const result = await notion.views.list({ databaseId });
+      const result = await notion.views.list({ database_id: databaseId });
 
       expect(result.results).toHaveLength(1);
       expect(result.results[0]).toBeInstanceOf(View);
@@ -79,7 +79,7 @@ describe('ViewsAPI integration', () => {
         }),
       );
 
-      const result = await notion.views.list({ dataSourceId });
+      const result = await notion.views.list({ data_source_id: dataSourceId });
 
       expect(result.results).toHaveLength(1);
     });

@@ -16,14 +16,14 @@ describe('ViewsAPI', () => {
   });
 
   describe('list', () => {
-    it('should throw a validation error when neither databaseId nor dataSourceId is provided', async () => {
+    it('should throw a validation error when neither database_id nor data_source_id is provided', async () => {
       await expect(viewsAPI.list({})).rejects.toThrow(NotionValidationError);
     });
 
-    it('should throw a validation error when both databaseId and dataSourceId are provided', async () => {
-      await expect(viewsAPI.list({ databaseId: 'db-id', dataSourceId: 'ds-id' })).rejects.toThrow(
-        NotionValidationError,
-      );
+    it('should throw a validation error when both database_id and data_source_id are provided', async () => {
+      await expect(
+        viewsAPI.list({ database_id: 'db-id', data_source_id: 'ds-id' }),
+      ).rejects.toThrow(NotionValidationError);
     });
   });
 

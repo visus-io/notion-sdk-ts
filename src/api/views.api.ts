@@ -16,14 +16,14 @@ import { BaseAPI } from './base.api';
 import type { DataSourceSort } from './dataSources.api';
 
 /**
- * Options for listing views. Exactly one of `databaseId`/`dataSourceId` must be provided.
+ * Options for listing views. Exactly one of `database_id`/`data_source_id` must be provided.
  */
 export interface ListViewsOptions extends PaginationParameters {
-  /** List views for this database (mutually exclusive with dataSourceId) */
-  databaseId?: string;
+  /** List views for this database (mutually exclusive with data_source_id) */
+  database_id?: string;
 
-  /** List views for this data source (mutually exclusive with databaseId) */
-  dataSourceId?: string;
+  /** List views for this data source (mutually exclusive with database_id) */
+  data_source_id?: string;
 }
 
 /**
@@ -148,21 +148,23 @@ export class ViewsAPI extends BaseAPI<NotionView, View> {
   /**
    * List the views for a database or data source.
    *
-   * @param options - Exactly one of `databaseId`/`dataSourceId`, plus pagination
+   * @param options - Exactly one of `database_id`/`data_source_id`, plus pagination
    * @returns Paginated list of views
    *
-   * @throws {NotionValidationError} If neither or both of `databaseId`/`dataSourceId` are provided
+   * @throws {NotionValidationError} If neither or both of `database_id`/`data_source_id` are provided
    *
    * @see https://developers.notion.com/guides/data-apis/working-with-views
    */
   async list(options: ListViewsOptions): Promise<PaginatedList<View>> {
-    if (Boolean(options.databaseId) === Boolean(options.dataSourceId)) {
-      throw new NotionValidationError('Exactly one of databaseId or dataSourceId must be provided');
+    if (Boolean(options.database_id) === Boolean(options.data_source_id)) {
+      throw new NotionValidationError(
+        'Exactly one of database_id or data_source_id must be provided',
+      );
     }
 
     const query: Record<string, string> = {
-      ...(options.databaseId ? { database_id: options.databaseId } : {}),
-      ...(options.dataSourceId ? { data_source_id: options.dataSourceId } : {}),
+      ...(options.database_id ? { database_id: options.database_id } : {}),
+      ...(options.data_source_id ? { data_source_id: options.data_source_id } : {}),
       ...this.buildPaginationQuery(options),
     };
 

@@ -443,5 +443,36 @@ describe('pagination helpers', () => {
       expect(rows).toHaveLength(1);
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
+
+    it('should throw instead of looping forever when a window makes no progress', async () => {
+      const tieTime = new Date('2026-01-05T00:00:00.000Z');
+
+      // Every row in the capped window shares the exact same created_time as the
+      // previous window's cursor, so created_time >= filtering can't move forward --
+      // the same page would be returned on every subsequent call.
+      const mockFetch = vi
+        .fn<WindowedFetchFunction<MockRow>>()
+        .mockResolvedValueOnce({
+          object: 'list',
+          results: [{ id: '1', createdTime: tieTime }],
+          next_cursor: null,
+          has_more: false,
+          type: 'page',
+          request_status: { type: 'incomplete', incomplete_reason: 'query_result_limit_reached' },
+        })
+        .mockResolvedValueOnce({
+          object: 'list',
+          results: [{ id: '1', createdTime: tieTime }],
+          next_cursor: null,
+          has_more: false,
+          type: 'page',
+          request_status: { type: 'incomplete', incomplete_reason: 'query_result_limit_reached' },
+        });
+
+      await expect(collectAllDataSourceRows(mockFetch)).rejects.toThrow(
+        /cannot make forward progress/,
+      );
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
   });
 });
