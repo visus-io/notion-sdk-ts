@@ -38,8 +38,9 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "docs:build": "cd docs && bun install && bun run build",
-    "docs:dev": "cd docs && bun install && bun run dev",
+    "docs:build": "cd docs && bun run build",
+    "docs:dev": "cd docs && bun run dev",
+    "docs:install": "cd docs && bun install",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

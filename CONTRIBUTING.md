@@ -55,7 +55,8 @@ covering tests, lint, and documentation updates.
 ## Documentation
 
 - Narrative guides and the generated API reference live in [`docs/`](./docs) (Starlight +
-  TypeDoc). Run `bun run docs:dev` to preview changes locally.
+  TypeDoc). It has its own dependencies. Run `bun run docs:install` once, then
+  `bun run docs:dev` to preview changes locally.
 - Update the relevant guide under `docs/src/content/docs/guides/` if your change affects
   documented behavior.
 - Public API changes are documented automatically via JSDoc comments in `src/` — there's no

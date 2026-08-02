@@ -76,9 +76,10 @@ const results = await notion.databases.query('database-id', {
 
 ## Documentation
 
-Full documentation is hosted at [nts.projects.visus.io](https://nts.projects.visus.io). It includes guides and a generated API reference. Source lives in [`docs/`](./docs). Run it locally:
+Full documentation is hosted at [nts.projects.visus.io](https://nts.projects.visus.io). It includes guides and a generated API reference. Source lives in [`docs/`](./docs). It has its own dependencies, separate from the root project. Install them once, then run the site locally:
 
 ```bash
+bun run docs:install
 bun run docs:dev
 ```
 
@@ -112,6 +113,7 @@ bun run lint             # ESLint
 bun run lint:fix         # Auto-fix
 bun run format           # Prettier
 
+bun run docs:install     # Install the docs site's dependencies (run once, or after they change)
 bun run docs:dev         # Run the docs site locally
 bun run docs:build       # Build the docs site
 ```
