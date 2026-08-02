@@ -1,13 +1,16 @@
 import { NotionClient, type NotionClientOptions } from './client';
 import {
+  AsyncTasksAPI,
   BlocksAPI,
   CommentsAPI,
+  CustomEmojisAPI,
   DatabasesAPI,
   DataSourcesAPI,
   FileUploadsAPI,
   PagesAPI,
   SearchAPI,
   UsersAPI,
+  ViewsAPI,
 } from './api';
 
 /**
@@ -42,16 +45,35 @@ import {
  * await notion.comments.create({ parent: { page_id: 'page-id' }, rich_text: [...] });
  *
  * const fileUpload = await notion.fileUploads.uploadFile('image.png', buffer, 'image/png');
+ *
+ * const views = await notion.views.list({ data_source_id: 'data-source-id' });
+ * const queryResult = await notion.views.queries.create(views.results[0].id);
+ *
+ * const markdown = await notion.pages.getMarkdown('page-id');
+ * const task = await notion.pages.updateMarkdown('page-id', {
+ *   type: 'replace_content',
+ *   new_str: 'Updated content',
+ *   allow_async: true,
+ * });
+ * await notion.asyncTasks.poll(task.id);
+ *
+ * const emojis = await notion.customEmojis.list();
  * ```
  */
 export class Notion {
   private readonly client: NotionClient;
 
-  /** Pages API for working with Notion pages */
-  public readonly pages: PagesAPI;
+  /** Async Tasks API for polling long-running Notion operations */
+  public readonly asyncTasks: AsyncTasksAPI;
 
   /** Blocks API for working with Notion blocks */
   public readonly blocks: BlocksAPI;
+
+  /** Comments API for working with Notion comments */
+  public readonly comments: CommentsAPI;
+
+  /** Custom Emojis API for listing workspace custom emojis */
+  public readonly customEmojis: CustomEmojisAPI;
 
   /** Databases API for working with Notion databases */
   public readonly databases: DatabasesAPI;
@@ -59,27 +81,33 @@ export class Notion {
   /** Data Sources API for working with Notion data sources */
   public readonly dataSources: DataSourcesAPI;
 
+  /** FileUploads API for uploading files to Notion */
+  public readonly fileUploads: FileUploadsAPI;
+
+  /** Pages API for working with Notion pages */
+  public readonly pages: PagesAPI;
+
   /** Search API for searching across the workspace */
   public readonly search: SearchAPI;
 
   /** Users API for working with Notion users */
   public readonly users: UsersAPI;
 
-  /** Comments API for working with Notion comments */
-  public readonly comments: CommentsAPI;
-
-  /** FileUploads API for uploading files to Notion */
-  public readonly fileUploads: FileUploadsAPI;
+  /** Views API for working with Notion database/data source views */
+  public readonly views: ViewsAPI;
 
   constructor(options: NotionClientOptions) {
     this.client = new NotionClient(options);
-    this.pages = new PagesAPI(this.client);
+    this.asyncTasks = new AsyncTasksAPI(this.client);
     this.blocks = new BlocksAPI(this.client);
+    this.comments = new CommentsAPI(this.client);
+    this.customEmojis = new CustomEmojisAPI(this.client);
     this.databases = new DatabasesAPI(this.client);
     this.dataSources = new DataSourcesAPI(this.client);
+    this.fileUploads = new FileUploadsAPI(this.client);
+    this.pages = new PagesAPI(this.client);
     this.search = new SearchAPI(this.client);
     this.users = new UsersAPI(this.client);
-    this.comments = new CommentsAPI(this.client);
-    this.fileUploads = new FileUploadsAPI(this.client);
+    this.views = new ViewsAPI(this.client);
   }
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { block } from './block.helpers';
 import { richText } from './richText.helpers';
+import { blockSchema } from '../schemas';
 
 describe('block helpers', () => {
   // -----------------------------------------------------------------------
@@ -55,6 +56,18 @@ describe('block helpers', () => {
       const p = result.paragraph as { color: string; children: unknown[] };
       expect(p.color).toBe('blue');
       expect(p.children).toHaveLength(1);
+    });
+
+    it('should include icon when provided', () => {
+      const result = block.paragraph('Tab label', { icon: { type: 'emoji', emoji: '📎' } });
+      const p = result.paragraph as { icon?: unknown };
+      expect(p.icon).toEqual({ type: 'emoji', emoji: '📎' });
+    });
+
+    it('should omit icon when not provided', () => {
+      const result = block.paragraph('No icon');
+      const p = result.paragraph as { icon?: unknown };
+      expect(p.icon).toBeUndefined();
     });
   });
 
@@ -167,7 +180,7 @@ describe('block helpers', () => {
     });
   });
 
-  describe('meetingNotes', () => {
+  describe('meetingNotes (deprecated)', () => {
     it('should create a meeting_notes block', () => {
       const result = block.meetingNotes('Meeting transcript text');
       expect(result.type).toBe('meeting_notes');
@@ -180,6 +193,25 @@ describe('block helpers', () => {
       });
       const t = result.meeting_notes as { children?: unknown[] };
       expect(t.children).toHaveLength(1);
+    });
+
+    it('should no longer match the real meeting_notes block shape (regression)', () => {
+      const result = block.meetingNotes('Meeting content');
+      const fullBlock = {
+        object: 'block' as const,
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        parent: { type: 'page_id' as const, page_id: '223e4567-e89b-12d3-a456-426614174000' },
+        created_time: '2024-01-01T00:00:00.000Z',
+        created_by: { object: 'user' as const, id: '323e4567-e89b-12d3-a456-426614174000' },
+        last_edited_time: '2024-01-02T00:00:00.000Z',
+        last_edited_by: { object: 'user' as const, id: '323e4567-e89b-12d3-a456-426614174000' },
+        in_trash: false,
+        has_children: false,
+        ...result,
+      };
+
+      const parsed = blockSchema.safeParse(fullBlock);
+      expect(parsed.success).toBe(false);
     });
   });
 
@@ -390,6 +422,32 @@ describe('block helpers', () => {
     it('should create a standalone column', () => {
       const result = block.column([block.paragraph('Content')]);
       expect(result.type).toBe('column');
+    });
+  });
+
+  describe('tab', () => {
+    it('should create a tab block with one paragraph per tab', () => {
+      const result = block.tab([
+        { label: 'One', children: [block.paragraph('Content one')] },
+        {
+          label: 'Two',
+          icon: { type: 'emoji', emoji: '🎯' },
+          children: [block.paragraph('Content two')],
+        },
+      ]);
+
+      expect(result.type).toBe('tab');
+      const t = result.tab as {
+        children: {
+          type: string;
+          paragraph: { rich_text: unknown[]; icon?: unknown; children?: unknown[] };
+        }[];
+      };
+      expect(t.children).toHaveLength(2);
+      expect(t.children[0].type).toBe('paragraph');
+      expect(t.children[0].paragraph.icon).toBeUndefined();
+      expect(t.children[0].paragraph.children).toHaveLength(1);
+      expect(t.children[1].paragraph.icon).toEqual({ type: 'emoji', emoji: '🎯' });
     });
   });
 

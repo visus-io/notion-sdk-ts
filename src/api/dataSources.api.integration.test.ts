@@ -106,6 +106,32 @@ describe('DataSourcesAPI integration', () => {
 
       await notion.dataSources.query(dataSourceId, { is_archived: true });
     });
+
+    it('should propagate request_status when a query is capped at the result limit', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/data_sources/${dataSourceId}/query`, () =>
+          HttpResponse.json({
+            object: 'list',
+            results: [buildPageResponse()],
+            next_cursor: null,
+            has_more: false,
+            type: 'page',
+            request_status: {
+              type: 'incomplete',
+              incomplete_reason: 'query_result_limit_reached',
+            },
+          }),
+        ),
+      );
+
+      const result = await notion.dataSources.query(dataSourceId);
+
+      expect(result.has_more).toBe(false);
+      expect(result.request_status).toEqual({
+        type: 'incomplete',
+        incomplete_reason: 'query_result_limit_reached',
+      });
+    });
   });
 
   describe('listTemplates', () => {

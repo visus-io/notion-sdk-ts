@@ -1,8 +1,8 @@
 import type { NotionClient } from '../client';
-import type { NotionPage } from '../schemas';
-import { pageSchema } from '../schemas';
+import type { MarkdownContentResponse, NotionPage, PageMarkdown } from '../schemas';
+import { markdownContentResponseSchema, pageMarkdownSchema, pageSchema } from '../schemas';
 import { Page } from '../models';
-import { LIMITS, validateArrayLength } from '../validation';
+import { LIMITS, NotionValidationError, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
 
 /**
@@ -38,6 +38,12 @@ export interface CreatePageOptions {
   /** Page content blocks (max 100) */
   children?: unknown[];
 
+  /**
+   * Page content as a markdown string, as an alternative to `properties`/`children`.
+   * Mutually exclusive with `properties` and `children`.
+   */
+  markdown?: string;
+
   /** Template to apply when creating the page */
   template?: { type: 'none' } | { type: 'default' } | { type: 'template_id'; template_id: string };
 
@@ -53,6 +59,75 @@ export interface CreatePageOptions {
  */
 export type MovePageParent =
   { type: 'page_id'; page_id: string } | { type: 'data_source_id'; data_source_id: string };
+
+/**
+ * Assert that `markdown` isn't combined with `properties`/`children` when creating a page.
+ *
+ * @throws {NotionValidationError}
+ */
+function validateMarkdownExclusivity(options: {
+  markdown?: string;
+  properties?: Record<string, unknown>;
+  children?: unknown[];
+}): void {
+  if (options.markdown !== undefined && (options.properties || options.children)) {
+    throw new NotionValidationError('markdown cannot be combined with properties or children');
+  }
+}
+
+/**
+ * Options for retrieving a page's content as markdown.
+ */
+export interface GetPageMarkdownOptions {
+  /** Include meeting-note transcript content in the markdown output */
+  include_transcript?: boolean;
+}
+
+/**
+ * A single find-and-replace edit against a page's markdown content.
+ */
+export interface MarkdownContentUpdate {
+  /** The exact existing markdown substring to replace */
+  old_str: string;
+
+  /** The replacement markdown content */
+  new_str: string;
+
+  /** Replace all occurrences of `old_str` instead of just the first */
+  replace_all_matches?: boolean;
+}
+
+/**
+ * Options for updating a page's markdown content.
+ */
+export type UpdatePageMarkdownOptions =
+  | {
+      type: 'update_content';
+      content_updates: MarkdownContentUpdate[];
+      allow_deleting_content?: boolean;
+      allow_async?: boolean;
+    }
+  | {
+      type: 'replace_content';
+      new_str: string;
+      allow_deleting_content?: boolean;
+      allow_async?: boolean;
+    }
+  // Legacy variants.
+  | {
+      type: 'insert_content';
+      content: string;
+      position?: { type: 'start' | 'end' };
+      after?: string;
+      allow_async?: boolean;
+    }
+  | {
+      type: 'replace_content_range';
+      content: string;
+      content_range: unknown;
+      allow_deleting_content?: boolean;
+      allow_async?: boolean;
+    };
 
 /**
  * Options for updating a page.
@@ -120,11 +195,62 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    * @see https://developers.notion.com/reference/post-page
    */
   async create(options: CreatePageOptions): Promise<Page> {
+    validateMarkdownExclusivity(options);
     if (options.children) {
       validateArrayLength(options.children, LIMITS.ARRAY_ELEMENTS, 'children');
     }
 
     return this.createResource('/pages', options);
+  }
+
+  /**
+   * Retrieve a page's content as markdown.
+   *
+   * @param pageId - The ID of the page to retrieve
+   * @param options - Options for retrieving the markdown content
+   * @returns The page's markdown content
+   *
+   * @see https://developers.notion.com/guides/data-apis/working-with-markdown-content
+   */
+  async getMarkdown(pageId: string, options?: GetPageMarkdownOptions): Promise<PageMarkdown> {
+    const query =
+      options?.include_transcript !== undefined
+        ? { include_transcript: String(options.include_transcript) }
+        : undefined;
+
+    const response = await this.client.request<unknown>({
+      method: 'GET',
+      path: `/pages/${pageId}/markdown`,
+      query,
+    });
+
+    return pageMarkdownSchema.parse(response);
+  }
+
+  /**
+   * Update a page's content as markdown.
+   *
+   * When `allow_async: true` is set and the write is large, the API may return an
+   * `async_task` handle instead of completing synchronously -- poll it via
+   * `notion.asyncTasks.poll(task.id)`.
+   *
+   * @param pageId - The ID of the page to update
+   * @param options - The markdown update to apply
+   * @returns The updated markdown content, or an async task handle if processed asynchronously
+   *
+   * @see https://developers.notion.com/guides/data-apis/working-with-markdown-content
+   */
+  async updateMarkdown(
+    pageId: string,
+    options: UpdatePageMarkdownOptions,
+  ): Promise<MarkdownContentResponse> {
+    const response = await this.client.request<unknown>({
+      method: 'PATCH',
+      path: `/pages/${pageId}/markdown`,
+      body: options,
+    });
+
+    return markdownContentResponseSchema.parse(response);
   }
 
   /**

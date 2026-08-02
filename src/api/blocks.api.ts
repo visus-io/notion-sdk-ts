@@ -2,14 +2,64 @@ import type { NotionClient } from '../client';
 import {
   type BlockPosition,
   blockSchema,
+  type MeetingNotesQueryProperty,
+  meetingNotesQueryResponseSchema,
   type NotionBlock,
   type PaginatedList,
   paginatedListSchema,
   type PaginationParameters,
+  type RequestStatus,
 } from '../schemas';
 import { Block } from '../models';
 import { LIMITS, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
+
+/**
+ * Filter condition for a meeting-notes query.
+ */
+export interface MeetingNotesQueryFilterCondition {
+  property: MeetingNotesQueryProperty;
+  filter: Record<string, unknown>;
+}
+
+/**
+ * Filter for a meeting-notes query.
+ */
+export interface MeetingNotesQueryFilter {
+  operator: 'and' | 'or';
+  filters: MeetingNotesQueryFilterCondition[];
+}
+
+/**
+ * Sort configuration for a meeting-notes query.
+ */
+export interface MeetingNotesQuerySort {
+  property: string;
+  direction: 'ascending' | 'descending';
+}
+
+/**
+ * Options for querying meeting-notes blocks.
+ */
+export interface QueryMeetingNotesOptions {
+  /** Filter configuration */
+  filter?: MeetingNotesQueryFilter;
+
+  /** Sort configuration (max 100) */
+  sort?: MeetingNotesQuerySort[];
+
+  /** Maximum number of results to return (1-50, default 50) */
+  limit?: number;
+}
+
+/**
+ * Result of a meeting-notes query. No cursor-based pagination -- only `hasMore`.
+ */
+export interface MeetingNotesQueryResult {
+  results: Block[];
+  hasMore: boolean;
+  requestStatus?: RequestStatus;
+}
 
 /**
  * Options for retrieving a block.
@@ -158,6 +208,53 @@ export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
         results: parsed.results.map((block) => new Block(block)),
         next_cursor: parsed.next_cursor,
         has_more: parsed.has_more,
+      };
+    },
+  };
+
+  /**
+   * Meeting-notes query operations.
+   */
+  readonly meetingNotes = {
+    /**
+     * Query meeting-notes blocks across the workspace.
+     *
+     * @param options - Filter, sort, and limit options
+     * @returns Matching meeting-notes blocks
+     *
+     * @see https://developers.notion.com/reference/query-meeting-notes
+     */
+    query: async (options?: QueryMeetingNotesOptions): Promise<MeetingNotesQueryResult> => {
+      if (options?.sort) {
+        validateArrayLength(options.sort, LIMITS.ARRAY_ELEMENTS, 'sort');
+      }
+
+      const body: Record<string, unknown> = {};
+
+      if (options?.filter) {
+        body.filter = options.filter;
+      }
+
+      if (options?.sort) {
+        body.sort = options.sort;
+      }
+
+      if (options?.limit) {
+        body.limit = options.limit;
+      }
+
+      const response = await this.client.request<unknown>({
+        method: 'POST',
+        path: '/blocks/meeting_notes/query',
+        body: Object.keys(body).length > 0 ? body : undefined,
+      });
+
+      const parsed = meetingNotesQueryResponseSchema.parse(response);
+
+      return {
+        results: parsed.results.map((b) => new Block(b)),
+        hasMore: parsed.has_more,
+        requestStatus: parsed.request_status,
       };
     },
   };

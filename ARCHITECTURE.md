@@ -10,7 +10,7 @@ Notion (facade) --> *API classes (endpoint logic + Zod parsing) --> NotionClient
                               Model classes (OOP wrappers)
 ```
 
-`Notion` is the public entry point. It creates a `NotionClient` (HTTP transport) and instantiates 8 API classes, exposed as `readonly` properties: `pages`, `blocks`, `databases`, `dataSources`, `search`, `users`, `comments`, `fileUploads`.
+`Notion` is the public entry point. It creates a `NotionClient` (HTTP transport) and instantiates 11 API classes, exposed as `readonly` properties: `pages`, `blocks`, `databases`, `dataSources`, `search`, `users`, `comments`, `fileUploads`, `asyncTasks`, `views`, `customEmojis`.
 
 ## Project Structure
 
@@ -25,7 +25,7 @@ src/
   schemas/              -- Zod schemas and inferred types
   models/               -- OOP model classes wrapping parsed data
   helpers/              -- Factory functions and builders, one file per domain
-                            (block, file, filter, pagination, parent, property, richText, sort)
+                            (block, file, filter, pagination, parent, property, richText, sort, webhook)
 ```
 
 Test files are colocated with source using `.test.ts` suffix (e.g., `block.model.test.ts` next to `block.model.ts`).
@@ -65,14 +65,14 @@ Test files are colocated with source using `.test.ts` suffix (e.g., `block.model
 
 ### Helpers (`src/helpers/`)
 
-- Exported as namespace objects: `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `notionFile`.
+- Exported as namespace objects: `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `notionFile`, `webhook`.
 - `richText` uses `Object.assign(createFn, { mentionPage, mentionDatabase, ... })` to be both callable and have static methods.
 - `RichTextBuilder` provides a chainable/fluent API; `.build()` produces `NotionRichText[]`.
 - `RichTextInput` union (`string | RichTextBuilder | NotionRichText`) is accepted by all text-accepting helpers, resolved via `resolveRichText()`.
 - Helpers eagerly validate inputs via `validateStringLength()` / `validateArrayLength()`, throwing `NotionValidationError` before any API call.
 - Filter helpers return builders with chainable methods producing `FilterCondition`; compound filters use `filter.and()` / `filter.or()`.
 - Sort helpers return builders with `.ascending()` / `.descending()` terminal methods.
-- Pagination helpers (`paginate`, `paginateIterator`, `paginateWithMetadata`) automate cursor-based pagination for Notion list endpoints.
+- Pagination helpers (`paginate`, `paginateIterator`, `paginateWithMetadata`) automate cursor-based pagination for Notion list endpoints; `iterateAllDataSourceRows`/`collectAllDataSourceRows` additionally work around the 10,000-result-per-query cap via `created_time` windowing (see `pagination.schema.ts`'s `request_status`).
 
 ### Error Handling (`src/errors.ts`, `src/validation.ts`)
 

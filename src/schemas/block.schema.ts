@@ -75,6 +75,7 @@ export const blockSchema = z.object({
     'pdf',
     'quote',
     'synced_block',
+    'tab',
     'table',
     'table_of_contents',
     'table_row',
@@ -137,7 +138,13 @@ export const blockSchema = z.object({
       language: z.enum(CODE_BLOCK_LANGUAGES),
     })
     .optional(),
-  column_list: z.object({}).optional(),
+  column_list: z
+    .object({
+      get children() {
+        return getChildrenSchema();
+      },
+    })
+    .optional(),
   column: z
     .object({
       width_ratio: z.number().min(0).max(1).optional(),
@@ -189,6 +196,7 @@ export const blockSchema = z.object({
     .object({
       rich_text: richTextSchema,
       color: z.enum(NOTION_COLORS),
+      icon: iconSchema.optional(),
       get children() {
         return getChildrenSchema();
       },
@@ -221,6 +229,13 @@ export const blockSchema = z.object({
           block_id: z.uuid(),
         })
         .nullable(),
+      get children() {
+        return getChildrenSchema();
+      },
+    })
+    .optional(),
+  tab: z
+    .object({
       get children() {
         return getChildrenSchema();
       },
@@ -270,12 +285,21 @@ export const blockSchema = z.object({
       },
     })
     .optional(),
+  // Meeting-notes blocks are server-managed: title/status/child-block-ids are populated
+  // by Notion, not hand-constructed by clients. Exact `status` enum values weren't
+  // confirmed against a live response, so it's kept permissive (a trimmed string)
+  // rather than a guessed closed enum, to avoid rejecting valid live responses.
   meeting_notes: z
     .object({
-      rich_text: richTextSchema,
-      get children() {
-        return getChildrenSchema();
-      },
+      title: richTextSchema,
+      status: z.string().trim(),
+      children: z.object({
+        summary_block_id: z.uuid().nullish(),
+        notes_block_id: z.uuid().nullish(),
+        transcript_block_id: z.uuid().nullish(),
+      }),
+      calendar_event: z.unknown().nullish(),
+      recording: z.unknown().nullish(),
     })
     .optional(),
   unsupported: z.object({}).optional(),

@@ -19,13 +19,33 @@ import * as z from 'zod';
 export type PaginatedListType =
   | 'block'
   | 'comment'
+  | 'custom_emoji'
   | 'database'
   | 'data_source'
   | 'page'
   | 'page_or_database'
   | 'page_or_data_source'
   | 'property_item'
-  | 'user';
+  | 'user'
+  | 'view';
+
+/**
+ * Reasons a query can be reported as incomplete despite `has_more` being `false`.
+ * Currently only emitted when a query hits the 10,000-result pagination depth cap.
+ */
+export const REQUEST_STATUS_INCOMPLETE_REASONS = ['query_result_limit_reached'] as const;
+export type RequestStatusIncompleteReason = (typeof REQUEST_STATUS_INCOMPLETE_REASONS)[number];
+
+/**
+ * Signals that a query was truncated even though `has_more` is `false` -- e.g. data source,
+ * view, and meeting-notes queries cap at 10,000 results. Callers that need every row must
+ * detect this and re-query with a narrower filter (see the pagination helpers).
+ */
+export const requestStatusSchema = z.object({
+  type: z.literal('incomplete'),
+  incomplete_reason: z.enum(REQUEST_STATUS_INCOMPLETE_REASONS),
+});
+export type RequestStatus = z.infer<typeof requestStatusSchema>;
 
 /**
  * Base paginated list response schema.
@@ -40,6 +60,7 @@ export const paginatedListSchema = <T extends z.ZodTypeAny>(resultSchema: T) => 
     type: z.enum([
       'block',
       'comment',
+      'custom_emoji',
       'database',
       'data_source',
       'page',
@@ -47,7 +68,9 @@ export const paginatedListSchema = <T extends z.ZodTypeAny>(resultSchema: T) => 
       'page_or_data_source',
       'property_item',
       'user',
+      'view',
     ]),
+    request_status: requestStatusSchema.optional(),
   });
 };
 
@@ -71,4 +94,5 @@ export type PaginatedList<T> = {
   next_cursor: string | null;
   has_more: boolean;
   type: PaginatedListType;
+  request_status?: RequestStatus;
 };
