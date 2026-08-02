@@ -491,7 +491,10 @@ function column(children: unknown[]): BlockObject {
   };
 }
 
-/** A single tab. Its label becomes the tab's paragraph rich text. Its `children` become the tab's content. */
+/**
+ * A single tab. Its label becomes the tab's paragraph rich text.
+ * Its `children` become the tab's content.
+ */
 interface TabItem {
   label: RichTextInput;
   icon?: unknown;

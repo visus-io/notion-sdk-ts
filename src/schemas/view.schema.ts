@@ -103,7 +103,7 @@ export type ViewDeleteResult = z.infer<typeof viewDeleteResponseSchema>;
 /**
  * View query response schema. This response has a non-standard pagination shape:
  * `object: "view_query"`, plus `expires_at` and `total_count`. Queries expire
- * approximately 15 minutes after creation.
+ * about 15 minutes after creation.
  *
  * @category Views
  */

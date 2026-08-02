@@ -28,15 +28,16 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     Custom Emojis, Views.
   </Card>
   <Card title="Ergonomic helpers" icon="puzzle">
-    `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, and `paginate`
+    `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, and `notionFile`
     factories eliminate verbose JSON.
   </Card>
   <Card title="OOP models" icon="star">
-    `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText` with
-    convenience methods.
+    `Page`, `Block`, `Database`, `DataSource`, `User`, `Comment`, `FileUpload`, `RichText`,
+    `AsyncTask`, `CustomEmoji`, `View` with convenience methods.
   </Card>
   <Card title="Automatic pagination" icon="seti:folder">
-    `paginate()` and `paginateIterator()` helpers automatically fetch all pages for you.
+    `paginate()`, `paginateIterator()`, and `paginateWithMetadata()` helpers automatically fetch all
+    pages for you.
   </Card>
   <Card title="Zero bloat" icon="rocket">
     Single runtime dependency (`zod`); uses the built-in `fetch` (Node.js 18+).
