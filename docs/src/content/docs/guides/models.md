@@ -42,8 +42,6 @@ page.isArchived; // boolean
 page.isLocked; // boolean
 page.properties; // Record of property values
 page.parent; // Parent reference
-page.icon; // Icon object (if set)
-page.cover; // Cover object (if set)
 ```
 
 > **Note:** There is no `page.archived` getter. Use `page.inTrash` to check trash status instead.
@@ -147,34 +145,39 @@ for (const block of blocks.results) {
 
 ### Accessing Block Content
 
+The `Block` model exposes only the fields common to every block type. To read a
+block-type-specific field, such as `paragraph` or `code`, call `block.toJSON()`
+first. This returns the raw, schema-validated block object.
+
 ```typescript
 const block = await notion.blocks.retrieve('block-id');
+const data = block.toJSON();
 
 // Paragraph block
-if (block.type === 'paragraph') {
-  console.log(block.paragraph.rich_text);
-  console.log(block.paragraph.color);
+if (data.type === 'paragraph') {
+  console.log(data.paragraph?.rich_text);
+  console.log(data.paragraph?.color);
 }
 
 // Heading block
-if (block.type === 'heading_1') {
-  console.log(block.heading_1.rich_text);
-  console.log(block.heading_1.is_toggleable);
+if (data.type === 'heading_1') {
+  console.log(data.heading_1?.rich_text);
+  console.log(data.heading_1?.is_toggleable);
 }
 
 // Code block
-if (block.type === 'code') {
-  console.log(block.code.rich_text);
-  console.log(block.code.language);
-  console.log(block.code.caption);
+if (data.type === 'code') {
+  console.log(data.code?.rich_text);
+  console.log(data.code?.language);
+  console.log(data.code?.caption);
 }
 
 // Image block
-if (block.type === 'image') {
-  if (block.image.type === 'external') {
-    console.log(block.image.external.url);
-  } else if (block.image.type === 'file') {
-    console.log(block.image.file.url);
+if (data.type === 'image' && data.image) {
+  if (data.image.type === 'external') {
+    console.log(data.image.external.url);
+  } else if (data.image.type === 'file') {
+    console.log(data.image.file.url);
   }
 }
 ```
@@ -256,8 +259,8 @@ The `DataSource` model represents a database data source. This model was added i
 const ds = await notion.dataSources.retrieve('data-source-id');
 
 ds.id; // UUID
-ds.name; // string
-ds.description; // string | undefined
+ds.title; // NotionRichText
+ds.description; // NotionRichText
 ds.properties; // Property configurations
 ds.parent; // Parent database reference
 ds.createdTime; // Date
@@ -270,8 +273,8 @@ ds.inTrash; // boolean
 ### Methods
 
 ```typescript
-// Get name and description
-ds.getTitle(); // Same as ds.name
+// Get title and description as plain text
+ds.getTitle(); // Plain-text version of ds.title
 ds.getDescription(); // Description or empty string
 
 // Get parent database ID
@@ -325,7 +328,7 @@ const user = await notion.users.retrieve('user-id');
 user.id; // UUID
 user.type; // 'person' | 'bot' | undefined
 user.name; // string | undefined
-user.avatarUrl; // string | undefined
+user.avatarUrl; // string | null | undefined
 ```
 
 ### Methods
@@ -684,8 +687,9 @@ console.log(descriptionRt.toMarkdown());
 const blocks = await notion.blocks.children.list('page-id');
 
 for (const block of blocks.results) {
-  if (block.type === 'paragraph') {
-    const rt = new RichText(block.paragraph.rich_text);
+  const data = block.toJSON();
+  if (data.type === 'paragraph' && data.paragraph) {
+    const rt = new RichText(data.paragraph.rich_text);
     console.log('Plain:', rt.toPlainText());
     console.log('HTML:', rt.toHTML());
   }

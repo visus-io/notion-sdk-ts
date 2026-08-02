@@ -310,7 +310,7 @@ const results = await notion.search.query({
 
 // Results contain DataSource objects
 for (const ds of results.results) {
-  console.log(ds.name);
+  console.log(ds.getTitle());
 }
 ```
 

@@ -336,7 +336,7 @@ prop.date('2025-03-01T10:00:00');
 prop.date('2025-03-01T10:00:00', { end: '2025-03-01T11:00:00' });
 
 // With timezone
-prop.date('2025-03-01T10:00:00', { time_zone: 'America/New_York' });
+prop.date('2025-03-01T10:00:00', { timeZone: 'America/New_York' });
 ```
 
 ### Relation & People

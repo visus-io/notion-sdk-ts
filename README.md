@@ -14,7 +14,7 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 
 - **Type-safe** Zod v4 runtime validation on every API response; full TypeScript declarations
 - **Complete API coverage** Pages, Blocks, Databases, Data Sources, Comments, Search, Users, File Uploads, Async Tasks, Custom Emojis, Views
-- **Ergonomic helpers** `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `paginate` factories and a `webhook` signature-verification helper eliminate verbose JSON and boilerplate
+- **Ergonomic helpers** `block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, and `notionFile` factories, plus a `webhook` signature-verification helper, eliminate verbose JSON and boilerplate
 - **OOP models** `Page`, `Block`, `Database`, `User`, `Comment`, `DataSource`, `FileUpload`, `RichText`, `AsyncTask`, `CustomEmoji`, `View` with convenience methods
 - **Automatic pagination** `paginate()`, `paginateIterator()`, and `paginateWithMetadata()` helpers automatically fetch all pages, plus `iterateAllDataSourceRows()`/`collectAllDataSourceRows()` to work around the 10,000-result query cap
 - **Automatic rate limiting** Respects `Retry-After` header with exponential backoff fallback (configurable)

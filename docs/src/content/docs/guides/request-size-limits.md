@@ -222,10 +222,10 @@ try {
     parent: parent.page('page-id'),
     rich_text: richText('With attachments').build(),
     attachments: [
-      { name: 'file1.pdf', url: 'https://example.com/1.pdf' },
-      { name: 'file2.pdf', url: 'https://example.com/2.pdf' },
-      { name: 'file3.pdf', url: 'https://example.com/3.pdf' },
-      { name: 'file4.pdf', url: 'https://example.com/4.pdf' }, // Too many!
+      { file_upload_id: 'file-upload-id-1', type: 'file_upload' },
+      { file_upload_id: 'file-upload-id-2', type: 'file_upload' },
+      { file_upload_id: 'file-upload-id-3', type: 'file_upload' },
+      { file_upload_id: 'file-upload-id-4', type: 'file_upload' }, // Too many!
     ],
   });
 } catch (error) {
@@ -239,9 +239,9 @@ await notion.comments.create({
   parent: parent.page('page-id'),
   rich_text: richText('With attachments').build(),
   attachments: [
-    { name: 'file1.pdf', url: 'https://example.com/1.pdf' },
-    { name: 'file2.pdf', url: 'https://example.com/2.pdf' },
-    { name: 'file3.pdf', url: 'https://example.com/3.pdf' },
+    { file_upload_id: 'file-upload-id-1', type: 'file_upload' },
+    { file_upload_id: 'file-upload-id-2', type: 'file_upload' },
+    { file_upload_id: 'file-upload-id-3', type: 'file_upload' },
   ],
 });
 ```

@@ -98,7 +98,11 @@ export interface PaginationParameters {
   /** The number of items to return (default: 100, max: 100) */
   page_size?: number;
 
-  /** The cursor value from a previous response. Pass it to continue pagination. The SDK treats `null` the same as omitted. */
+  /**
+   * The cursor value from a previous response.
+   * Pass it to continue pagination.
+   * The SDK treats `null` the same as omitted.
+   */
   start_cursor?: string | null;
 }
 

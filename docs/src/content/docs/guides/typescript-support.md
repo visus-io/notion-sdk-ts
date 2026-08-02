@@ -410,7 +410,7 @@ async function fetchAndValidatePage(pageId: string) {
     return validatedPage;
   } catch (error) {
     if (error instanceof ZodError) {
-      console.error('Validation errors:', error.errors);
+      console.error('Validation errors:', error.issues);
     }
     throw error;
   }

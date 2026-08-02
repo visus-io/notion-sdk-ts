@@ -214,7 +214,7 @@ export async function paginateWithMetadata<T>(fetchPage: PaginatedFetchFunction<
  * after the previous window hits the query result limit
  * (`request_status.type === 'incomplete'`). Merge this bound into your own
  * created_time-ascending query, for example
- * `filter.createdTime('Created time').onOrAfter(createdTimeCursor)`.
+ * `filter.createdTime().onOrAfter(createdTimeCursor)`.
  *
  * @category Pagination
  */
@@ -245,7 +245,7 @@ export type WindowedFetchFunction<T extends { id: string; createdTime: Date }> =
  *     start_cursor: cursor,
  *     sorts: [{ timestamp: 'created_time', direction: 'ascending' }],
  *     filter: createdTimeCursor
- *       ? filter.and(baseFilter, filter.createdTime('Created time').onOrAfter(createdTimeCursor))
+ *       ? filter.and(baseFilter, filter.createdTime().onOrAfter(createdTimeCursor))
  *       : baseFilter,
  *   }),
  * );

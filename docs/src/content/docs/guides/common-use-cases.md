@@ -152,11 +152,11 @@ await notion.blocks.children.append(page.id, {
       richText('Welcome to the API documentation. This guide covers ')
         .build()
         .concat(richText('authentication').bold().build())
-        .concat(richText(', '))
+        .concat(richText(', ').build())
         .concat(richText('endpoints').bold().build())
-        .concat(richText(', and '))
+        .concat(richText(', and ').build())
         .concat(richText('examples').bold().build())
-        .concat(richText('.')),
+        .concat(richText('.').build()),
     ),
     block.callout('This API requires authentication for all requests.', {
       icon: { type: 'emoji', emoji: '🔐' },
@@ -321,6 +321,7 @@ These examples show advanced rich text formatting and manipulation.
 
 ```typescript
 import { richText, RichText } from '@visus-io/notion-sdk-ts';
+import type { NotionColor } from '@visus-io/notion-sdk-ts';
 
 // Example 1: Complex formatted text
 const formattedText = richText.join(
@@ -361,7 +362,8 @@ const mathText = richText.join(
 
 // Example 5: Parse existing rich text
 const page = await notion.pages.retrieve('page-id');
-const titleRichText = page.properties.Name.title;
+const nameProperty = page.properties.Name;
+const titleRichText = nameProperty.type === 'title' ? nameProperty.title : [];
 
 const rt = new RichText(titleRichText);
 console.log('Plain text:', rt.toPlainText());
@@ -374,7 +376,7 @@ if (rt.hasLinks()) {
 
 // Example 6: Build dynamic rich text
 function createStatusMessage(status: string, username: string): any[] {
-  const colors: Record<string, string> = {
+  const colors: Record<string, NotionColor> = {
     success: 'green',
     warning: 'yellow',
     error: 'red',
@@ -443,14 +445,16 @@ await notion.pages.update(page.id, {
 });
 
 // Example 4: Multi-step upload with progress tracking
+const fileData = readFileSync('./large-file.zip');
+
 const initUpload = await notion.fileUploads.initiate({
-  name: 'large-file.zip',
+  filename: 'large-file.zip',
   content_type: 'application/zip',
+  content_length: fileData.byteLength,
 });
 
 console.log('Upload initiated:', initUpload.id);
 
-const fileData = readFileSync('./large-file.zip');
 await notion.fileUploads.upload(initUpload.uploadUrl, fileData, 'application/zip');
 
 console.log('File uploaded, finalizing...');
@@ -509,7 +513,7 @@ await notion.comments.create({
 await notion.comments.create({
   parent: parent.page('page-id'),
   rich_text: richText('Automated review complete ✓').build(),
-  display_name: 'CI Bot',
+  display_name: { type: 'custom', custom: { name: 'CI Bot' } },
 });
 
 // Example 5: Get all comments on a page
@@ -528,19 +532,13 @@ await notion.comments.create({
   rich_text: richText('This section needs clarification.').build(),
 });
 
-// Example 7: Comment with file attachments (requires file upload URLs)
+// Example 7: Comment with file attachments (requires uploaded file IDs)
 await notion.comments.create({
   parent: parent.page('page-id'),
   rich_text: richText('Attaching the design mockups.').build(),
   attachments: [
-    {
-      name: 'mockup-1.png',
-      url: 'https://example.com/mockup-1.png',
-    },
-    {
-      name: 'mockup-2.png',
-      url: 'https://example.com/mockup-2.png',
-    },
+    { type: 'file_upload', file_upload_id: 'mockup-1-upload-id' },
+    { type: 'file_upload', file_upload_id: 'mockup-2-upload-id' },
   ],
 });
 ```
