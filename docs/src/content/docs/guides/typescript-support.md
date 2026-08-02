@@ -233,7 +233,7 @@ function processBlock(block: NotionBlock) {
 
 ## Supported Property Types
 
-The SDK supports all 21 Notion property types:
+The SDK supports all 22 Notion property types:
 
 ### Property Type Union
 
@@ -425,7 +425,7 @@ import { richTextSchema } from '@visus-io/notion-sdk-ts';
 // Validate just rich text
 const richTextData = [{ type: 'text', text: { content: 'Hello' }, plain_text: 'Hello' }];
 
-const validated = richTextSchema.array().parse(richTextData);
+const validated = richTextSchema.parse(richTextData);
 console.log(validated);
 ```
 

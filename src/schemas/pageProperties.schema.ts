@@ -9,7 +9,7 @@ import { userSchema } from './user.schema';
  *
  * These schemas define the data values in page properties (database columns).
  * Property objects define the schema and configuration instead.
- * This file supports 23 property types, including title, rich text, number, and select.
+ * This file supports 22 property types, including title, rich text, number, and select.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/page-property-values
