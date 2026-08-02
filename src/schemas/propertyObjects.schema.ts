@@ -369,7 +369,8 @@ export const propertyObjectSchema = z.discriminatedUnion('type', [
   uniqueIdPropertySchema,
 ]);
 
-/** Record of property objects keyed by property name
+/**
+ * Record of property objects keyed by property name.
  *
  * @category Page Properties
  */

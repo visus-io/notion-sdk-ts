@@ -36,11 +36,13 @@ export const VIEW_TYPES = [
 export type ViewType = (typeof VIEW_TYPES)[number];
 
 /**
- * Configuration for a single view layout. Notion has not yet confirmed the exact
- * per-type fields (for example, table column order or board group-by property) against
- * a live response. This schema stays permissive: it tags the object on `type` and
- * passes all other fields through without modeling them. As a result, unknown fields
- * round-trip instead of the schema stripping or rejecting them.
+ * Configuration for a single view layout.
+ *
+ * Notion has not confirmed the exact fields for each view type against a live
+ * response. Examples include the table column order and the board group-by
+ * property. This schema stays permissive. It tags the object by its `type`
+ * field and passes all other fields through without validation. As a result,
+ * unknown fields round-trip unchanged instead of the schema rejecting them.
  *
  * @category Views
  */

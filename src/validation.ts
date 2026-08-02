@@ -3,7 +3,7 @@
  *
  * @see https://developers.notion.com/reference/request-limits#size-limits
  *
- * @category Errors
+ * @category Client & Core
  */
 export const LIMITS = {
   /** Maximum characters in a single rich text `text.content` field. */
@@ -78,7 +78,7 @@ export class NotionValidationError extends Error {
  *
  * @throws {NotionValidationError}
  *
- * @category Errors
+ * @category Client & Core
  */
 export function validateStringLength(value: string, maxLength: number, label: string): void {
   if (value.length > maxLength) {
@@ -97,7 +97,7 @@ export function validateStringLength(value: string, maxLength: number, label: st
  *
  * @throws {NotionValidationError}
  *
- * @category Errors
+ * @category Client & Core
  */
 export function validateArrayLength(array: unknown[], maxLength: number, label: string): void {
   if (array.length > maxLength) {

@@ -76,7 +76,7 @@ const results = await notion.databases.query('database-id', {
 
 ## Documentation
 
-Full documentation — guides plus a generated API reference — is hosted at [nts.projects.visus.io](https://nts.projects.visus.io). Source lives in [`docs/`](./docs); run it locally:
+Full documentation is hosted at [nts.projects.visus.io](https://nts.projects.visus.io). It includes guides and a generated API reference. Source lives in [`docs/`](./docs). Run it locally:
 
 ```bash
 bun run docs:dev
