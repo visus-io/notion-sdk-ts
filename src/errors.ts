@@ -14,6 +14,7 @@ export type NotionErrorCode =
   | 'rate_limited'
   | 'internal_server_error'
   | 'service_unavailable'
+  | 'service_overload'
   | 'database_connection_unavailable'
   | 'gateway_timeout';
 
@@ -59,6 +60,13 @@ export class NotionAPIError extends Error {
    */
   isRateLimited(): boolean {
     return this.code === 'rate_limited';
+  }
+
+  /**
+   * Check if the error is a service overload error (HTTP 529).
+   */
+  isServiceOverloaded(): boolean {
+    return this.code === 'service_overload';
   }
 
   /**

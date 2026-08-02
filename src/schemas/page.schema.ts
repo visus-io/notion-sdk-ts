@@ -1,6 +1,6 @@
 import * as z from 'zod';
-import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
+import { iconSchema } from './icon.schema';
 import { pagePropertiesSchema } from './pageProperties.schema';
 import { parentSchema } from './parent.schema';
 import { notionDateStringSchema } from './shared.schema';
@@ -24,7 +24,9 @@ export const pageSchema = z.object({
   last_edited_time: notionDateStringSchema,
   last_edited_by: userSchema,
   in_trash: z.boolean(),
-  icon: z.nullable(z.union([fileSchema, emojiSchema])),
+  is_archived: z.boolean().optional(),
+  is_locked: z.boolean().optional(),
+  icon: z.nullable(iconSchema),
   cover: z.nullable(fileSchema),
   properties: z.record(z.string().trim(), pagePropertiesSchema),
   parent: parentSchema,

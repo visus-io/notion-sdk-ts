@@ -264,5 +264,97 @@ describe('CommentsAPI', () => {
         },
       });
     });
+
+    it('should create a comment from markdown', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockCommentResponse);
+
+      await commentsAPI.create({
+        parent: { page_id: 'page-id-123' },
+        markdown: '**bold** comment',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/comments',
+        body: {
+          parent: { page_id: 'page-id-123' },
+          markdown: '**bold** comment',
+        },
+      });
+    });
+
+    it('should throw validation error when both rich_text and markdown are provided', async () => {
+      await expect(
+        commentsAPI.create({
+          parent: { page_id: 'page-id-123' },
+          rich_text: [{ type: 'text', text: { content: 'Comment' } }],
+          markdown: '**bold**',
+        }),
+      ).rejects.toThrow(NotionValidationError);
+    });
+
+    it('should throw validation error when neither rich_text nor markdown is provided', async () => {
+      await expect(
+        commentsAPI.create({
+          parent: { page_id: 'page-id-123' },
+        }),
+      ).rejects.toThrow(NotionValidationError);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a comment with rich_text', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockCommentResponse);
+
+      const richText = [{ type: 'text', text: { content: 'Updated comment' } }];
+
+      const result = await commentsAPI.update('123e4567-e89b-12d3-a456-426614174000', {
+        rich_text: richText,
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'PATCH',
+        path: '/comments/123e4567-e89b-12d3-a456-426614174000',
+        body: { rich_text: richText },
+      });
+      expect(result).toBeInstanceOf(Comment);
+    });
+
+    it('should update a comment with markdown', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockCommentResponse);
+
+      await commentsAPI.update('123e4567-e89b-12d3-a456-426614174000', {
+        markdown: 'Updated *italic* comment',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'PATCH',
+        path: '/comments/123e4567-e89b-12d3-a456-426614174000',
+        body: { markdown: 'Updated *italic* comment' },
+      });
+    });
+
+    it('should throw validation error when both rich_text and markdown are provided', async () => {
+      await expect(
+        commentsAPI.update('123e4567-e89b-12d3-a456-426614174000', {
+          rich_text: [{ type: 'text', text: { content: 'x' } }],
+          markdown: 'x',
+        }),
+      ).rejects.toThrow(NotionValidationError);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a comment', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockCommentResponse);
+
+      const result = await commentsAPI.delete('123e4567-e89b-12d3-a456-426614174000');
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'DELETE',
+        path: '/comments/123e4567-e89b-12d3-a456-426614174000',
+      });
+      expect(result).toBeInstanceOf(Comment);
+    });
   });
 });

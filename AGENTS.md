@@ -36,11 +36,12 @@ bun run format:check     # Check formatting
 
 - Vitest with `globals: true`; tests still explicitly `import { describe, expect, it } from 'vitest'`. Environment: Node.
 - Structure: top-level `describe()` per module/class, nested `describe()` for groups, `it('should ...')` per case. Dash-comment dividers (`// -------...`) separate logical test groups.
+- **`src/api/` endpoints get two tiers of coverage; prefer the integration tier.** Each API module has both `*.api.integration.test.ts` (MSW-backed, drives the real `Notion` facade -> `NotionClient` -> `fetch` stack via `useMswServer()`/`server` from `src/testUtils/mswServer.ts`, fixtures from `src/testUtils/fixtures.ts`) and `*.api.test.ts` (unit, `fetch` mocked via `vi.fn()`). The integration tier is the primary signal for a new or changed endpoint -- it's the only one that actually exercises URL construction, header/query/body serialization, and response parsing over real HTTP, which a mocked-`fetch` unit test cannot catch by construction. Add an integration happy-path test (plus an error-path case if the module doesn't already cover that failure shape) for every new/changed method. Use the unit tier for what integration tests are impractical for: exhaustive per-option/per-branch combinations, client-side validation-error paths, and other cases that would be noisy to re-express as MSW handlers. When both apply to a change, add both -- don't let one substitute for the other.
 - Model tests construct with realistic mock data matching full Notion API response shapes and assert getters/methods.
 - Helper tests call factory functions and assert plain-object output with `toEqual()`.
 - Client tests mock `fetch` via `vi.fn()` injected through `NotionClientOptions.fetch`; use `vi.useFakeTimers()` for retry tests; use `expect.unreachable()` on expected-throw paths.
 - Validation tests use `expect(() => ...).toThrow(ErrorClass | /pattern/)` and include boundary cases (at limit, over limit).
-- No external mocking libraries -- only Vitest's built-in `vi`.
+- No external mocking libraries for unit tests -- only Vitest's built-in `vi`. Integration tests use `msw` to intercept HTTP at the network layer (not to mock arbitrary modules).
 
 ## Git Workflow
 

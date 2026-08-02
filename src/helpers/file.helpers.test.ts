@@ -19,6 +19,27 @@ describe('icon helpers', () => {
       file_upload: { id: 'upload-123' },
     });
   });
+
+  it('should create a native icon with a color', () => {
+    expect(icon.native('star circle', 'blue')).toEqual({
+      type: 'icon',
+      icon: { name: 'star circle', color: 'blue' },
+    });
+  });
+
+  it('should create a native icon without a color', () => {
+    expect(icon.native('token')).toEqual({
+      type: 'icon',
+      icon: { name: 'token' },
+    });
+  });
+
+  it('should create a custom emoji icon', () => {
+    expect(icon.customEmoji('emoji-id')).toEqual({
+      type: 'custom_emoji',
+      custom_emoji: { id: 'emoji-id' },
+    });
+  });
 });
 
 describe('cover helpers', () => {

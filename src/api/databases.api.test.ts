@@ -425,5 +425,19 @@ describe('DatabasesAPI', () => {
         },
       });
     });
+
+    it('should update is_locked status', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
+
+      await databasesAPI.update('123e4567-e89b-12d3-a456-426614174000', {
+        is_locked: true,
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'PATCH',
+        path: '/databases/123e4567-e89b-12d3-a456-426614174000',
+        body: { is_locked: true },
+      });
+    });
   });
 });

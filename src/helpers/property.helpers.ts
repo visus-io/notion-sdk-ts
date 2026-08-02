@@ -242,6 +242,51 @@ function people(userIds: string[]): { people: Array<{ object: 'user'; id: string
   return { people: userIds.map((id) => ({ object: 'user' as const, id })) };
 }
 
+/** Options for the verification property's optional date. */
+interface VerificationDateOptions {
+  start: string;
+  end?: string | null;
+  timeZone?: string | null;
+}
+
+/** The shape of a verification property value. */
+interface VerificationValue {
+  verification: {
+    state: 'verified' | 'unverified';
+    date?: { start: string; end: string | null; time_zone: string | null } | null;
+  };
+}
+
+/**
+ * Create a verification property value.
+ *
+ * @example
+ * ```ts
+ * prop.verification('verified')
+ * prop.verification('verified', { start: '2025-01-15' })
+ * prop.verification('unverified')
+ * ```
+ */
+function verification(
+  state: 'verified' | 'unverified',
+  date?: VerificationDateOptions,
+): VerificationValue {
+  return {
+    verification: {
+      state,
+      ...(date
+        ? {
+            date: {
+              start: date.start,
+              end: date.end ?? null,
+              time_zone: date.timeZone ?? null,
+            },
+          }
+        : {}),
+    },
+  };
+}
+
 /** A single file entry for the files' property. */
 interface FileEntry {
   name: string;
@@ -315,4 +360,5 @@ export const prop = {
   relation,
   people,
   files,
+  verification,
 };

@@ -25,6 +25,14 @@ const rateLimitedBody = {
   message: 'Rate limited',
 };
 
+/** Service-overload error body the Notion API returns for 529 responses. */
+const serviceOverloadBody = {
+  object: 'error' as const,
+  status: 529,
+  code: 'service_overload' as const,
+  message: 'Service overloaded',
+};
+
 /** A successful JSON body. */
 const successBody = { object: 'page', id: 'page-id' };
 
@@ -263,6 +271,54 @@ describe('NotionClient', () => {
       }
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should retry on service_overload (529) responses', async () => {
+      const fetchMock = vi
+        .fn()
+        // First call: service overloaded, no Retry-After header
+        .mockResolvedValueOnce(mockResponse(529, serviceOverloadBody))
+        // Second call: success
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      // Exponential backoff attempt 0: 2^0 * 1000 = 1000ms
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry on service_overload even when retryOnRateLimit is disabled', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(529, serviceOverloadBody, { 'Retry-After': '2' }))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(2000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
   });
 });

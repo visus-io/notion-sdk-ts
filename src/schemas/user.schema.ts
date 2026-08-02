@@ -30,6 +30,7 @@ const personUserSchema = z.object({
   avatar_url: z.union([z.url(), z.null()]).optional(),
   person: z.object({
     email: z.email(),
+    email_verified: z.boolean().optional(),
   }),
 });
 

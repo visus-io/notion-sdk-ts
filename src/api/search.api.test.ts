@@ -244,5 +244,41 @@ describe('SearchAPI', () => {
       expect(result.results[1]).toBeInstanceOf(Page);
       expect(result.results[2]).toBeInstanceOf(DataSource);
     });
+
+    it('should search with in_trash as a standalone filter', async () => {
+      const mockResponse = {
+        object: 'list',
+        results: [mockPageResponse],
+        next_cursor: null,
+        has_more: false,
+      };
+      vi.mocked(mockClient.request).mockResolvedValue(mockResponse);
+
+      await searchAPI.query({ filter: { in_trash: true } });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/search',
+        body: { filter: { in_trash: true } },
+      });
+    });
+
+    it('should search with in_trash combined with the object filter', async () => {
+      const mockResponse = {
+        object: 'list',
+        results: [mockPageResponse],
+        next_cursor: null,
+        has_more: false,
+      };
+      vi.mocked(mockClient.request).mockResolvedValue(mockResponse);
+
+      await searchAPI.query({ filter: { property: 'object', value: 'page', in_trash: true } });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/search',
+        body: { filter: { property: 'object', value: 'page', in_trash: true } },
+      });
+    });
   });
 });

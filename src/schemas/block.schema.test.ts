@@ -141,6 +141,21 @@ describe('blockSchema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should parse heading_4 block', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'heading_4',
+        heading_4: {
+          rich_text: richTextArray,
+          color: 'yellow',
+          is_toggleable: false,
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+
     it('should parse toggleable heading_1 with children', () => {
       const block: NotionBlock = {
         ...baseBlock,

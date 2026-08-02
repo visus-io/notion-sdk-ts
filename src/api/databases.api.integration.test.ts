@@ -119,6 +119,22 @@ describe('DatabasesAPI integration', () => {
     });
   });
 
+  describe('update is_locked', () => {
+    it('should lock a database', async () => {
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/databases/${databaseId}`, async ({ request }) => {
+          const body = (await request.json()) as { is_locked?: boolean };
+          expect(body.is_locked).toBe(true);
+          return HttpResponse.json(buildDatabaseResponse({ id: databaseId, is_locked: true }));
+        }),
+      );
+
+      const result = await notion.databases.update(databaseId, { is_locked: true });
+
+      expect(result.isLocked).toBe(true);
+    });
+  });
+
   describe('trash / restore', () => {
     it('should move a database to trash and back', async () => {
       server.use(

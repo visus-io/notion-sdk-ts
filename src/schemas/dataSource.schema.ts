@@ -1,6 +1,6 @@
 import * as z from 'zod';
-import { emojiSchema } from './emoji.schema';
 import { fileSchema } from './file.schema';
+import { iconSchema } from './icon.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
 import { notionDateStringSchema } from './shared.schema';
@@ -50,8 +50,8 @@ export const dataSourceSchema = z.object({
   /** Description of the data source as it appears in Notion */
   description: richTextSchema,
 
-  /** Data source icon (File or Emoji object) */
-  icon: z.union([fileSchema, emojiSchema]).nullable(),
+  /** Data source icon (File, Emoji, Native Icon, or Custom Emoji object) */
+  icon: iconSchema.nullable(),
 
   /** Data source cover image */
   cover: fileSchema.nullable(),
@@ -70,3 +70,27 @@ export const dataSourceSchema = z.object({
 });
 
 export type NotionDataSource = z.infer<typeof dataSourceSchema>;
+
+/**
+ * A single data source template reference, as returned by the
+ * List data source templates endpoint.
+ *
+ * Notion API reference:
+ * https://developers.notion.com/reference/list-data-source-templates
+ */
+export const dataSourceTemplateSchema = z.object({
+  id: z.uuid(),
+  name: z.string().trim(),
+  is_default: z.boolean(),
+});
+
+export type DataSourceTemplate = z.infer<typeof dataSourceTemplateSchema>;
+
+/** Response shape of the List data source templates endpoint. */
+export const dataSourceTemplateListSchema = z.object({
+  templates: z.array(dataSourceTemplateSchema),
+  has_more: z.boolean(),
+  next_cursor: z.string().trim().nullable(),
+});
+
+export type DataSourceTemplateList = z.infer<typeof dataSourceTemplateListSchema>;

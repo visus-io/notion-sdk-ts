@@ -3,8 +3,8 @@ import {
   databaseSchema,
   type DataSourceRef,
   type NotionDatabase,
-  type NotionEmoji,
   type NotionFile,
+  type NotionIcon,
   type NotionParent,
   type NotionRichText,
   type NotionUser,
@@ -82,9 +82,9 @@ export class Database extends BaseModel<NotionDatabase> {
   }
 
   /**
-   * Returns the database icon (file or emoji).
+   * Returns the database icon (file, emoji, native icon, or custom emoji).
    */
-  get icon(): NotionFile | NotionEmoji | null {
+  get icon(): NotionIcon | null {
     return this.data.icon;
   }
 
@@ -121,6 +121,13 @@ export class Database extends BaseModel<NotionDatabase> {
    */
   get isInline(): boolean {
     return this.data.is_inline;
+  }
+
+  /**
+   * Returns whether the database is locked from editing.
+   */
+  get isLocked(): boolean {
+    return this.data.is_locked ?? false;
   }
 
   /**

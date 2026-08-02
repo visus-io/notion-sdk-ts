@@ -7,6 +7,7 @@ export * from './dataSource.schema';
 export * from './emoji.schema';
 export * from './file.schema';
 export * from './fileUpload.schema';
+export * from './icon.schema';
 export * from './page.schema';
 export * from './pageProperties.schema';
 export * from './propertyObjects.schema';

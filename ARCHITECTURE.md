@@ -78,11 +78,11 @@ Test files are colocated with source using `.test.ts` suffix (e.g., `block.model
 
 Four error classes, all extending `Error` and setting `this.name` explicitly:
 
-- `NotionAPIError` -- HTTP error responses. Has `status`, `code`, `body`, `retryAfterMs`; helpers `isRateLimited()`, `isNotFound()`, `isUnauthorized()`, `isValidationError()`, `isServerError()`, `isRetryable()`.
+- `NotionAPIError` -- HTTP error responses. Has `status`, `code`, `body`, `retryAfterMs`; helpers `isRateLimited()`, `isServiceOverloaded()`, `isNotFound()`, `isUnauthorized()`, `isValidationError()`, `isServerError()`, `isRetryable()`.
 - `NotionNetworkError` -- connectivity failures, optional `cause`.
 - `NotionRequestTimeoutError` -- timeout exceeded.
 - `NotionValidationError` -- client-side size limit violations, thrown before the request is sent.
 
-The client only retries `rate_limited` (429) errors, using the `Retry-After` header or exponential backoff (`2^attempt * 1000ms`, capped at 60s).
+The client retries `rate_limited` (429, when `retryOnRateLimit` is enabled) and `service_overload` (529, always) errors, using the `Retry-After` header or exponential backoff (`2^attempt * 1000ms`, capped at 60s).
 
 Client-side size limits enforced before requests are defined in the `LIMITS` constant in `validation.ts` (rich text, URLs, email/phone, multi-select/relation/people arrays, comment attachments, payload blocks/bytes) -- read that file for exact values rather than relying on this doc.

@@ -231,4 +231,50 @@ describe('Page', () => {
     const page = new Page(pageData);
     expect(page.getTitle()).toBeNull();
   });
+
+  it('should expose isArchived and isLocked when present', () => {
+    const pageData = {
+      object: 'page',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      created_time: '2023-01-01T00:00:00.000Z',
+      created_by: { object: 'user', id: '223e4567-e89b-12d3-a456-426614174000' },
+      last_edited_time: '2023-01-02T00:00:00.000Z',
+      last_edited_by: { object: 'user', id: '223e4567-e89b-12d3-a456-426614174000' },
+      in_trash: false,
+      is_archived: true,
+      is_locked: true,
+      icon: null,
+      cover: null,
+      properties: {},
+      parent: { type: 'workspace', workspace: true },
+      url: 'https://notion.so/page',
+      public_url: null,
+    };
+
+    const page = new Page(pageData);
+    expect(page.isArchived).toBe(true);
+    expect(page.isLocked).toBe(true);
+  });
+
+  it('should default isArchived and isLocked to false when absent', () => {
+    const pageData = {
+      object: 'page',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      created_time: '2023-01-01T00:00:00.000Z',
+      created_by: { object: 'user', id: '223e4567-e89b-12d3-a456-426614174000' },
+      last_edited_time: '2023-01-02T00:00:00.000Z',
+      last_edited_by: { object: 'user', id: '223e4567-e89b-12d3-a456-426614174000' },
+      in_trash: false,
+      icon: null,
+      cover: null,
+      properties: {},
+      parent: { type: 'workspace', workspace: true },
+      url: 'https://notion.so/page',
+      public_url: null,
+    };
+
+    const page = new Page(pageData);
+    expect(page.isArchived).toBe(false);
+    expect(page.isLocked).toBe(false);
+  });
 });

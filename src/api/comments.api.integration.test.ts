@@ -62,6 +62,62 @@ describe('CommentsAPI integration', () => {
     });
   });
 
+  describe('create with markdown', () => {
+    it('should create a comment from a markdown string', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/comments`, async ({ request }) => {
+          const body = (await request.json()) as { markdown?: string; rich_text?: unknown };
+          expect(body.markdown).toBe('Nice **work**!');
+          expect(body.rich_text).toBeUndefined();
+          return HttpResponse.json(buildCommentResponse());
+        }),
+      );
+
+      const result = await notion.comments.create({
+        parent: { page_id: pageId },
+        markdown: 'Nice **work**!',
+      });
+
+      expect(result).toBeInstanceOf(Comment);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a comment over the network', async () => {
+      const commentId = '323e4567-e89b-12d3-a456-426614174000';
+
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/comments/${commentId}`, async ({ request }) => {
+          const body = (await request.json()) as { markdown?: string };
+          expect(body.markdown).toBe('Updated comment');
+          return HttpResponse.json(buildCommentResponse({ id: commentId }));
+        }),
+      );
+
+      const result = await notion.comments.update(commentId, { markdown: 'Updated comment' });
+
+      expect(result).toBeInstanceOf(Comment);
+      expect(result.id).toBe(commentId);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a comment over the network', async () => {
+      const commentId = '323e4567-e89b-12d3-a456-426614174000';
+
+      server.use(
+        http.delete(`${NOTION_TEST_BASE_URL}/v1/comments/${commentId}`, () =>
+          HttpResponse.json(buildCommentResponse({ id: commentId })),
+        ),
+      );
+
+      const result = await notion.comments.delete(commentId);
+
+      expect(result).toBeInstanceOf(Comment);
+      expect(result.id).toBe(commentId);
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------

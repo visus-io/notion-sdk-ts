@@ -17,14 +17,25 @@ export type SearchFilterObject = 'page' | 'data_source';
 
 /**
  * Search filter configuration.
+ *
+ * `in_trash` can be combined with the object filter (`property`/`value`) or
+ * used on its own to list only trashed content.
  */
-export interface SearchFilter {
-  /** Filter by object type */
-  value: SearchFilterObject;
+export type SearchFilter =
+  | {
+      /** Filter by object type */
+      value: SearchFilterObject;
 
-  /** Property to filter on (always "object" for this filter type) */
-  property: 'object';
-}
+      /** Property to filter on (always "object" for this filter type) */
+      property: 'object';
+
+      /** Whether to list only trashed pages and data sources */
+      in_trash?: boolean;
+    }
+  | {
+      /** Whether to list only trashed pages and data sources */
+      in_trash: boolean;
+    };
 
 /**
  * Search sort configuration.

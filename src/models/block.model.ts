@@ -46,6 +46,7 @@ export class Block extends BaseModel<NotionBlock> {
       'heading_1',
       'heading_2',
       'heading_3',
+      'heading_4',
       'quote',
       'callout',
       'bulleted_list_item',
@@ -59,7 +60,7 @@ export class Block extends BaseModel<NotionBlock> {
    * Check if this is a heading block.
    */
   isHeading(): boolean {
-    return ['heading_1', 'heading_2', 'heading_3'].includes(this.data.type);
+    return ['heading_1', 'heading_2', 'heading_3', 'heading_4'].includes(this.data.type);
   }
 
   /**
@@ -71,6 +72,7 @@ export class Block extends BaseModel<NotionBlock> {
       'heading_1',
       'heading_2',
       'heading_3',
+      'heading_4',
       'bulleted_list_item',
       'numbered_list_item',
       'to_do',

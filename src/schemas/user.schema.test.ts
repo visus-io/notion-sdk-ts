@@ -49,6 +49,24 @@ describe('userSchema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should parse person user with email_verified', () => {
+      const user = {
+        object: 'user' as const,
+        id: '123e4567-e89b-12d3-a456-426614174004',
+        type: 'person' as const,
+        person: {
+          email: 'verified@example.com',
+          email_verified: true,
+        },
+      };
+
+      const result = userSchema.safeParse(user);
+      expect(result.success).toBe(true);
+      if (result.success && 'person' in result.data) {
+        expect(result.data.person.email_verified).toBe(true);
+      }
+    });
+
     it('should reject person user with invalid email', () => {
       const user = {
         object: 'user',

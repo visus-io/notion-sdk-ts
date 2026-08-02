@@ -6,16 +6,14 @@ import {
   type PaginationParameters,
 } from '../schemas';
 import { Comment } from '../models';
-import { LIMITS, validateArrayLength } from '../validation';
+import { LIMITS, NotionValidationError, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
 
 /**
  * Display name for a comment.
  */
 export type CommentDisplayName =
-  | { type: 'integration' }
-  | { type: 'user' }
-  | { type: 'custom'; custom: { name: string } };
+  { type: 'integration' } | { type: 'user' } | { type: 'custom'; custom: { name: string } };
 
 /**
  * Comment attachment (file upload reference).
@@ -38,14 +36,42 @@ export interface CreateCommentOptions {
   /** Optional discussion thread ID to add the comment to */
   discussion_id?: string;
 
-  /** The comment content as rich text array (max 100 items) */
-  rich_text: unknown[];
+  /** The comment content as rich text array (max 100 items). Exactly one of `rich_text`/`markdown` must be provided. */
+  rich_text?: unknown[];
+
+  /** The comment content as a markdown string (inline formatting only). Exactly one of `rich_text`/`markdown` must be provided. */
+  markdown?: string;
 
   /** File attachments (max 3 allowed) */
   attachments?: CommentAttachment[];
 
   /** Custom display name for the comment */
   display_name?: CommentDisplayName;
+}
+
+/**
+ * Options for updating a comment.
+ */
+export interface UpdateCommentOptions {
+  /** The comment content as rich text array (max 100 items). Exactly one of `rich_text`/`markdown` must be provided. */
+  rich_text?: unknown[];
+
+  /** The comment content as a markdown string (inline formatting only). Exactly one of `rich_text`/`markdown` must be provided. */
+  markdown?: string;
+}
+
+/**
+ * Assert that exactly one of `rich_text`/`markdown` is provided for a comment body.
+ *
+ * @throws {NotionValidationError}
+ */
+function validateCommentContent(options: { rich_text?: unknown[]; markdown?: string }): void {
+  const hasRichText = options.rich_text !== undefined;
+  const hasMarkdown = options.markdown !== undefined;
+
+  if (hasRichText === hasMarkdown) {
+    throw new NotionValidationError('Exactly one of rich_text or markdown must be provided');
+  }
 }
 
 /**
@@ -89,11 +115,44 @@ export class CommentsAPI extends BaseAPI<NotionComment, Comment> {
    * @see https://developers.notion.com/reference/create-a-comment
    */
   async create(options: CreateCommentOptions): Promise<Comment> {
-    validateArrayLength(options.rich_text, LIMITS.ARRAY_ELEMENTS, 'rich_text');
+    validateCommentContent(options);
+    if (options.rich_text) {
+      validateArrayLength(options.rich_text, LIMITS.ARRAY_ELEMENTS, 'rich_text');
+    }
     if (options.attachments) {
       validateArrayLength(options.attachments, LIMITS.COMMENT_ATTACHMENTS, 'attachments');
     }
 
     return this.createResource('/comments', options);
+  }
+
+  /**
+   * Update an existing comment's content.
+   *
+   * @param commentId - The ID of the comment to update
+   * @param options - The updated comment content (`rich_text` or `markdown`)
+   * @returns The updated comment wrapped in a Comment model
+   *
+   * @see https://developers.notion.com/reference/update-a-comment
+   */
+  async update(commentId: string, options: UpdateCommentOptions): Promise<Comment> {
+    validateCommentContent(options);
+    if (options.rich_text) {
+      validateArrayLength(options.rich_text, LIMITS.ARRAY_ELEMENTS, 'rich_text');
+    }
+
+    return this.updateResource(`/comments/${commentId}`, options);
+  }
+
+  /**
+   * Delete a comment. A connection can only delete comments it created.
+   *
+   * @param commentId - The ID of the comment to delete
+   * @returns The deleted comment wrapped in a Comment model
+   *
+   * @see https://developers.notion.com/reference/delete-a-comment
+   */
+  async delete(commentId: string): Promise<Comment> {
+    return this.deleteResource(`/comments/${commentId}`);
   }
 }

@@ -73,6 +73,7 @@ describe('Database', () => {
     expect(database.url).toBe('https://notion.so/database');
     expect(database.publicUrl).toBe(null);
     expect(database.isInline).toBe(false);
+    expect(database.isLocked).toBe(false);
   });
 
   it('should extract title and description as plain text', () => {
@@ -322,6 +323,7 @@ describe('Database', () => {
       url: 'https://notion.so/database-123',
       in_trash: false,
       is_inline: false,
+      is_locked: true,
       public_url: 'https://public.notion.so/database',
     };
 
@@ -332,6 +334,7 @@ describe('Database', () => {
       external: { url: 'https://example.com/cover.png' },
     });
     expect(database.publicUrl).toBe('https://public.notion.so/database');
+    expect(database.isLocked).toBe(true);
     expect(database.createdBy.id).toBe('323e4567-e89b-12d3-a456-426614174000');
     expect(database.lastEditedBy.id).toBe('423e4567-e89b-12d3-a456-426614174000');
   });

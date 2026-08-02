@@ -189,4 +189,27 @@ describe('property helpers', () => {
       expect(result.files).toHaveLength(2);
     });
   });
+
+  describe('verification', () => {
+    it('should create a verified state without a date', () => {
+      expect(prop.verification('verified')).toEqual({
+        verification: { state: 'verified' },
+      });
+    });
+
+    it('should create a verified state with a date', () => {
+      expect(prop.verification('verified', { start: '2025-01-15' })).toEqual({
+        verification: {
+          state: 'verified',
+          date: { start: '2025-01-15', end: null, time_zone: null },
+        },
+      });
+    });
+
+    it('should create an unverified state', () => {
+      expect(prop.verification('unverified')).toEqual({
+        verification: { state: 'unverified' },
+      });
+    });
+  });
 });
