@@ -65,6 +65,16 @@ page.isSubpage(); // true if parent is a page
 page.toJSON();
 ```
 
+### Markdown Content
+
+`pages.create()` accepts a `markdown` string as an alternative to `properties`/`children`.
+`pages.getMarkdown()` and `pages.updateMarkdown()` read and write a page's content as markdown
+directly, instead of a block tree. `updateMarkdown()` returns an `AsyncTask` handle instead of the
+finished content when `allow_async: true` triggers asynchronous processing; poll it with
+`notion.asyncTasks.poll()`. See
+[Working with Markdown Content](/guides/common-use-cases/#working-with-markdown-content) for a
+full example.
+
 ### Example Usage
 
 ```typescript

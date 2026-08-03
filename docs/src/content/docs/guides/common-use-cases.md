@@ -14,6 +14,9 @@ This guide shows practical examples and workflows for common Notion SDK tasks.
 - [Querying and Filtering Databases](#querying-and-filtering-databases)
 - [Working with Rich Text](#working-with-rich-text)
 - [Uploading Files and Images](#uploading-files-and-images)
+- [Working with Markdown Content](#working-with-markdown-content)
+- [Working with Views](#working-with-views)
+- [Managing Custom Emoji](#managing-custom-emoji)
 - [Managing Comments](#managing-comments)
 - [Batch Operations](#batch-operations)
 - [Pagination Patterns](#pagination-patterns)
@@ -468,6 +471,158 @@ if (status.isUploaded()) {
   console.log('File ready to use!');
 } else if (status.isFailed()) {
   console.error('Upload failed');
+}
+```
+
+---
+
+## Working with Markdown Content
+
+`pages.create()` accepts a markdown string as an alternative to `properties`/`children`.
+`pages.getMarkdown()` and `pages.updateMarkdown()` read and write that content directly, without
+building a block tree by hand.
+
+```typescript
+import { Notion, parent } from '@visus-io/notion-sdk-ts';
+import { readFileSync } from 'fs';
+
+const notion = new Notion({ auth: process.env.NOTION_TOKEN });
+
+// Example 1: Create a page from markdown instead of properties/children.
+// `markdown` is mutually exclusive with `properties` and `children`.
+const page = await notion.pages.create({
+  parent: parent.page('parent-page-id'),
+  markdown: [
+    '# Release Notes',
+    '',
+    'This release adds **markdown-based** page authoring.',
+    '',
+    '- Faster to write than a block tree',
+    '- Round-trips through `getMarkdown()`/`updateMarkdown()`',
+  ].join('\n'),
+});
+
+// Example 2: Read a page's content back as markdown
+const content = await notion.pages.getMarkdown(page.id);
+console.log(content.markdown);
+
+if (content.truncated) {
+  console.log('Content was truncated; fetch the block tree for the full page.');
+}
+
+// Example 3: Find-and-replace an exact markdown substring
+await notion.pages.updateMarkdown(page.id, {
+  type: 'update_content',
+  content_updates: [
+    {
+      old_str: '# Release Notes',
+      new_str: '# Release Notes (v3.1.0)',
+    },
+  ],
+});
+
+// Example 4: Replace the entire page body
+await notion.pages.updateMarkdown(page.id, {
+  type: 'replace_content',
+  new_str: '# Rewritten\n\nThis page was replaced in one call.',
+  allow_deleting_content: true,
+});
+
+// Example 5: Large writes can process asynchronously. Discriminate the response
+// by `object`, then poll the async task through `notion.asyncTasks`.
+const largeMarkdown = readFileSync('./release-notes.md', 'utf8');
+const result = await notion.pages.updateMarkdown(page.id, {
+  type: 'replace_content',
+  new_str: largeMarkdown,
+  allow_deleting_content: true,
+  allow_async: true,
+});
+
+if (result.object === 'async_task') {
+  const task = await notion.asyncTasks.poll(result.id, { timeoutMs: 60_000 });
+  if (task.isSucceeded()) {
+    console.log('Markdown update finished:', task.result);
+  } else if (task.isFailed()) {
+    console.error('Markdown update failed:', task.error);
+  }
+} else {
+  console.log('Markdown update applied synchronously:', result.markdown);
+}
+```
+
+---
+
+## Working with Views
+
+Views control how a database or data source displays its rows: table, board, calendar, and
+more. View queries are separate from `dataSources.query()` — they respect the view's own filter,
+sort, and layout, and each query result expires about 15 minutes after creation.
+
+```typescript
+import { Notion } from '@visus-io/notion-sdk-ts';
+
+const notion = new Notion({ auth: process.env.NOTION_TOKEN });
+const dataSourceId = 'your-data-source-id';
+
+// Example 1: List the views for a data source
+const views = await notion.views.list({ data_source_id: dataSourceId });
+for (const view of views.results) {
+  console.log(`${view.name} (${view.type})`);
+}
+
+// Example 2: Create a board view grouped by status
+const boardView = await notion.views.create({
+  data_source_id: dataSourceId,
+  name: 'By Status',
+  type: 'board',
+});
+
+// Example 3: Query a view's rows and check for the 10,000-result cap.
+// See the Pagination guide for how request_status signals truncation.
+const query = await notion.views.queries.create(boardView.id, {
+  filter: { property: 'Status', status: { equals: 'In Progress' } },
+});
+
+console.log(`${query.totalCount} rows, query expires at ${query.expiresAt}`);
+for (const page of query.results) {
+  console.log(page.getTitle());
+}
+
+if (query.requestStatus?.incomplete_reason === 'query_result_limit_reached') {
+  console.log('Query hit the 10,000-result cap; narrow the filter to see the rest.');
+}
+
+// Example 4: Clean up the query and the view
+await notion.views.queries.delete(boardView.id, query.id);
+await notion.views.delete(boardView.id);
+```
+
+---
+
+## Managing Custom Emoji
+
+List the custom emojis available in the workspace, then reuse one as a page or database icon.
+
+```typescript
+import { Notion, icon } from '@visus-io/notion-sdk-ts';
+
+const notion = new Notion({ auth: process.env.NOTION_TOKEN });
+
+// Example 1: List all custom emojis
+const emojis = await notion.customEmojis.list();
+for (const emoji of emojis.results) {
+  console.log(`${emoji.name}: ${emoji.url}`);
+}
+
+// Example 2: Look up one emoji by exact name
+const partyParrot = await notion.customEmojis.list({ name: 'party-parrot' });
+const emojiId = partyParrot.results[0]?.id;
+
+// Example 3: Use a custom emoji as a page icon
+if (emojiId) {
+  await notion.pages.update('page-id', {
+    icon: icon.customEmoji(emojiId),
+  });
 }
 ```
 
