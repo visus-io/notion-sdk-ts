@@ -135,7 +135,20 @@ function apiReferenceSidebar() {
 export default defineConfig({
   site: 'https://nts.projects.visus.io',
   security: {
-    csp: true,
+    csp: {
+      // Starlight ships these scripts with `is:inline`, so Astro's CSP feature can't see or
+      // hash their content automatically -- they're allowlisted here by hash instead. Recompute
+      // by scanning `docs/dist/**/*.html` for `script-src` violations after a Starlight upgrade.
+      scriptDirective: {
+        hashes: [
+          'sha256-VWo5Wp4aqSj6nSgMpeAp9cKieaoIfwFUAunAVugI5gA=',
+          'sha256-f/zAUE74ucc3JYp4r4QQvkJofoQdkOIhHYK+jeZ6eko=',
+          'sha256-GkZBRnvSuhtx/cvzvukVkX2JJZW+DdPlVr7BX8Tefqo=',
+          'sha256-wX2yOADeV+NMngflD5uYi3vl50SHC4sfM1EmylVjlX4=',
+          'sha256-7eCV4jtsr4t4knb3c4FCRPeu7GGZeOUGE3XvWix0XOQ=',
+        ],
+      },
+    },
   },
   integrations: [
     starlight({

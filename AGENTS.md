@@ -84,6 +84,20 @@ Rules live in `eslint.config.mjs` (`tseslint.configs.recommendedTypeChecked` + `
 - Before finishing any change that touches a `.yml`/`.yaml` file, check whether `yamllint` is available (`command -v yamllint`) and, if so, run it against the changed file(s) (config lives at `.yamllint.yml`). Skip silently only if the tool is not installed.
 - If the changed `.yml` file is a GitHub Actions workflow under `.github/workflows/`, additionally check whether `actionlint` is available (`command -v actionlint`) and, if so, run it against the changed file(s). Skip silently only if the tool is not installed.
 
+## Docs Site (`docs/`)
+
+`docs/astro.config.mjs` hardcodes 5 script hashes in `security.csp.scriptDirective.hashes`.
+These hashes allow Starlight's `is:inline` scripts to run under the site's Content Security
+Policy. Astro's CSP feature cannot hash `is:inline` scripts automatically.
+
+If `docs/package.json` bumps the `@astrojs/starlight` version, recompute these hashes. Run
+`bun run --cwd docs build`, then scan `docs/dist/**/*.html` for inline `<script>` tags whose
+content hash is missing from that page's `script-src` list. Replace the `hashes` array in
+`docs/astro.config.mjs` with the new set and rebuild to confirm zero violations remain across
+all pages. A stale hash silently blocks the matching script at runtime; it does not fail the
+build. Affected features include search, the theme picker, and sidebar and table-of-contents
+state.
+
 ## What NOT to Do
 
 - No default exports anywhere -- named exports only.
@@ -92,3 +106,4 @@ Rules live in `eslint.config.mjs` (`tseslint.configs.recommendedTypeChecked` + `
 - Avoid `any` (use `unknown` when the type is truly unknown) and `!` non-null assertions.
 - Don't override or hardcode a different Notion API version -- it's fixed at `2026-03-11`.
 - Don't skip client-side validation (`validateStringLength()` / `validateArrayLength()`) before an API call that accepts user input.
+- Don't upgrade `@astrojs/starlight` in `docs/` without recomputing the CSP script hashes in `docs/astro.config.mjs` (see "Docs Site" above).
