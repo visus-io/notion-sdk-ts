@@ -1,0 +1,10 @@
+---
+import Default from '@astrojs/starlight/components/Head.astro';
+
+// Shiki emits a `style="..."` attribute per highlighted token; Astro's CSP hashes cover
+// `<style>` elements, not per-element attributes, so allow inline style attributes here
+// while leaving `style-src` itself hash-restricted.
+Astro.csp?.insertStyleResource({ resource: "'unsafe-inline'", kind: 'attribute' });
+---
+
+<Default />

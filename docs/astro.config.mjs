@@ -134,6 +134,9 @@ function apiReferenceSidebar() {
 
 export default defineConfig({
   site: 'https://nts.projects.visus.io',
+  security: {
+    csp: true,
+  },
   integrations: [
     starlight({
       title: '@visus-io/notion-sdk-ts',
@@ -143,6 +146,9 @@ export default defineConfig({
       ],
       editLink: {
         baseUrl: 'https://github.com/visus-io/notion-sdk-ts/edit/main/docs/',
+      },
+      components: {
+        Head: './src/components/Head.astro',
       },
       sidebar: [
         {
