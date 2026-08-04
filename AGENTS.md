@@ -67,7 +67,7 @@ same change. Do not defer doc updates to a later commit.
 
 ## Git Workflow
 
-- Husky `pre-commit` runs `lint-staged`; `commit-msg` runs `commitlint`; `post-checkout` runs `bun install` when `package.json`/`bun.lock` change on branch switch.
+- Husky `pre-commit` runs `lint-staged`; `commit-msg` runs `commitlint`; `post-checkout` runs `bun install` when `package.json`/`bun.lock` change on branch switch; `post-merge` runs `bun install` when `package.json`/`bun.lock` change after a merge (for example `git pull`).
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`).
 - `lint-staged` auto-fixes/formats `.ts`, `.json`, `.md`, `.yml`, `.yaml` on commit.
 
