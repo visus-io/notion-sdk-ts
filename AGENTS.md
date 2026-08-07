@@ -27,7 +27,7 @@ bun run format:check     # Check formatting
 - **Constants:** UPPER_SNAKE_CASE (`LIMITS`, `NOTION_COLORS`).
 - **Functions/variables:** camelCase (`validateStringLength`, `resolveRichText`).
 - **Exported namespace objects:** camelCase (`block`, `richText`, `filter`, `sort`, `prop`, `parent`, `icon`, `cover`, `notionFile`).
-- **Type-only imports:** always `import type { X }` (enforced by `consistent-type-imports`); mixing with value imports on one line is fine.
+- **Type-only imports:** always `import type { X }` (enforced by `consistent-type-imports`); mixing with value imports on one line is fine. A `typeof X` type query works on a type-only import of `X`. TypeScript resolves `typeof` in a type position, not a value position, so this compiles.
 - Each subdirectory has a barrel `index.ts`; `src/index.ts` re-exports everything.
 - Prettier: single quotes, semicolons, trailing commas, 100 char width, 2-space indent, no tabs. `prettier-plugin-packagejson` sorts `package.json` fields.
 - TypeScript: target ES2021, module CommonJS, strict mode. Declaration maps and source maps disabled. Use numeric separators for readability (`2_000`, `500 * 1_024`). Prefix unused parameters with `_`.

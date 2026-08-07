@@ -276,13 +276,15 @@ describe('SearchAPI', () => {
       };
       vi.mocked(mockClient.request).mockResolvedValue(mockResponse);
 
-      await searchAPI.query();
+      try {
+        await searchAPI.query();
 
-      expect(parsePageSpy).toHaveBeenCalledTimes(1);
-      expect(parseDataSourceSpy).toHaveBeenCalledTimes(1);
-
-      parsePageSpy.mockRestore();
-      parseDataSourceSpy.mockRestore();
+        expect(parsePageSpy).toHaveBeenCalledTimes(1);
+        expect(parseDataSourceSpy).toHaveBeenCalledTimes(1);
+      } finally {
+        parsePageSpy.mockRestore();
+        parseDataSourceSpy.mockRestore();
+      }
     });
 
     it('should search with in_trash combined with the object filter', async () => {
