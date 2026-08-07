@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SearchAPI } from './search.api';
 import type { NotionClient } from '../client';
 import { DataSource, Page } from '../models';
+import { dataSourceSchema, pageSchema } from '../schemas';
 
 describe('SearchAPI', () => {
   const mockClient = {
@@ -261,6 +262,29 @@ describe('SearchAPI', () => {
         path: '/search',
         body: { filter: { in_trash: true } },
       });
+    });
+
+    it('should parse each result exactly once (no double-parsing)', async () => {
+      const parsePageSpy = vi.spyOn(pageSchema, 'parse');
+      const parseDataSourceSpy = vi.spyOn(dataSourceSchema, 'parse');
+
+      const mockResponse = {
+        object: 'list',
+        results: [mockPageResponse, mockDataSourceResponse],
+        next_cursor: null,
+        has_more: false,
+      };
+      vi.mocked(mockClient.request).mockResolvedValue(mockResponse);
+
+      try {
+        await searchAPI.query();
+
+        expect(parsePageSpy).toHaveBeenCalledTimes(1);
+        expect(parseDataSourceSpy).toHaveBeenCalledTimes(1);
+      } finally {
+        parsePageSpy.mockRestore();
+        parseDataSourceSpy.mockRestore();
+      }
     });
 
     it('should search with in_trash combined with the object filter', async () => {

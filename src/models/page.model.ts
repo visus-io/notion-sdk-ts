@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import { type NotionPage, type NotionPageProperties, pageSchema } from '../schemas';
 
 /**
@@ -10,8 +10,8 @@ export class Page extends BaseModel<NotionPage> {
   private cachedCreatedTimeMs?: number;
   private cachedLastEditedTimeMs?: number;
 
-  constructor(data: unknown) {
-    super(data as NotionPage, pageSchema);
+  constructor(data: unknown, trusted?: typeof TRUSTED) {
+    super(data as NotionPage, pageSchema, trusted);
   }
 
   get object(): string {

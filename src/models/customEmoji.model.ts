@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import { customEmojiSchema, type NotionCustomEmoji } from '../schemas';
 
 /**
@@ -7,8 +7,8 @@ import { customEmojiSchema, type NotionCustomEmoji } from '../schemas';
  * @category Custom Emoji & Icons
  */
 export class CustomEmoji extends BaseModel<NotionCustomEmoji> {
-  constructor(data: NotionCustomEmoji) {
-    super(data, customEmojiSchema);
+  constructor(data: NotionCustomEmoji, trusted?: typeof TRUSTED) {
+    super(data, customEmojiSchema, trusted);
   }
 
   /**

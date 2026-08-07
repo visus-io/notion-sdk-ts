@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import {
   databaseSchema,
   type DataSourceRef,
@@ -19,8 +19,8 @@ export class Database extends BaseModel<NotionDatabase> {
   private cachedCreatedTimeMs?: number;
   private cachedLastEditedTimeMs?: number;
 
-  constructor(data: NotionDatabase) {
-    super(data, databaseSchema);
+  constructor(data: NotionDatabase, trusted?: typeof TRUSTED) {
+    super(data, databaseSchema, trusted);
   }
 
   /**

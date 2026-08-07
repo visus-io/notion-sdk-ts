@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import {
   type CommentAttachment,
   type CommentDisplayName,
@@ -15,8 +15,8 @@ import {
  * @category Comments
  */
 export class Comment extends BaseModel<NotionComment> {
-  constructor(data: NotionComment) {
-    super(data, commentSchema);
+  constructor(data: NotionComment, trusted?: typeof TRUSTED) {
+    super(data, commentSchema, trusted);
   }
 
   /**

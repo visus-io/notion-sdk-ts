@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import {
   type NotionParent,
   type NotionUser,
@@ -17,8 +17,8 @@ import {
  * @category Views
  */
 export class View extends BaseModel<NotionView> {
-  constructor(data: NotionView) {
-    super(data, viewSchema);
+  constructor(data: NotionView, trusted?: typeof TRUSTED) {
+    super(data, viewSchema, trusted);
   }
 
   /**

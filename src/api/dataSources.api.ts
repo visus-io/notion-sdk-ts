@@ -11,6 +11,7 @@ import {
   type PaginationParameters,
 } from '../schemas';
 import { DataSource, Page } from '../models';
+import { TRUSTED } from '../models/base.model';
 import { LIMITS, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
 
@@ -252,7 +253,7 @@ export class DataSourcesAPI extends BaseAPI<NotionDataSource, DataSource> {
 
     return {
       object: 'list',
-      results: parsed.results.map((page) => new Page(page)),
+      results: parsed.results.map((page) => new Page(page, TRUSTED)),
       next_cursor: parsed.next_cursor,
       has_more: parsed.has_more,
       type: 'page',

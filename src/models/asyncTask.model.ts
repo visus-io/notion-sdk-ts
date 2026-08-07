@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import { asyncTaskSchema, type NotionAsyncTask } from '../schemas';
 
 /**
@@ -10,8 +10,8 @@ import { asyncTaskSchema, type NotionAsyncTask } from '../schemas';
  * @category Async Tasks
  */
 export class AsyncTask extends BaseModel<NotionAsyncTask> {
-  constructor(data: NotionAsyncTask) {
-    super(data, asyncTaskSchema);
+  constructor(data: NotionAsyncTask, trusted?: typeof TRUSTED) {
+    super(data, asyncTaskSchema, trusted);
   }
 
   /**

@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import {
   dataSourceSchema,
   type NotionDataSource,
@@ -19,8 +19,8 @@ import {
  * @category Databases & Data Sources
  */
 export class DataSource extends BaseModel<NotionDataSource> {
-  constructor(data: NotionDataSource) {
-    super(data, dataSourceSchema);
+  constructor(data: NotionDataSource, trusted?: typeof TRUSTED) {
+    super(data, dataSourceSchema, trusted);
   }
 
   /**

@@ -1,6 +1,7 @@
 import type { NotionClient } from '../client';
 import { fileUploadSchema, type NotionFileUpload } from '../schemas';
 import { FileUpload } from '../models';
+import { TRUSTED } from '../models/base.model';
 import { BaseAPI } from './base.api';
 
 /**
@@ -53,7 +54,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     });
 
     const parsed = fileUploadSchema.parse(response);
-    return new FileUpload(parsed);
+    return new FileUpload(parsed, TRUSTED);
   }
 
   /**
@@ -97,7 +98,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     });
 
     const parsed = fileUploadSchema.parse(response);
-    return new FileUpload(parsed);
+    return new FileUpload(parsed, TRUSTED);
   }
 
   /**
@@ -170,6 +171,6 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     });
 
     const parsed = fileUploadSchema.parse(response);
-    return new FileUpload(parsed);
+    return new FileUpload(parsed, TRUSTED);
   }
 }

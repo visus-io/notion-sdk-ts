@@ -1,4 +1,5 @@
 import type { NotionClient } from '../client';
+import { TRUSTED } from '../models/base.model';
 import type { PaginatedList, PaginatedListType, PaginationParameters } from '../schemas';
 import { paginatedListSchema } from '../schemas';
 import { LIMITS, validateArrayLength } from '../validation';
@@ -16,7 +17,7 @@ interface ResourceConfig<TResponse, TModel> {
   schema: z.ZodSchema<TResponse>;
 
   /** Model class constructor to wrap the validated response */
-  ModelClass: new (data: TResponse) => TModel;
+  ModelClass: new (data: TResponse, trusted?: typeof TRUSTED) => TModel;
 
   /** Type of items in the paginated list (used for typing the results) */
   listType?: PaginatedListType;
@@ -248,7 +249,7 @@ export abstract class BaseAPI<TResponse, TModel> {
    */
   private parseAndWrap(response: TResponse): TModel {
     const parsed = this.config.schema.parse(response);
-    return new this.config.ModelClass(parsed);
+    return new this.config.ModelClass(parsed, TRUSTED);
   }
 
   /**
@@ -267,7 +268,7 @@ export abstract class BaseAPI<TResponse, TModel> {
 
     return {
       object: 'list',
-      results: parsed.results.map((item) => new this.config.ModelClass(item)),
+      results: parsed.results.map((item) => new this.config.ModelClass(item, TRUSTED)),
       next_cursor: parsed.next_cursor,
       has_more: parsed.has_more,
       type: this.config.listType || ('unknown' as PaginatedListType),

@@ -1,4 +1,4 @@
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import { blockSchema, type NotionBlock } from '../schemas';
 
 const TEXT_BLOCK_TYPES = new Set<NotionBlock['type']>([
@@ -50,8 +50,8 @@ export class Block extends BaseModel<NotionBlock> {
   private cachedCreatedTimeMs?: number;
   private cachedLastEditedTimeMs?: number;
 
-  constructor(data: unknown) {
-    super(data as NotionBlock, blockSchema);
+  constructor(data: unknown, trusted?: typeof TRUSTED) {
+    super(data as NotionBlock, blockSchema, trusted);
   }
 
   get object(): string {
