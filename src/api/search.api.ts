@@ -8,6 +8,7 @@ import {
   type PaginationParameters,
 } from '../schemas';
 import { DataSource, Page } from '../models';
+import { TRUSTED } from '../models/base.model';
 
 /**
  * Search filter object type.
@@ -111,10 +112,10 @@ export class SearchAPI {
     const results: SearchResult[] = response.results.map((item) => {
       if (item.object === 'page') {
         const parsed = pageSchema.parse(item);
-        return new Page(parsed);
+        return new Page(parsed, TRUSTED);
       } else {
         const parsed = dataSourceSchema.parse(item);
-        return new DataSource(parsed);
+        return new DataSource(parsed, TRUSTED);
       }
     });
 

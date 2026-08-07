@@ -1,5 +1,6 @@
 import type { NotionClient } from '../client';
 import { Page, View } from '../models';
+import { TRUSTED } from '../models/base.model';
 import {
   type NotionView,
   type PaginatedList,
@@ -121,7 +122,7 @@ function toViewQueryResult(response: unknown): ViewQueryResult {
     viewId: parsed.view_id,
     expiresAt: new Date(parsed.expires_at),
     totalCount: parsed.total_count,
-    results: parsed.results.map((page) => new Page(page)),
+    results: parsed.results.map((page) => new Page(page, TRUSTED)),
     nextCursor: parsed.next_cursor,
     hasMore: parsed.has_more,
     requestStatus: parsed.request_status,

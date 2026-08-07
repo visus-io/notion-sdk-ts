@@ -1,3 +1,4 @@
+import type { TRUSTED } from './base.model';
 import { BaseModel } from './base.model';
 import { fileUploadSchema, type NotionFileUpload } from '../schemas';
 
@@ -7,8 +8,8 @@ import { fileUploadSchema, type NotionFileUpload } from '../schemas';
  * @category File Uploads
  */
 export class FileUpload extends BaseModel<NotionFileUpload> {
-  constructor(data: NotionFileUpload) {
-    super(data, fileUploadSchema);
+  constructor(data: NotionFileUpload, trusted?: typeof TRUSTED) {
+    super(data, fileUploadSchema, trusted);
   }
 
   /**

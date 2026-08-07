@@ -11,6 +11,7 @@ import {
   type RequestStatus,
 } from '../schemas';
 import { Block } from '../models';
+import { TRUSTED } from '../models/base.model';
 import { LIMITS, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
 
@@ -207,7 +208,7 @@ export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
       const parsed = listSchema.parse(response);
 
       return {
-        results: parsed.results.map((block) => new Block(block)),
+        results: parsed.results.map((block) => new Block(block, TRUSTED)),
         next_cursor: parsed.next_cursor,
         has_more: parsed.has_more,
       };
@@ -254,7 +255,7 @@ export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
       const parsed = meetingNotesQueryResponseSchema.parse(response);
 
       return {
-        results: parsed.results.map((b) => new Block(b)),
+        results: parsed.results.map((b) => new Block(b, TRUSTED)),
         hasMore: parsed.has_more,
         requestStatus: parsed.request_status,
       };

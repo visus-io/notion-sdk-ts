@@ -1,3 +1,4 @@
+import type { TRUSTED } from './base.model';
 import { BaseModel } from './base.model';
 import { type BotUser, type NotionUser, type PersonUser, userSchema } from '../schemas';
 
@@ -7,8 +8,8 @@ import { type BotUser, type NotionUser, type PersonUser, userSchema } from '../s
  * @category Users
  */
 export class User extends BaseModel<NotionUser> {
-  constructor(data: unknown) {
-    super(data as NotionUser, userSchema);
+  constructor(data: unknown, trusted?: typeof TRUSTED) {
+    super(data as NotionUser, userSchema, trusted);
   }
 
   get object(): string {
