@@ -1,5 +1,4 @@
-import type { TRUSTED } from './base.model';
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import { blockSchema, type NotionBlock } from '../schemas';
 
 const TEXT_BLOCK_TYPES = new Set<NotionBlock['type']>([

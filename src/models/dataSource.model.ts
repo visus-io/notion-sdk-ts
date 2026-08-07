@@ -1,5 +1,4 @@
-import type { TRUSTED } from './base.model';
-import { BaseModel } from './base.model';
+import { BaseModel, type TRUSTED } from './base.model';
 import {
   dataSourceSchema,
   type NotionDataSource,
