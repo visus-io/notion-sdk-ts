@@ -52,20 +52,24 @@ export interface RequestOptions {
  * Base HTTP client for Notion API requests.
  */
 export class NotionClient {
-  private readonly auth: string;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
   private readonly maxRetries: number;
   private readonly retryOnRateLimit: boolean;
+  private readonly requestHeaders: Record<string, string>;
 
   constructor(options: NotionClientOptions) {
-    this.auth = options.auth;
-    this.baseUrl = options.baseUrl ?? 'https://api.notion.com';
+    this.baseUrl = `${options.baseUrl ?? 'https://api.notion.com'}/v1`;
     this.timeoutMs = options.timeoutMs ?? 60000;
     this.fetchImpl = options.fetch ?? fetch;
     this.maxRetries = options.maxRetries ?? 3;
     this.retryOnRateLimit = options.retryOnRateLimit ?? true;
+    this.requestHeaders = {
+      Authorization: `Bearer ${options.auth}`,
+      'Content-Type': 'application/json',
+      'Notion-Version': NOTION_VERSION,
+    };
   }
 
   /**
@@ -108,7 +112,6 @@ export class NotionClient {
    */
   private async makeRequest<T>(options: RequestOptions): Promise<T> {
     const url = this.buildUrl(options.path, options.query);
-    const headers = this.buildHeaders();
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -116,7 +119,7 @@ export class NotionClient {
     try {
       const response = await this.fetchImpl(url, {
         method: options.method,
-        headers,
+        headers: this.requestHeaders,
         body: options.body ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,
       });
@@ -176,7 +179,7 @@ export class NotionClient {
     path: string,
     query?: Record<string, string | number | boolean | string[] | undefined>,
   ): string {
-    const url = new URL(`${this.baseUrl}/v1${path}`);
+    const url = new URL(`${this.baseUrl}${path}`);
 
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -193,17 +196,6 @@ export class NotionClient {
     }
 
     return url.toString();
-  }
-
-  /**
-   * Build the request headers.
-   */
-  private buildHeaders(): Record<string, string> {
-    return {
-      Authorization: `Bearer ${this.auth}`,
-      'Content-Type': 'application/json',
-      'Notion-Version': NOTION_VERSION,
-    };
   }
 
   /**

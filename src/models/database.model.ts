@@ -16,6 +16,9 @@ import {
  * @category Databases & Data Sources
  */
 export class Database extends BaseModel<NotionDatabase> {
+  private cachedCreatedTimeMs?: number;
+  private cachedLastEditedTimeMs?: number;
+
   constructor(data: NotionDatabase) {
     super(data, databaseSchema);
   }
@@ -45,7 +48,8 @@ export class Database extends BaseModel<NotionDatabase> {
    * Returns the created time as a Date object.
    */
   get createdTime(): Date {
-    return new Date(this.data.created_time);
+    this.cachedCreatedTimeMs ??= new Date(this.data.created_time).getTime();
+    return new Date(this.cachedCreatedTimeMs);
   }
 
   /**
@@ -59,7 +63,8 @@ export class Database extends BaseModel<NotionDatabase> {
    * Returns the last edited time as a Date object.
    */
   get lastEditedTime(): Date {
-    return new Date(this.data.last_edited_time);
+    this.cachedLastEditedTimeMs ??= new Date(this.data.last_edited_time).getTime();
+    return new Date(this.cachedLastEditedTimeMs);
   }
 
   /**

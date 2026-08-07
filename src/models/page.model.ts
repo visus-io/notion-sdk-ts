@@ -7,6 +7,9 @@ import { type NotionPage, type NotionPageProperties, pageSchema } from '../schem
  * @category Pages
  */
 export class Page extends BaseModel<NotionPage> {
+  private cachedCreatedTimeMs?: number;
+  private cachedLastEditedTimeMs?: number;
+
   constructor(data: unknown) {
     super(data as NotionPage, pageSchema);
   }
@@ -20,11 +23,13 @@ export class Page extends BaseModel<NotionPage> {
   }
 
   get createdTime(): Date {
-    return new Date(this.data.created_time);
+    this.cachedCreatedTimeMs ??= new Date(this.data.created_time).getTime();
+    return new Date(this.cachedCreatedTimeMs);
   }
 
   get lastEditedTime(): Date {
-    return new Date(this.data.last_edited_time);
+    this.cachedLastEditedTimeMs ??= new Date(this.data.last_edited_time).getTime();
+    return new Date(this.cachedLastEditedTimeMs);
   }
 
   get inTrash(): boolean {

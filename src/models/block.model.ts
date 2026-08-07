@@ -1,12 +1,55 @@
 import { BaseModel } from './base.model';
 import { blockSchema, type NotionBlock } from '../schemas';
 
+const TEXT_BLOCK_TYPES = new Set<NotionBlock['type']>([
+  'paragraph',
+  'heading_1',
+  'heading_2',
+  'heading_3',
+  'heading_4',
+  'quote',
+  'callout',
+  'bulleted_list_item',
+  'numbered_list_item',
+  'to_do',
+  'toggle',
+]);
+
+const HEADING_BLOCK_TYPES = new Set<NotionBlock['type']>([
+  'heading_1',
+  'heading_2',
+  'heading_3',
+  'heading_4',
+]);
+
+const CHILD_CONTAINER_BLOCK_TYPES = new Set<NotionBlock['type']>([
+  'paragraph',
+  'heading_1',
+  'heading_2',
+  'heading_3',
+  'heading_4',
+  'bulleted_list_item',
+  'numbered_list_item',
+  'to_do',
+  'toggle',
+  'quote',
+  'callout',
+  'synced_block',
+  'column',
+  'column_list',
+  'tab',
+  'table',
+]);
+
 /**
  * Block model wrapping a validated Notion block object with helper methods.
  *
  * @category Blocks
  */
 export class Block extends BaseModel<NotionBlock> {
+  private cachedCreatedTimeMs?: number;
+  private cachedLastEditedTimeMs?: number;
+
   constructor(data: unknown) {
     super(data as NotionBlock, blockSchema);
   }
@@ -24,11 +67,13 @@ export class Block extends BaseModel<NotionBlock> {
   }
 
   get createdTime(): Date {
-    return new Date(this.data.created_time);
+    this.cachedCreatedTimeMs ??= new Date(this.data.created_time).getTime();
+    return new Date(this.cachedCreatedTimeMs);
   }
 
   get lastEditedTime(): Date {
-    return new Date(this.data.last_edited_time);
+    this.cachedLastEditedTimeMs ??= new Date(this.data.last_edited_time).getTime();
+    return new Date(this.cachedLastEditedTimeMs);
   }
 
   get inTrash(): boolean {
@@ -43,50 +88,21 @@ export class Block extends BaseModel<NotionBlock> {
    * Check if this is a text-based block type.
    */
   isTextBlock(): boolean {
-    return [
-      'paragraph',
-      'heading_1',
-      'heading_2',
-      'heading_3',
-      'heading_4',
-      'quote',
-      'callout',
-      'bulleted_list_item',
-      'numbered_list_item',
-      'to_do',
-      'toggle',
-    ].includes(this.data.type);
+    return TEXT_BLOCK_TYPES.has(this.data.type);
   }
 
   /**
    * Check if this is a heading block.
    */
   isHeading(): boolean {
-    return ['heading_1', 'heading_2', 'heading_3', 'heading_4'].includes(this.data.type);
+    return HEADING_BLOCK_TYPES.has(this.data.type);
   }
 
   /**
    * Check if this block can contain children.
    */
   canHaveChildren(): boolean {
-    return [
-      'paragraph',
-      'heading_1',
-      'heading_2',
-      'heading_3',
-      'heading_4',
-      'bulleted_list_item',
-      'numbered_list_item',
-      'to_do',
-      'toggle',
-      'quote',
-      'callout',
-      'synced_block',
-      'column',
-      'column_list',
-      'tab',
-      'table',
-    ].includes(this.data.type);
+    return CHILD_CONTAINER_BLOCK_TYPES.has(this.data.type);
   }
 
   /**

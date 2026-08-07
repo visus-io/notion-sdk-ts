@@ -256,7 +256,12 @@ export type WindowedFetchFunction<T extends { id: string; createdTime: Date }> =
 export async function* iterateAllDataSourceRows<T extends { id: string; createdTime: Date }>(
   fetchWindow: WindowedFetchFunction<T>,
 ): AsyncGenerator<T, void, undefined> {
-  const seenIds = new Set<string>();
+  // Rows repeat across a window boundary only when they share the exact `created_time`
+  // used as the next window's lower bound (results are sorted ascending by created_time,
+  // so ties are always contiguous). Tracking only that trailing tie group -- instead of
+  // every id ever yielded -- keeps memory bounded regardless of result set size.
+  let tailTimeMs: number | undefined;
+  let tailIds = new Set<string>();
   let cursor: string | undefined;
   let createdTimeCursor: string | undefined;
   let lastCreatedTime: Date | undefined;
@@ -267,10 +272,18 @@ export async function* iterateAllDataSourceRows<T extends { id: string; createdT
     let yieldedThisWindow = false;
 
     for (const item of response.results) {
-      if (seenIds.has(item.id)) {
+      const itemTimeMs = item.createdTime.getTime();
+
+      if (tailTimeMs !== undefined && itemTimeMs === tailTimeMs && tailIds.has(item.id)) {
         continue;
       }
-      seenIds.add(item.id);
+
+      if (tailTimeMs === undefined || itemTimeMs > tailTimeMs) {
+        tailTimeMs = itemTimeMs;
+        tailIds = new Set();
+      }
+
+      tailIds.add(item.id);
       lastCreatedTime = item.createdTime;
       yieldedThisWindow = true;
       yield item;

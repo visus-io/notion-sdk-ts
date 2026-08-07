@@ -31,7 +31,21 @@ interface ResourceConfig<TResponse, TModel> {
 export abstract class BaseAPI<TResponse, TModel> {
   protected abstract config: ResourceConfig<TResponse, TModel>;
 
+  private cachedPaginatedListSchema?: ReturnType<
+    typeof paginatedListSchema<z.ZodSchema<TResponse>>
+  >;
+
   protected constructor(protected readonly client: NotionClient) {}
+
+  /**
+   * Return whether a query object has at least one entry.
+   *
+   * @param query - Query object to check
+   * @returns `true` if `query` has at least one own enumerable key
+   */
+  private hasQueryParams(query?: Record<string, string | string[]>): boolean {
+    return !!query && Object.keys(query).length > 0;
+  }
 
   /**
    * Delete a resource via DELETE request.
@@ -167,7 +181,7 @@ export abstract class BaseAPI<TResponse, TModel> {
     const response = await this.client.request<TResponse>({
       method: 'GET',
       path: resourcePath,
-      query: Object.keys(query || {}).length > 0 ? query : undefined,
+      query: this.hasQueryParams(query) ? query : undefined,
     });
 
     return this.parseAndWrap(response);
@@ -193,7 +207,7 @@ export abstract class BaseAPI<TResponse, TModel> {
     const response = await this.client.request<PaginatedList<TResponse>>({
       method: 'GET',
       path: resourcePath,
-      query: Object.keys(query || {}).length > 0 ? query : undefined,
+      query: this.hasQueryParams(query) ? query : undefined,
     });
 
     return this.parsePaginatedList(response);
@@ -248,8 +262,8 @@ export abstract class BaseAPI<TResponse, TModel> {
    * return this.parsePaginatedList(response);
    */
   private parsePaginatedList(response: PaginatedList<TResponse>): PaginatedList<TModel> {
-    const schema = paginatedListSchema(this.config.schema);
-    const parsed = schema.parse(response);
+    this.cachedPaginatedListSchema ??= paginatedListSchema(this.config.schema);
+    const parsed = this.cachedPaginatedListSchema.parse(response);
 
     return {
       object: 'list',
