@@ -127,10 +127,10 @@ describe('User', () => {
     };
 
     const user = new User(verifiedData);
-    expect(user.isEmailVerified()).toBe(true);
+    expect(user.getEmailVerified()).toBe(true);
   });
 
-  it('should return undefined for isEmailVerified when not a person', () => {
+  it('should return undefined for getEmailVerified when not a person', () => {
     const botData = {
       object: 'user' as const,
       id: '123e4567-e89b-12d3-a456-426614174000',
@@ -146,6 +146,21 @@ describe('User', () => {
     };
 
     const bot = new User(botData);
-    expect(bot.isEmailVerified()).toBeUndefined();
+    expect(bot.getEmailVerified()).toBeUndefined();
+  });
+
+  it('should return undefined for getEmailVerified when email_verified is absent', () => {
+    const unverifiedData = {
+      object: 'user' as const,
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      type: 'person' as const,
+      name: 'John Doe',
+      person: {
+        email: 'test@test.com',
+      },
+    };
+
+    const user = new User(unverifiedData);
+    expect(user.getEmailVerified()).toBeUndefined();
   });
 });

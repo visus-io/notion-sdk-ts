@@ -56,10 +56,10 @@ export class User extends BaseModel<NotionUser> {
   }
 
   /**
-   * Check if the person's email is verified.
+   * Get the person's email verification status.
    * Returns `undefined` when the user is not a person.
    */
-  isEmailVerified(): boolean | undefined {
+  getEmailVerified(): boolean | undefined {
     if (this.isPerson()) {
       return this.data.person.email_verified;
     }
