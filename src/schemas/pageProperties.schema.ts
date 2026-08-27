@@ -87,6 +87,7 @@ const formulaPropertySchema = z.object({
     }),
     z.object({ type: z.literal('number'), number: z.number().nullable() }),
     z.object({ type: z.literal('string'), string: z.string().trim().nullable() }),
+    z.object({ type: z.literal('unsupported'), unsupported: z.object({}) }),
   ]),
 });
 
