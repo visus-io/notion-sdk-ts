@@ -113,4 +113,39 @@ describe('User', () => {
     const user = new User(userData);
     expect(user.getBotInfo()).toBeUndefined();
   });
+
+  it('should report email verification status for a person user', () => {
+    const verifiedData = {
+      object: 'user' as const,
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      type: 'person' as const,
+      name: 'John Doe',
+      person: {
+        email: 'test@test.com',
+        email_verified: true,
+      },
+    };
+
+    const user = new User(verifiedData);
+    expect(user.isEmailVerified()).toBe(true);
+  });
+
+  it('should return undefined for isEmailVerified when not a person', () => {
+    const botData = {
+      object: 'user' as const,
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      type: 'bot' as const,
+      name: 'Bot Assistant',
+      avatar_url: null,
+      bot: {
+        owner: {
+          type: 'workspace' as const,
+          workspace: true as const,
+        },
+      },
+    };
+
+    const bot = new User(botData);
+    expect(bot.isEmailVerified()).toBeUndefined();
+  });
 });

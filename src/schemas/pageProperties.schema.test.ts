@@ -307,6 +307,19 @@ describe('pagePropertiesSchema', () => {
       const result = pagePropertiesSchema.safeParse(property);
       expect(result.success).toBe(true);
     });
+
+    it('should parse unsupported formula', () => {
+      const property = {
+        id: 'prop-19a',
+        type: 'formula' as const,
+        formula: {
+          type: 'unsupported' as const,
+        },
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('last_edited_by property', () => {

@@ -56,6 +56,16 @@ export class User extends BaseModel<NotionUser> {
   }
 
   /**
+   * Check if the person's email is verified.
+   */
+  isEmailVerified(): boolean | undefined {
+    if (this.isPerson()) {
+      return this.data.person.email_verified;
+    }
+    return undefined;
+  }
+
+  /**
    * Get bot information if this is a bot user.
    */
   getBotInfo():
