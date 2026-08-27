@@ -314,6 +314,7 @@ describe('pagePropertiesSchema', () => {
         type: 'formula' as const,
         formula: {
           type: 'unsupported' as const,
+          unsupported: {},
         },
       };
 
