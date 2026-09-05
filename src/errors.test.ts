@@ -102,6 +102,22 @@ describe('NotionAPIError', () => {
     });
   });
 
+  describe('isRestrictedResource', () => {
+    it('should return true for restricted_resource error', () => {
+      const response = createErrorResponse('restricted_resource', 403);
+      const error = new NotionAPIError(response);
+
+      expect(error.isRestrictedResource()).toBe(true);
+    });
+
+    it('should return false for non-restricted-resource error', () => {
+      const response = createErrorResponse('invalid_request', 400);
+      const error = new NotionAPIError(response);
+
+      expect(error.isRestrictedResource()).toBe(false);
+    });
+  });
+
   describe('isValidationError', () => {
     it('should return true for validation_error', () => {
       const response = createErrorResponse('validation_error', 400);
@@ -142,6 +158,7 @@ describe('NotionAPIError', () => {
       { code: 'service_unavailable', status: 503, expected: true },
       { code: 'invalid_request', status: 400, expected: false },
       { code: 'object_not_found', status: 404, expected: false },
+      { code: 'restricted_resource', status: 403, expected: false },
     ] as const)('should return $expected for $code ($status)', ({ code, status, expected }) => {
       const response = createErrorResponse(code, status);
       const error = new NotionAPIError(response);

@@ -1,5 +1,6 @@
 import { BaseModel, type TRUSTED } from './base.model';
 import {
+  type DatabaseType,
   dataSourceSchema,
   type NotionDataSource,
   type NotionFile,
@@ -140,6 +141,14 @@ export class DataSource extends BaseModel<NotionDataSource> {
    */
   get inTrash(): boolean {
     return this.data.in_trash;
+  }
+
+  /**
+   * Returns the canonical database type this data source's parent database was built from,
+   * if any.
+   */
+  get databaseType(): DatabaseType | undefined {
+    return this.data.database_type;
   }
 
   /**

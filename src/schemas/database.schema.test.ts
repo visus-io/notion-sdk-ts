@@ -68,4 +68,32 @@ describe('databaseSchema', () => {
     const result = databaseSchema.safeParse(database);
     expect(result.success).toBe(true);
   });
+
+  it('should parse database with a canonical database_type', () => {
+    const database = {
+      object: 'database' as const,
+      id: '123e4567-e89b-12d3-a456-426614174005',
+      data_sources: [],
+      created_time: '2024-01-01T00:00:00.000Z',
+      created_by: baseUser,
+      last_edited_time: '2024-01-02T00:00:00.000Z',
+      last_edited_by: baseUser,
+      title: [],
+      description: [],
+      icon: null,
+      cover: null,
+      parent: {
+        type: 'workspace' as const,
+        workspace: true as const,
+      },
+      url: 'https://notion.so/database',
+      in_trash: false,
+      is_inline: false,
+      public_url: null,
+      database_type: 'tasks' as const,
+    };
+
+    const result = databaseSchema.safeParse(database);
+    expect(result.success).toBe(true);
+  });
 });

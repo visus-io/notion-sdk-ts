@@ -292,6 +292,7 @@ describe('Database', () => {
     expect(database.dataSources[0].id).toBe('223e4567-e89b-12d3-a456-426614174000');
     expect(database.dataSources[0].name).toBe('Data Source 1');
     expect(database.dataSources[1].name).toBe('Data Source 2');
+    expect(database.databaseType).toBeUndefined();
   });
 
   it('should access metadata fields', () => {
@@ -325,6 +326,7 @@ describe('Database', () => {
       is_inline: false,
       is_locked: true,
       public_url: 'https://public.notion.so/database',
+      database_type: 'tasks',
     };
 
     const database = new Database(databaseData);
@@ -335,6 +337,7 @@ describe('Database', () => {
     });
     expect(database.publicUrl).toBe('https://public.notion.so/database');
     expect(database.isLocked).toBe(true);
+    expect(database.databaseType).toBe('tasks');
     expect(database.createdBy.id).toBe('323e4567-e89b-12d3-a456-426614174000');
     expect(database.lastEditedBy.id).toBe('423e4567-e89b-12d3-a456-426614174000');
   });

@@ -1,6 +1,7 @@
 import type { NotionClient } from '../client';
 import {
   databaseSchema,
+  type DatabaseType,
   type NotionDatabase,
   type NotionPage,
   pageSchema,
@@ -10,7 +11,7 @@ import {
 } from '../schemas';
 import { Database, Page } from '../models';
 import { TRUSTED } from '../models/base.model';
-import { LIMITS, validateArrayLength } from '../validation';
+import { LIMITS, NotionValidationError, validateArrayLength } from '../validation';
 import { BaseAPI } from './base.api';
 
 /**
@@ -69,7 +70,9 @@ export type CreateDatabaseParent = { page_id: string } | { workspace: true };
 
 /**
  * Initial data source configuration for creating a database.
- * As of API version 2025-09-03, databases are created with an initial data source.
+ * Provide this to create a database with a custom properties schema. To create a database
+ * from one of Notion's canonical schemas instead, use `database_type` on
+ * {@link CreateDatabaseOptions}.
  */
 export interface InitialDataSource {
   /** Data source properties schema */
@@ -81,15 +84,19 @@ export interface InitialDataSource {
 
 /**
  * Options for creating a database.
- * As of API version 2025-09-03, databases require an `initial_data_source` object.
- * This object holds the properties schema. It replaces top-level properties.
+ * Provide exactly one of `database_type` or `initial_data_source`. `database_type` builds
+ * the database from one of Notion's canonical schemas. `initial_data_source` holds a custom
+ * properties schema. It replaces top-level properties.
  */
 export interface CreateDatabaseOptions {
   /** The parent object (page or workspace) */
   parent: CreateDatabaseParent;
 
+  /** Build the database from a canonical Notion schema instead of a custom one */
+  database_type?: DatabaseType;
+
   /** Initial data source configuration (contains properties schema) */
-  initial_data_source: InitialDataSource;
+  initial_data_source?: InitialDataSource;
 
   /** Database title as rich text array */
   title?: unknown[];
@@ -208,21 +215,20 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
    *
    * @param options - Options for creating the database
    * @returns The created database wrapped in a Database model
+   * @throws {NotionValidationError} If not exactly one of `database_type`/`initial_data_source` is provided
    *
    * @see https://developers.notion.com/reference/create-a-database
    */
   async create(options: CreateDatabaseOptions): Promise<Database> {
+    if (Boolean(options.database_type) === Boolean(options.initial_data_source)) {
+      throw new NotionValidationError(
+        'Exactly one of database_type or initial_data_source must be provided',
+      );
+    }
     if (options.title) {
       validateArrayLength(options.title, LIMITS.ARRAY_ELEMENTS, 'title');
     }
     if (options.initial_data_source?.title) {
-      validateArrayLength(
-        options.initial_data_source.title,
-        LIMITS.ARRAY_ELEMENTS,
-        'initial_data_source.title',
-      );
-    }
-    if (options.initial_data_source.title) {
       validateArrayLength(
         options.initial_data_source.title,
         LIMITS.ARRAY_ELEMENTS,

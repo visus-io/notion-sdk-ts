@@ -6,6 +6,7 @@ import { richTextSchema } from './richText.schema';
 import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 import { propertiesObjectSchema } from './propertyObjects.schema';
+import { DATABASE_TYPES } from './database.schema';
 
 /**
  * Notion data source object schema.
@@ -69,6 +70,9 @@ export const dataSourceSchema = z.object({
 
   /** Whether the data source is in the trash */
   in_trash: z.boolean(),
+
+  /** Canonical database type this data source's parent database was built from, if any */
+  database_type: z.enum(DATABASE_TYPES).optional(),
 });
 
 /**

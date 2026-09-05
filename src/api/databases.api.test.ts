@@ -280,6 +280,45 @@ describe('DatabasesAPI', () => {
       });
     });
 
+    it('should create a typed database', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockDatabaseResponse);
+
+      const result = await databasesAPI.create({
+        parent: { page_id: 'parent-page-id' },
+        database_type: 'tasks',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/databases',
+        body: {
+          parent: { page_id: 'parent-page-id' },
+          database_type: 'tasks',
+        },
+      });
+      expect(result).toBeInstanceOf(Database);
+    });
+
+    it('should throw validation error when both database_type and initial_data_source are provided', async () => {
+      await expect(
+        databasesAPI.create({
+          parent: { page_id: 'parent-page-id' },
+          database_type: 'tasks',
+          initial_data_source: {
+            properties: { Name: { title: {} } },
+          },
+        }),
+      ).rejects.toThrow(NotionValidationError);
+    });
+
+    it('should throw validation error when neither database_type nor initial_data_source is provided', async () => {
+      await expect(
+        databasesAPI.create({
+          parent: { page_id: 'parent-page-id' },
+        }),
+      ).rejects.toThrow(NotionValidationError);
+    });
+
     it('should throw validation error when title array exceeds limit', async () => {
       const tooManyTitleElements = new Array(101).fill({ type: 'text', text: { content: 'x' } });
 

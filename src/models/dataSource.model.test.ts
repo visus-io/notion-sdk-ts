@@ -409,6 +409,7 @@ describe('DataSource', () => {
       in_trash: true,
       is_inline: true,
       public_url: 'https://public.notion.so/datasource',
+      database_type: 'skills',
     };
 
     const dataSource = new DataSource(dataSourceData);
@@ -420,6 +421,7 @@ describe('DataSource', () => {
     expect(dataSource.inTrash).toBe(true);
     expect(dataSource.isInline).toBe(true);
     expect(dataSource.publicUrl).toBe('https://public.notion.so/datasource');
+    expect(dataSource.databaseType).toBe('skills');
     expect(dataSource.createdBy.id).toBe('323e4567-e89b-12d3-a456-426614174000');
     expect(dataSource.lastEditedBy.id).toBe('423e4567-e89b-12d3-a456-426614174000');
   });

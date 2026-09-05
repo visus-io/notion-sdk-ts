@@ -31,6 +31,19 @@ export const dataSourceRefSchema = z.object({
 export type DataSourceRef = z.infer<typeof dataSourceRefSchema>;
 
 /**
+ * Canonical database types Notion can build a database from. Passing one of these to Create
+ * Database builds the database from Notion's schema for that type instead of a custom schema.
+ *
+ * @category Databases & Data Sources
+ */
+export const DATABASE_TYPES = ['tasks', 'projects', 'skills'] as const;
+
+/**
+ * @category Databases & Data Sources
+ */
+export type DatabaseType = (typeof DATABASE_TYPES)[number];
+
+/**
  * @category Databases & Data Sources
  */
 export const databaseSchema = z.object({
@@ -51,6 +64,7 @@ export const databaseSchema = z.object({
   is_inline: z.boolean(),
   is_locked: z.boolean().optional(),
   public_url: z.nullable(z.url()),
+  database_type: z.enum(DATABASE_TYPES).optional(),
 });
 
 /**

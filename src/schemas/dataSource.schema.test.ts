@@ -86,4 +86,36 @@ describe('dataSourceSchema', () => {
     const result = dataSourceSchema.safeParse(dataSource);
     expect(result.success).toBe(true);
   });
+
+  it('should parse data source with a canonical database_type', () => {
+    const dataSource = {
+      object: 'data_source' as const,
+      id: '123e4567-e89b-12d3-a456-426614174006',
+      properties: {},
+      parent: {
+        type: 'database_id' as const,
+        database_id: '123e4567-e89b-12d3-a456-426614174007',
+      },
+      database_parent: {
+        type: 'workspace' as const,
+        workspace: true as const,
+      },
+      created_time: '2024-01-01T00:00:00.000Z',
+      created_by: baseUser,
+      last_edited_time: '2024-01-02T00:00:00.000Z',
+      last_edited_by: baseUser,
+      title: [],
+      description: [],
+      icon: null,
+      cover: null,
+      url: 'https://notion.so/datasource',
+      in_trash: false,
+      is_inline: false,
+      public_url: null,
+      database_type: 'projects' as const,
+    };
+
+    const result = dataSourceSchema.safeParse(dataSource);
+    expect(result.success).toBe(true);
+  });
 });

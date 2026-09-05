@@ -101,6 +101,22 @@ describe('DatabasesAPI integration', () => {
 
       expect(result).toBeInstanceOf(Database);
     });
+
+    it('should create a typed database', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/databases`, () =>
+          HttpResponse.json(buildDatabaseResponse({ database_type: 'tasks' })),
+        ),
+      );
+
+      const result = await notion.databases.create({
+        parent: { page_id: 'parent-page-id' },
+        database_type: 'tasks',
+      });
+
+      expect(result).toBeInstanceOf(Database);
+      expect(result.databaseType).toBe('tasks');
+    });
   });
 
   describe('update', () => {

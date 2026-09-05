@@ -30,6 +30,9 @@ export interface NotionErrorResponse {
   status: number;
   code: NotionErrorCode;
   message: string;
+
+  /** Extra machine-readable context for some error codes, for example `restricted_resource`. */
+  additional_data?: Record<string, unknown>;
 }
 
 /**
@@ -87,6 +90,14 @@ export class NotionAPIError extends Error {
    */
   isNotFound(): boolean {
     return this.code === 'object_not_found';
+  }
+
+  /**
+   * Check if the API rejected the request because a workspace restriction applies,
+   * for example the Free workspace block limit.
+   */
+  isRestrictedResource(): boolean {
+    return this.code === 'restricted_resource';
   }
 
   /**
