@@ -26,7 +26,64 @@ This guide shows practical examples and workflows for common Notion SDK tasks.
 
 ## Creating a Task Management Database
 
-Create a complete task management database with properties. Then add tasks to it.
+Notion provides a canonical `tasks` schema. Pass `database_type: 'tasks'` to build a
+database from it. The result matches a database of that type created in the Notion app. Use
+`initial_data_source` instead when you need custom properties.
+
+### Using the Built-in Tasks Schema
+
+The canonical `tasks` schema has these properties: `Task name`, `Assignee`, `Status`, and
+`Due`. These are the English names. Property names follow the workspace's language. The
+example below assumes an English workspace. Retrieve the data source first to confirm exact
+names in other languages.
+
+```typescript
+import { Notion, parent, prop, sort } from '@visus-io/notion-sdk-ts';
+
+const notion = new Notion({ auth: process.env.NOTION_TOKEN });
+
+// Step 1: Create the database from Notion's canonical tasks schema
+const database = await notion.databases.create({
+  parent: { page_id: 'parent-page-id' },
+  database_type: 'tasks',
+});
+
+// Step 2: Get data source for creating pages
+const dataSourceId = database.dataSources[0].id;
+
+// Step 3: Add tasks
+const tasks = [
+  { name: 'Review pull requests', dueDate: '2025-03-15' },
+  { name: 'Update documentation', dueDate: '2025-03-20' },
+  { name: 'Fix bug #123', dueDate: '2025-03-10' },
+];
+
+for (const task of tasks) {
+  await notion.pages.create({
+    parent: parent.dataSource(dataSourceId, database.id),
+    properties: {
+      'Task name': prop.title(task.name),
+      Due: prop.date(task.dueDate),
+    },
+  });
+}
+
+// Step 4: Query tasks sorted by due date
+const upcomingTasks = await notion.databases.query(database.id, {
+  sorts: [sort.property('Due').ascending()],
+});
+
+console.log(`${upcomingTasks.results.length} tasks found`);
+for (const task of upcomingTasks.results) {
+  console.log(`- ${task.getTitle()}`);
+}
+```
+
+### Using Custom Properties
+
+Provide `initial_data_source` instead of `database_type` when you need properties beyond the
+canonical schema, for example a `Priority` select or a `Tags` multi-select. Provide exactly
+one of `database_type` or `initial_data_source`.
 
 ```typescript
 import { Notion, parent, prop, filter, sort } from '@visus-io/notion-sdk-ts';

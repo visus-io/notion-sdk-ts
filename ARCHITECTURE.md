@@ -117,8 +117,8 @@ The SDK has 4 error classes. Each class extends `Error` and sets `this.name`:
 
 - `NotionAPIError`: an HTTP error response. It has these properties: `status`, `code`, `body`,
   and `retryAfterMs`. It has these helper methods: `isRateLimited()`, `isServiceOverloaded()`,
-  `isNotFound()`, `isUnauthorized()`, `isValidationError()`, `isServerError()`, and
-  `isRetryable()`.
+  `isNotFound()`, `isUnauthorized()`, `isValidationError()`, `isServerError()`,
+  `isRestrictedResource()`, and `isRetryable()`.
 - `NotionNetworkError`: a connectivity failure. It has an optional `cause` property.
 - `NotionRequestTimeoutError`: the request exceeded the timeout.
 - `NotionValidationError`: a client-side size limit violation. The SDK throws this error before it

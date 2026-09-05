@@ -1,6 +1,7 @@
 import { BaseModel, type TRUSTED } from './base.model';
 import {
   databaseSchema,
+  type DatabaseType,
   type DataSourceRef,
   type NotionDatabase,
   type NotionFile,
@@ -142,6 +143,13 @@ export class Database extends BaseModel<NotionDatabase> {
    */
   get publicUrl(): string | null {
     return this.data.public_url;
+  }
+
+  /**
+   * Returns the canonical database type this database was built from, if any.
+   */
+  get databaseType(): DatabaseType | undefined {
+    return this.data.database_type;
   }
 
   /**
