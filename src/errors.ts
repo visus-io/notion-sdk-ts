@@ -93,8 +93,8 @@ export class NotionAPIError extends Error {
   }
 
   /**
-   * Check if the API rejected the request because a workspace restriction applies,
-   * for example the Free workspace block limit.
+   * Check if a workspace restriction blocked the request.
+   * The Free workspace block limit is one example.
    */
   isRestrictedResource(): boolean {
     return this.code === 'restricted_resource';
