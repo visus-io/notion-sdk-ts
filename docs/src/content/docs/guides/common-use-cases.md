@@ -27,9 +27,8 @@ This guide shows practical examples and workflows for common Notion SDK tasks.
 ## Creating a Task Management Database
 
 Notion provides a canonical `tasks` schema. Pass `database_type: 'tasks'` to build a
-database from it. This is the fastest way to create a task database, and it matches a
-database of that type created in the Notion app. Use `initial_data_source` instead when you
-need custom properties.
+database from it. The result matches a database of that type created in the Notion app. Use
+`initial_data_source` instead when you need custom properties.
 
 ### Using the Built-in Tasks Schema
 
@@ -173,13 +172,6 @@ console.log(`${highPriorityTasks.results.length} high-priority tasks found`);
 for (const task of highPriorityTasks.results) {
   console.log(`- ${task.getTitle()}`);
 }
-```
-
-```typescript
-const database = await notion.databases.create({
-  parent: { page_id: 'parent-page-id' },
-  database_type: 'tasks',
-});
 ```
 
 ---
