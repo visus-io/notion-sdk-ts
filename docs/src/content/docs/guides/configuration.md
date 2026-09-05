@@ -219,7 +219,7 @@ try {
 
 ## Custom Fetch Implementation
 
-The SDK uses the native `fetch` API in Node 18 and later. You can provide your own
+The SDK uses the native `fetch` API in Node 22 and later. You can provide your own
 implementation instead.
 
 ### Default Behavior

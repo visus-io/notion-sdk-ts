@@ -19,7 +19,7 @@ A type-safe TypeScript SDK for the Notion API with Zod validation, OOP models, a
 - **Automatic pagination** `paginate()`, `paginateIterator()`, and `paginateWithMetadata()` helpers automatically fetch all pages, plus `iterateAllDataSourceRows()`/`collectAllDataSourceRows()` to work around the 10,000-result query cap
 - **Automatic rate limiting** Respects `Retry-After` header with exponential backoff fallback (configurable)
 - **Client-side size validation** Enforces Notion API size limits before sending requests
-- **Zero bloat** Single runtime dependency (`zod`); uses built-in `fetch` (Node 18+)
+- **Zero bloat** Single runtime dependency (`zod`); uses built-in `fetch` (Node 22+)
 
 ## Installation
 
@@ -29,7 +29,7 @@ npm install @visus-io/notion-sdk-ts
 bun add @visus-io/notion-sdk-ts
 ```
 
-**Requirements:** Node.js 18+ or Bun 1.3.10+ (uses native `fetch`)
+**Requirements:** Node.js 22+ or Bun 1.4.0+ (uses native `fetch`)
 
 ## Quick Start
 
@@ -118,7 +118,7 @@ bun run docs:dev         # Run the docs site locally
 bun run docs:build       # Build the docs site
 ```
 
-> **Note:** While this project uses Bun for development, the published package works with both Node.js 18+ and Bun 1.3.10+.
+> **Note:** While this project uses Bun for development, the published package works with both Node.js 22+ and Bun 1.4.0+.
 
 See [**ARCHITECTURE.md**](./ARCHITECTURE.md) for project structure and architecture.
 

@@ -181,7 +181,7 @@ The SDK uses [Zod](https://github.com/colinhacks/zod) for runtime validation of 
 
 ### Network Security
 
-The SDK uses Node.js's built-in `fetch` (Node 18+) for HTTP requests. Ensure your Node.js version is up to date to receive security patches.
+The SDK uses Node.js's built-in `fetch` (Node 22+) for HTTP requests. Ensure your Node.js version is up to date to receive security patches.
 
 ### Dependencies
 

@@ -2,7 +2,7 @@
 
 `@visus-io/notion-sdk-ts` wraps the full Notion REST API. It uses Zod v4 for runtime validation.
 It provides object-oriented model classes and helper factories. The SDK has one runtime
-dependency: `zod`. It uses the built-in `fetch` function in Node 18 and later. The SDK uses Notion
+dependency: `zod`. It uses the built-in `fetch` function in Node 22 and later. The SDK uses Notion
 API version `2026-03-11`. You cannot change this version.
 
 ```

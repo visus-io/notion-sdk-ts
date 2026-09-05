@@ -14,7 +14,7 @@ npm install @visus-io/notion-sdk-ts
 
 **Requirements:**
 
-- Node.js 18 or later. This version has the built-in `fetch` function.
+- Node.js 22 or later. This version has the built-in `fetch` function.
 - A Notion integration token. Create one at
   [My Integrations](https://www.notion.so/my-integrations).
 
