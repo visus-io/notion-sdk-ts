@@ -32,6 +32,11 @@ database from it. The result matches a database of that type created in the Noti
 
 ### Using the Built-in Tasks Schema
 
+The canonical `tasks` schema has these properties: `Task name`, `Assignee`, `Status`, and
+`Due`. These are the English names. Property names follow the workspace's language. The
+example below assumes an English workspace. Retrieve the data source first to confirm exact
+names in other languages.
+
 ```typescript
 import { Notion, parent, prop, sort } from '@visus-io/notion-sdk-ts';
 
@@ -73,10 +78,6 @@ for (const task of upcomingTasks.results) {
   console.log(`- ${task.getTitle()}`);
 }
 ```
-
-The canonical `tasks` schema has these properties: `Task name`, `Assignee`, `Status`, and
-`Due`. Property names follow the workspace's language. Retrieve the data source first if you
-need to confirm exact names or the `Status` property's options.
 
 ### Using Custom Properties
 
