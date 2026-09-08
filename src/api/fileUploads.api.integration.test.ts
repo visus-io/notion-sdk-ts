@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { NotionAPIError } from '../errors';
 import { FileUpload } from '../models';
 import { Notion } from '../notion';
 import { buildFileUploadResponse } from '../testUtils/fixtures';
@@ -71,8 +72,11 @@ describe('FileUploadsAPI integration', () => {
   });
 
   describe('uploadFile', () => {
-    it('should drive the full initiate -> upload -> complete flow across two origins', async () => {
-      let uploadedBody: ArrayBuffer | undefined;
+    it('should drive the full initiate -> upload -> complete flow', async () => {
+      let uploadedText: string | undefined;
+      let uploadAuthHeader: string | null = null;
+      let uploadVersionHeader: string | null = null;
+      let uploadContentType: string | null = null;
 
       server.use(
         http.post(`${NOTION_TEST_BASE_URL}/v1/file_uploads`, () =>
@@ -85,10 +89,14 @@ describe('FileUploadsAPI integration', () => {
             }),
           ),
         ),
-        // The SDK issues this PUT directly to the upload URL, bypassing NotionClient entirely.
-        http.put(uploadUrl, async ({ request }) => {
-          expect(request.headers.get('Content-Type')).toBe('application/pdf');
-          uploadedBody = await request.arrayBuffer();
+        // The SDK POSTs multipart/form-data to the upload URL through NotionClient.
+        http.post(uploadUrl, async ({ request }) => {
+          uploadAuthHeader = request.headers.get('Authorization');
+          uploadVersionHeader = request.headers.get('Notion-Version');
+          uploadContentType = request.headers.get('Content-Type');
+          const form = await request.formData();
+          const file = form.get('file');
+          uploadedText = file instanceof Blob ? await file.text() : undefined;
           return new HttpResponse(null, { status: 200 });
         }),
         http.post(completeUrl, () =>
@@ -108,7 +116,45 @@ describe('FileUploadsAPI integration', () => {
 
       expect(result).toBeInstanceOf(FileUpload);
       expect(result.isUploaded()).toBe(true);
-      expect(Buffer.from(uploadedBody as ArrayBuffer).toString()).toBe('file contents');
+      expect(uploadedText).toBe('file contents');
+      expect(uploadAuthHeader).toBe(`Bearer ${NOTION_TEST_AUTH_TOKEN}`);
+      expect(uploadVersionHeader).toBe('2026-03-11');
+      expect(uploadContentType).toMatch(/^multipart\/form-data/);
+    });
+
+    it('should route the upload through a custom fetch implementation', async () => {
+      const calls: string[] = [];
+      const trackingFetch: typeof fetch = (input, init) => {
+        calls.push(typeof input === 'string' ? input : input.toString());
+        return fetch(input as RequestInfo, init as RequestInit);
+      };
+
+      const client = new Notion({
+        auth: NOTION_TEST_AUTH_TOKEN,
+        baseUrl: NOTION_TEST_BASE_URL,
+        fetch: trackingFetch,
+      });
+
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/file_uploads`, () =>
+          HttpResponse.json(
+            buildFileUploadResponse({
+              id: fileUploadId,
+              status: 'pending',
+              upload_url: uploadUrl,
+              complete_url: completeUrl,
+            }),
+          ),
+        ),
+        http.post(uploadUrl, () => new HttpResponse(null, { status: 200 })),
+        http.post(completeUrl, () =>
+          HttpResponse.json(buildFileUploadResponse({ id: fileUploadId, status: 'uploaded' })),
+        ),
+      );
+
+      await client.fileUploads.uploadFile('report.pdf', Buffer.from('x'), 'application/pdf');
+
+      expect(calls).toContain(uploadUrl);
     });
   });
 
@@ -117,7 +163,7 @@ describe('FileUploadsAPI integration', () => {
   // ---------------------------------------------------------------------------
 
   describe('error handling', () => {
-    it('should throw a plain Error (not NotionAPIError) when the raw upload PUT fails', async () => {
+    it('should throw a NotionAPIError when the upload endpoint returns an error', async () => {
       server.use(
         http.post(`${NOTION_TEST_BASE_URL}/v1/file_uploads`, () =>
           HttpResponse.json(
@@ -128,9 +174,11 @@ describe('FileUploadsAPI integration', () => {
             }),
           ),
         ),
-        http.put(
-          uploadUrl,
-          () => new HttpResponse(null, { status: 500, statusText: 'Internal Server Error' }),
+        http.post(uploadUrl, () =>
+          HttpResponse.json(
+            { object: 'error', status: 400, code: 'validation_error', message: 'Bad part' },
+            { status: 400 },
+          ),
         ),
       );
 
@@ -138,7 +186,7 @@ describe('FileUploadsAPI integration', () => {
 
       await expect(
         notion.fileUploads.uploadFile('report.pdf', fileData, 'application/pdf'),
-      ).rejects.toThrow('File upload failed: 500 Internal Server Error');
+      ).rejects.toBeInstanceOf(NotionAPIError);
     });
   });
 });

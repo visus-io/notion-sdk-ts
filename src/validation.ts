@@ -106,3 +106,20 @@ export function validateArrayLength(array: unknown[], maxLength: number, label: 
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Numeric range validators
+// ---------------------------------------------------------------------------
+
+/**
+ * Assert that a number is within the inclusive range `[min, max]`.
+ *
+ * @throws {NotionValidationError}
+ *
+ * @category Client & Core
+ */
+export function validateNumberRange(value: number, min: number, max: number, label: string): void {
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new NotionValidationError(`${label} must be between ${min} and ${max} (got ${value})`);
+  }
+}

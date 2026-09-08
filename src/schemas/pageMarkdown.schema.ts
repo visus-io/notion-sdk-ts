@@ -19,7 +19,7 @@ export const pageMarkdownSchema = z.object({
   // eslint-disable-next-line zod/prefer-string-schema-with-trim -- markdown content must preserve leading/trailing whitespace and newlines
   markdown: z.string(),
   truncated: z.boolean(),
-  unknown_block_ids: z.array(z.uuid()).max(100),
+  unknown_block_ids: z.array(z.uuid()),
 });
 /**
  * @category Pages

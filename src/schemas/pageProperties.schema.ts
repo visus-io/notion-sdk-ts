@@ -9,7 +9,7 @@ import { userSchema } from './user.schema';
  *
  * These schemas define the data values in page properties (database columns).
  * Property objects define the schema and configuration instead.
- * This file supports 22 property types, including title, rich text, number, and select.
+ * This file supports 23 property types, including title, rich text, number, and select.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/page-property-values
@@ -137,6 +137,26 @@ const phoneNumberPropertySchema = z.object({
   id: z.string().trim(),
   type: z.literal('phone_number'),
   phone_number: z.string().trim().nullable(),
+});
+
+/**
+ * Place property.
+ *
+ * The location value is kept as a loose object. Notion is still adding fields to
+ * this value, so unknown keys pass through instead of failing the parse.
+ */
+const placePropertySchema = z.object({
+  id: z.string().trim(),
+  type: z.literal('place'),
+  place: z
+    .looseObject({
+      name: z.string().trim().optional(),
+      address: z.string().trim().optional(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
+      google_place_id: z.string().trim().optional(),
+    })
+    .nullable(),
 });
 
 /** Relation property. */
@@ -284,6 +304,7 @@ export const pagePropertiesSchema = z.discriminatedUnion('type', [
   numberPropertySchema,
   peoplePropertySchema,
   phoneNumberPropertySchema,
+  placePropertySchema,
   relationPropertySchema,
   richTextPropertySchema,
   rollupPropertySchema,
@@ -351,6 +372,10 @@ export type PeopleProperty = z.infer<typeof peoplePropertySchema>;
  * @category Page Properties
  */
 export type PhoneNumberProperty = z.infer<typeof phoneNumberPropertySchema>;
+/**
+ * @category Page Properties
+ */
+export type PlaceProperty = z.infer<typeof placePropertySchema>;
 /**
  * @category Page Properties
  */

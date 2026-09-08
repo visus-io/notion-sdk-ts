@@ -30,7 +30,9 @@ export const pageSchema = z.object({
   is_locked: z.boolean().optional(),
   icon: z.nullable(iconSchema),
   cover: z.nullable(fileSchema),
-  properties: z.record(z.string().trim(), pagePropertiesSchema),
+  // Property names are record keys. Do not trim them. Trimming would rewrite a
+  // name that has intentional leading or trailing spaces.
+  properties: z.record(z.string(), pagePropertiesSchema),
   parent: parentSchema,
   url: z.url(),
   public_url: z.url().nullable(),

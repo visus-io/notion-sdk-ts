@@ -14,6 +14,13 @@ import {
 export const NOTION_VERSION = '2026-03-11' as const;
 
 /**
+ * Upper bound for a single retry wait, in milliseconds.
+ * The client clamps both the `Retry-After` header value and the exponential
+ * backoff delay to this value.
+ */
+const MAX_RETRY_DELAY_MS = 60_000;
+
+/**
  * Configuration options for the Notion client.
  *
  * @category Client & Core
@@ -83,11 +90,13 @@ export class NotionClient {
       try {
         return await this.makeRequest<T>(options);
       } catch (error) {
-        // Retry rate-limited requests (if enabled) and service-overload (529)
-        // responses, which the API recommends always retrying.
+        // Retry the errors that `NotionAPIError.isRetryable()` reports: rate limits,
+        // service overload (529), and transient 5xx responses. `retryOnRateLimit`
+        // still suppresses retries for `rate_limited` only.
         if (
           error instanceof NotionAPIError &&
-          ((error.isRateLimited() && this.retryOnRateLimit) || error.isServiceOverloaded()) &&
+          error.isRetryable() &&
+          !(error.isRateLimited() && !this.retryOnRateLimit) &&
           attempt < this.maxRetries
         ) {
           // Prefer the server-supplied Retry-After value; fall back to
@@ -103,8 +112,62 @@ export class NotionClient {
       }
     }
 
-    // If we exhausted all retries, throw the last error
+    // Defensive: the loop always returns or throws before it reaches here,
+    // because the final iteration hits `throw error`. Keep this as a safety net.
     throw lastError ?? new Error('Request failed after all retries');
+  }
+
+  /**
+   * Send the raw bytes of a file to a Notion file-upload URL.
+   *
+   * The file-upload send endpoint uses `multipart/form-data`, not JSON. It is the
+   * only Notion endpoint that does. This method reuses the configured `fetch`
+   * implementation and the request timeout. It does not retry.
+   *
+   * Do not set a `Content-Type` header. The `fetch` implementation adds the
+   * `multipart/form-data` header together with the correct boundary.
+   *
+   * @param uploadUrl - The absolute `upload_url` from `fileUploads.initiate()`.
+   * @param form - A `FormData` body. Put the file bytes under the `file` key.
+   * @throws {NotionAPIError} If the endpoint returns an error response.
+   * @throws {NotionRequestTimeoutError} If the request exceeds the timeout.
+   * @throws {NotionNetworkError} If a network problem blocks the request.
+   */
+  async sendFileUpload(uploadUrl: string, form: FormData): Promise<void> {
+    const { 'Content-Type': _contentType, ...headers } = this.requestHeaders;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const response = await this.fetchImpl(uploadUrl, {
+        method: 'POST',
+        headers,
+        body: form,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof NotionAPIError) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new NotionRequestTimeoutError(`Request timed out after ${this.timeoutMs}ms`);
+        }
+        throw new NotionNetworkError('Network request failed', error);
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -162,7 +225,7 @@ export class NotionClient {
    */
   private getRetryAfter(attempt: number): number {
     const backoffMs = Math.pow(2, attempt) * 1000;
-    return Math.min(backoffMs, 60000); // Cap at 60 seconds
+    return Math.min(backoffMs, MAX_RETRY_DELAY_MS);
   }
 
   /**
@@ -201,6 +264,8 @@ export class NotionClient {
   /**
    * Parse the `Retry-After` response header into milliseconds.
    * Return `undefined` if the header is missing or not a valid non-negative number.
+   * Clamp the value to {@link MAX_RETRY_DELAY_MS} so a bad header cannot stall a
+   * request for minutes or hours.
    */
   private parseRetryAfterHeader(response: Response): number | undefined {
     const header = response.headers.get('Retry-After');
@@ -213,7 +278,7 @@ export class NotionClient {
       return undefined;
     }
 
-    return Math.ceil(seconds) * 1000;
+    return Math.min(Math.ceil(seconds) * 1000, MAX_RETRY_DELAY_MS);
   }
 
   /**

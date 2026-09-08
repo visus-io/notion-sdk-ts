@@ -374,7 +374,9 @@ export const propertyObjectSchema = z.discriminatedUnion('type', [
  *
  * @category Page Properties
  */
-export const propertiesObjectSchema = z.record(z.string().trim(), propertyObjectSchema);
+// Property names are record keys. Do not trim them. Trimming would rewrite a
+// name that has intentional leading or trailing spaces.
+export const propertiesObjectSchema = z.record(z.string(), propertyObjectSchema);
 
 /**
  * @category Page Properties

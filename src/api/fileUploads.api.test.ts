@@ -3,13 +3,10 @@ import { FileUploadsAPI } from './fileUploads.api';
 import type { NotionClient } from '../client';
 import { FileUpload } from '../models';
 
-// Mock global fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
 describe('FileUploadsAPI', () => {
   const mockClient = {
     request: vi.fn(),
+    sendFileUpload: vi.fn(),
   } as unknown as NotionClient;
 
   const fileUploadsAPI = new FileUploadsAPI(mockClient);
@@ -86,34 +83,54 @@ describe('FileUploadsAPI', () => {
 
   describe('upload', () => {
     it.each([
-      {
-        desc: 'Buffer',
-        contentType: 'image/png',
-        fileData: Buffer.from('image data') as BodyInit,
-      },
+      { desc: 'Buffer', contentType: 'image/png', fileData: Buffer.from('image data') },
+      { desc: 'Uint8Array', contentType: 'image/png', fileData: new Uint8Array([1, 2, 3]) },
       {
         desc: 'ArrayBuffer',
         contentType: 'application/octet-stream',
-        fileData: new ArrayBuffer(100) as BodyInit,
+        fileData: new ArrayBuffer(100),
       },
       {
         desc: 'Blob',
         contentType: 'text/plain',
-        fileData: new Blob(['test content'], { type: 'text/plain' }) as BodyInit,
+        fileData: new Blob(['test content'], { type: 'text/plain' }),
       },
-    ])('should upload $desc file data', async ({ contentType, fileData }) => {
-      const mockResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
-      mockFetch.mockResolvedValue(mockResponse);
+    ])(
+      'should send $desc file data as multipart form data through the client',
+      async ({ contentType, fileData }) => {
+        vi.mocked(mockClient.sendFileUpload).mockResolvedValue(undefined);
 
-      await fileUploadsAPI.upload('https://upload-url.com/upload', fileData, contentType);
+        await fileUploadsAPI.upload('https://upload-url.test/send', fileData, contentType);
 
-      expect(mockFetch).toHaveBeenCalledWith('https://upload-url.com/upload', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': contentType,
-        },
-        body: fileData,
-      });
+        expect(mockClient.sendFileUpload).toHaveBeenCalledTimes(1);
+        const [url, form] = vi.mocked(mockClient.sendFileUpload).mock.calls[0];
+        expect(url).toBe('https://upload-url.test/send');
+        expect(form).toBeInstanceOf(FormData);
+        expect(form.get('file')).toBeInstanceOf(Blob);
+        expect(form.get('part_number')).toBeNull();
+      },
+    );
+
+    it('should include part_number when provided', async () => {
+      vi.mocked(mockClient.sendFileUpload).mockResolvedValue(undefined);
+
+      await fileUploadsAPI.upload(
+        'https://upload-url.test/send',
+        Buffer.from('part'),
+        'application/octet-stream',
+        2,
+      );
+
+      const [, form] = vi.mocked(mockClient.sendFileUpload).mock.calls[0];
+      expect(form.get('part_number')).toBe('2');
+    });
+
+    it('should propagate an error from the client', async () => {
+      vi.mocked(mockClient.sendFileUpload).mockRejectedValue(new Error('upload failed'));
+
+      await expect(
+        fileUploadsAPI.upload('https://upload-url.test/send', Buffer.from('x'), 'text/plain'),
+      ).rejects.toThrow('upload failed');
     });
   });
 
@@ -164,9 +181,7 @@ describe('FileUploadsAPI', () => {
       vi.mocked(mockClient.request)
         .mockResolvedValueOnce(mockFileUploadResponse)
         .mockResolvedValueOnce(mockUploadedFileUploadResponse);
-
-      const mockUploadResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
-      mockFetch.mockResolvedValue(mockUploadResponse);
+      vi.mocked(mockClient.sendFileUpload).mockResolvedValue(undefined);
 
       const fileData = new ArrayBuffer(256);
       await fileUploadsAPI.uploadFile('data.bin', fileData, 'application/octet-stream');
@@ -180,15 +195,14 @@ describe('FileUploadsAPI', () => {
           content_length: 256,
         },
       });
+      expect(mockClient.sendFileUpload).toHaveBeenCalledTimes(1);
     });
 
     it('should upload a complete file using Blob', async () => {
       vi.mocked(mockClient.request)
         .mockResolvedValueOnce(mockFileUploadResponse)
         .mockResolvedValueOnce(mockUploadedFileUploadResponse);
-
-      const mockUploadResponse = { ok: true, status: 200, statusText: 'OK' } as Response;
-      mockFetch.mockResolvedValue(mockUploadResponse);
+      vi.mocked(mockClient.sendFileUpload).mockResolvedValue(undefined);
 
       const fileData = new Blob(['hello world'], { type: 'text/plain' });
       await fileUploadsAPI.uploadFile('hello.txt', fileData, 'text/plain');
@@ -200,6 +214,26 @@ describe('FileUploadsAPI', () => {
           filename: 'hello.txt',
           content_type: 'text/plain',
           content_length: fileData.size,
+        },
+      });
+    });
+
+    it('should determine content length for a Uint8Array', async () => {
+      vi.mocked(mockClient.request)
+        .mockResolvedValueOnce(mockFileUploadResponse)
+        .mockResolvedValueOnce(mockUploadedFileUploadResponse);
+      vi.mocked(mockClient.sendFileUpload).mockResolvedValue(undefined);
+
+      const fileData = new Uint8Array([1, 2, 3, 4, 5]);
+      await fileUploadsAPI.uploadFile('data.bin', fileData, 'application/octet-stream');
+
+      expect(mockClient.request).toHaveBeenNthCalledWith(1, {
+        method: 'POST',
+        path: '/file_uploads',
+        body: {
+          filename: 'data.bin',
+          content_type: 'application/octet-stream',
+          content_length: 5,
         },
       });
     });

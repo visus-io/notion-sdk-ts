@@ -15,13 +15,26 @@ describe('pageMarkdownSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should reject when unknown_block_ids exceeds the 100-item limit', () => {
+  it('should parse a large unknown_block_ids array without an item-count cap', () => {
     const response = {
       object: 'page_markdown' as const,
       id: '123e4567-e89b-12d3-a456-426614174000',
       markdown: '',
       truncated: true,
-      unknown_block_ids: new Array(101).fill('123e4567-e89b-12d3-a456-426614174000'),
+      unknown_block_ids: new Array(150).fill('123e4567-e89b-12d3-a456-426614174000'),
+    };
+
+    const result = pageMarkdownSchema.safeParse(response);
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject unknown_block_ids entries that are not UUIDs', () => {
+    const response = {
+      object: 'page_markdown' as const,
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      markdown: '',
+      truncated: true,
+      unknown_block_ids: ['not-a-uuid'],
     };
 
     const result = pageMarkdownSchema.safeParse(response);

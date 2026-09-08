@@ -19,9 +19,10 @@ export interface InitiateFileUploadOptions {
 }
 
 /**
- * File data for uploading (can be Buffer, ArrayBuffer, Blob, or ReadableStream).
+ * File data for uploading. Accepts a `Buffer`, `Uint8Array`, `ArrayBuffer`,
+ * `Blob`, or `ReadableStream`.
  */
-export type FileData = Buffer | ArrayBuffer | Blob | ReadableStream;
+export type FileData = Buffer | Uint8Array | ArrayBuffer | Blob | ReadableStream;
 
 /**
  * FileUploads API client for uploading files to Notion.
@@ -58,28 +59,52 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   }
 
   /**
-   * Upload file data to the upload URL.
-   * This method sends a PUT request directly to the upload URL. It does not go
-   * through the Notion API.
+   * Upload file data to the upload URL from initiate().
+   *
+   * This method sends a `multipart/form-data` `POST` to the upload URL. The
+   * request goes through the configured `NotionClient`, so it reuses the custom
+   * `fetch` implementation, the request timeout, and the authentication headers.
    *
    * @param uploadUrl - The upload URL from initiate()
    * @param fileData - The file data to upload
    * @param contentType - The MIME type of the file
+   * @param partNumber - The 1-based part number. Set this only for a multi-part
+   * upload of a file larger than 20 MB.
+   * @throws {NotionAPIError} If the upload endpoint returns an error response.
    *
-   * @see https://developers.notion.com/reference/upload-a-file
+   * @see https://developers.notion.com/reference/upload-file
    */
-  async upload(uploadUrl: string, fileData: FileData, contentType: string): Promise<void> {
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': contentType,
-      },
-      body: fileData,
-    });
+  async upload(
+    uploadUrl: string,
+    fileData: FileData,
+    contentType: string,
+    partNumber?: number,
+  ): Promise<void> {
+    const form = new FormData();
+    form.append('file', await FileUploadsAPI.toBlob(fileData, contentType));
 
-    if (!response.ok) {
-      throw new Error(`File upload failed: ${response.status} ${response.statusText}`);
+    if (partNumber !== undefined) {
+      form.append('part_number', String(partNumber));
     }
+
+    await this.client.sendFileUpload(uploadUrl, form);
+  }
+
+  /**
+   * Convert file data into a `Blob` for the multipart request body.
+   */
+  private static async toBlob(fileData: FileData, contentType: string): Promise<Blob> {
+    if (fileData instanceof Blob) {
+      return fileData;
+    }
+
+    if (fileData instanceof ReadableStream) {
+      return new Response(fileData).blob();
+    }
+
+    // Copy Buffer / Uint8Array / ArrayBuffer into a plain Uint8Array so the value
+    // is a valid BlobPart across TypeScript lib versions.
+    return new Blob([new Uint8Array(fileData as ArrayBuffer)], { type: contentType });
   }
 
   /**
@@ -132,6 +157,8 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     let contentLength: number;
     if (fileData instanceof Buffer) {
       contentLength = fileData.length;
+    } else if (fileData instanceof Uint8Array) {
+      contentLength = fileData.byteLength;
     } else if (fileData instanceof ArrayBuffer) {
       contentLength = fileData.byteLength;
     } else if (fileData instanceof Blob) {

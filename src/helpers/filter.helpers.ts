@@ -11,91 +11,132 @@ type FilterCondition = Record<string, unknown>;
 
 /** Operators common to text-like properties (title, rich_text, url, email, phone_number). */
 class TextFilter {
+  /**
+   * @param property - The property name.
+   * @param propertyType - The property-filter key (for example `rich_text`, `title`, `url`).
+   * @param isFormula - When `true`, wrap the condition as `formula: { string: ... }`.
+   */
   constructor(
     private readonly property: string,
     private readonly propertyType: string,
+    private readonly isFormula = false,
   ) {}
 
+  private build(condition: Record<string, unknown>): FilterCondition {
+    if (this.isFormula) {
+      return { property: this.property, formula: { string: condition } };
+    }
+    return { property: this.property, [this.propertyType]: condition };
+  }
+
   equals(value: string): FilterCondition {
-    return { property: this.property, [this.propertyType]: { equals: value } };
+    return this.build({ equals: value });
   }
 
   doesNotEqual(value: string): FilterCondition {
-    return { property: this.property, [this.propertyType]: { does_not_equal: value } };
+    return this.build({ does_not_equal: value });
   }
 
   contains(value: string): FilterCondition {
-    return { property: this.property, [this.propertyType]: { contains: value } };
+    return this.build({ contains: value });
   }
 
   doesNotContain(value: string): FilterCondition {
-    return { property: this.property, [this.propertyType]: { does_not_contain: value } };
+    return this.build({ does_not_contain: value });
   }
 
   startsWith(value: string): FilterCondition {
-    return { property: this.property, [this.propertyType]: { starts_with: value } };
+    return this.build({ starts_with: value });
   }
 
   endsWith(value: string): FilterCondition {
-    return { property: this.property, [this.propertyType]: { ends_with: value } };
+    return this.build({ ends_with: value });
   }
 
   isEmpty(): FilterCondition {
-    return { property: this.property, [this.propertyType]: { is_empty: true } };
+    return this.build({ is_empty: true });
   }
 
   isNotEmpty(): FilterCondition {
-    return { property: this.property, [this.propertyType]: { is_not_empty: true } };
+    return this.build({ is_not_empty: true });
   }
 }
 
 /** Operators for number properties. */
 class NumberFilter {
-  constructor(private readonly property: string) {}
+  /**
+   * @param property - The property name.
+   * @param isFormula - When `true`, wrap the condition as `formula: { number: ... }`.
+   */
+  constructor(
+    private readonly property: string,
+    private readonly isFormula = false,
+  ) {}
+
+  private build(condition: Record<string, unknown>): FilterCondition {
+    if (this.isFormula) {
+      return { property: this.property, formula: { number: condition } };
+    }
+    return { property: this.property, number: condition };
+  }
 
   equals(value: number): FilterCondition {
-    return { property: this.property, number: { equals: value } };
+    return this.build({ equals: value });
   }
 
   doesNotEqual(value: number): FilterCondition {
-    return { property: this.property, number: { does_not_equal: value } };
+    return this.build({ does_not_equal: value });
   }
 
   greaterThan(value: number): FilterCondition {
-    return { property: this.property, number: { greater_than: value } };
+    return this.build({ greater_than: value });
   }
 
   greaterThanOrEqualTo(value: number): FilterCondition {
-    return { property: this.property, number: { greater_than_or_equal_to: value } };
+    return this.build({ greater_than_or_equal_to: value });
   }
 
   lessThan(value: number): FilterCondition {
-    return { property: this.property, number: { less_than: value } };
+    return this.build({ less_than: value });
   }
 
   lessThanOrEqualTo(value: number): FilterCondition {
-    return { property: this.property, number: { less_than_or_equal_to: value } };
+    return this.build({ less_than_or_equal_to: value });
   }
 
   isEmpty(): FilterCondition {
-    return { property: this.property, number: { is_empty: true } };
+    return this.build({ is_empty: true });
   }
 
   isNotEmpty(): FilterCondition {
-    return { property: this.property, number: { is_not_empty: true } };
+    return this.build({ is_not_empty: true });
   }
 }
 
 /** Operators for checkbox properties. */
 class CheckboxFilter {
-  constructor(private readonly property: string) {}
+  /**
+   * @param property - The property name.
+   * @param isFormula - When `true`, wrap the condition as `formula: { checkbox: ... }`.
+   */
+  constructor(
+    private readonly property: string,
+    private readonly isFormula = false,
+  ) {}
+
+  private build(condition: Record<string, unknown>): FilterCondition {
+    if (this.isFormula) {
+      return { property: this.property, formula: { checkbox: condition } };
+    }
+    return { property: this.property, checkbox: condition };
+  }
 
   equals(value: boolean): FilterCondition {
-    return { property: this.property, checkbox: { equals: value } };
+    return this.build({ equals: value });
   }
 
   doesNotEqual(value: boolean): FilterCondition {
-    return { property: this.property, checkbox: { does_not_equal: value } };
+    return this.build({ does_not_equal: value });
   }
 }
 
@@ -103,11 +144,11 @@ class CheckboxFilter {
 class SelectFilter {
   constructor(private readonly property: string) {}
 
-  equals(value: string | string[]): FilterCondition {
+  equals(value: string): FilterCondition {
     return { property: this.property, select: { equals: value } };
   }
 
-  doesNotEqual(value: string | string[]): FilterCondition {
+  doesNotEqual(value: string): FilterCondition {
     return { property: this.property, select: { does_not_equal: value } };
   }
 
@@ -124,11 +165,11 @@ class SelectFilter {
 class MultiSelectFilter {
   constructor(private readonly property: string) {}
 
-  contains(value: string | string[]): FilterCondition {
+  contains(value: string): FilterCondition {
     return { property: this.property, multi_select: { contains: value } };
   }
 
-  doesNotContain(value: string | string[]): FilterCondition {
+  doesNotContain(value: string): FilterCondition {
     return { property: this.property, multi_select: { does_not_contain: value } };
   }
 
@@ -145,11 +186,11 @@ class MultiSelectFilter {
 class StatusFilter {
   constructor(private readonly property: string) {}
 
-  equals(value: string | string[]): FilterCondition {
+  equals(value: string): FilterCondition {
     return { property: this.property, status: { equals: value } };
   }
 
-  doesNotEqual(value: string | string[]): FilterCondition {
+  doesNotEqual(value: string): FilterCondition {
     return { property: this.property, status: { does_not_equal: value } };
   }
 
@@ -164,12 +205,21 @@ class StatusFilter {
 
 /** Operators for date properties and timestamp filters. */
 class DateFilter {
+  /**
+   * @param key - The property name, or the timestamp name (`created_time` / `last_edited_time`).
+   * @param isTimestamp - When `true`, build a `timestamp` filter instead of a `property` filter.
+   * @param isFormula - When `true`, wrap the condition as `formula: { date: ... }`.
+   */
   constructor(
     private readonly key: string,
     private readonly isTimestamp: boolean,
+    private readonly isFormula = false,
   ) {}
 
   private wrap(condition: Record<string, unknown>): FilterCondition {
+    if (this.isFormula) {
+      return { property: this.key, formula: { date: condition } };
+    }
     if (this.isTimestamp) {
       return { timestamp: this.key, [this.key]: condition };
     }
@@ -289,20 +339,19 @@ class FormulaFilter {
   constructor(private readonly property: string) {}
 
   text(): TextFilter {
-    return new TextFilter(this.property, 'formula');
+    return new TextFilter(this.property, 'formula', true);
   }
 
   number(): NumberFilter {
-    // Return a NumberFilter-like but under "formula" key
-    return new NumberFilter(this.property);
+    return new NumberFilter(this.property, true);
   }
 
   checkbox(): CheckboxFilter {
-    return new CheckboxFilter(this.property);
+    return new CheckboxFilter(this.property, true);
   }
 
   date(): DateFilter {
-    return new DateFilter(this.property, false);
+    return new DateFilter(this.property, false, true);
   }
 }
 

@@ -1,7 +1,6 @@
 import * as z from 'zod';
 import { CODE_BLOCK_LANGUAGES } from './codeLanguages';
 import { NOTION_COLORS } from './colors';
-import { fileSchema } from './file.schema';
 import { iconSchema } from './icon.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
@@ -12,7 +11,7 @@ import { userSchema } from './user.schema';
  * Notion block object schema.
  *
  * Blocks are the individual pieces of content that make up pages. Notion supports
- * 31 different block types including paragraphs, headings, lists, media, and more.
+ * many block types, including paragraphs, headings, lists, media, and more.
  *
  * Notion API reference:
  * https://developers.notion.com/reference/block
@@ -51,6 +50,25 @@ const headingsObjectSchema = z.object({
 });
 
 /**
+ * Content of a media block (`audio`, `image`, `video`, `file`, `pdf`).
+ *
+ * The Notion API inlines the file-object body directly on the block content. It does
+ * not nest a full file object. The `external`, `file`, and `file_upload` fields hold
+ * only their own inner values. For example `image.external` is `{ url }`, not
+ * `{ type: 'external', external: { url } }`.
+ *
+ * Notion API reference: https://developers.notion.com/reference/block
+ */
+const mediaBlockContentSchema = z.object({
+  caption: richTextSchema,
+  type: z.enum(['file', 'file_upload', 'external']),
+  file: z.object({ url: z.url(), expiry_time: notionDateStringSchema }).optional(),
+  external: z.object({ url: z.url() }).optional(),
+  file_upload: z.object({ id: z.uuid() }).optional(),
+  name: z.string().trim().optional(),
+});
+
+/**
  * @category Blocks
  */
 export const blockSchema = z.object({
@@ -78,6 +96,7 @@ export const blockSchema = z.object({
     'heading_4',
     'image',
     'link_preview',
+    'link_to_page',
     'numbered_list_item',
     'paragraph',
     'pdf',
@@ -102,7 +121,7 @@ export const blockSchema = z.object({
   has_children: z.boolean(),
 
   // Block-specific properties
-  audio: fileSchema.optional(),
+  audio: mediaBlockContentSchema.optional(),
   bookmark: z
     .object({
       caption: richTextSchema,
@@ -173,22 +192,22 @@ export const blockSchema = z.object({
       expression: z.string(),
     })
     .optional(),
-  file: z
-    .object({
-      caption: richTextSchema,
-      type: z.enum(['file', 'file_upload', 'external']),
-      file: fileSchema.optional(),
-      external: fileSchema.optional(),
-      file_upload: fileSchema.optional(),
-      name: z.string().trim().optional(),
-    })
-    .optional(),
+  file: mediaBlockContentSchema.optional(),
   heading_1: headingsObjectSchema.optional(),
   heading_2: headingsObjectSchema.optional(),
   heading_3: headingsObjectSchema.optional(),
   heading_4: headingsObjectSchema.optional(),
-  image: fileSchema.optional(),
+  image: mediaBlockContentSchema.optional(),
   link_preview: z.object({ url: z.url() }).optional(),
+  link_to_page: z
+    .object({
+      type: z.enum(['page_id', 'data_source_id', 'database_id', 'comment_id']),
+      page_id: z.uuid().optional(),
+      data_source_id: z.uuid().optional(),
+      database_id: z.uuid().optional(),
+      comment_id: z.uuid().optional(),
+    })
+    .optional(),
   numbered_list_item: z
     .object({
       rich_text: richTextSchema,
@@ -210,16 +229,7 @@ export const blockSchema = z.object({
       },
     })
     .optional(),
-  pdf: z
-    .object({
-      caption: richTextSchema,
-      type: z.enum(['file', 'file_upload', 'external']),
-      file: fileSchema.optional(),
-      external: fileSchema.optional(),
-      file_upload: fileSchema.optional(),
-      name: z.string().trim().optional(),
-    })
-    .optional(),
+  pdf: mediaBlockContentSchema.optional(),
   quote: z
     .object({
       rich_text: richTextSchema,
@@ -311,7 +321,7 @@ export const blockSchema = z.object({
     })
     .optional(),
   unsupported: z.object({}).optional(),
-  video: fileSchema.optional(),
+  video: mediaBlockContentSchema.optional(),
 });
 
 /**

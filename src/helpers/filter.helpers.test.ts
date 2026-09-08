@@ -161,17 +161,6 @@ describe('filter helpers', () => {
       });
     });
 
-    it('should accept an array of values for equals/doesNotEqual', () => {
-      expect(filter.select('Priority').equals(['High', 'Medium'])).toEqual({
-        property: 'Priority',
-        select: { equals: ['High', 'Medium'] },
-      });
-      expect(filter.select('Priority').doesNotEqual(['Low', 'None'])).toEqual({
-        property: 'Priority',
-        select: { does_not_equal: ['Low', 'None'] },
-      });
-    });
-
     it('should create isEmpty/isNotEmpty', () => {
       expect(filter.select('Priority').isEmpty()).toEqual({
         property: 'Priority',
@@ -203,17 +192,6 @@ describe('filter helpers', () => {
       });
     });
 
-    it('should accept an array of values for contains/doesNotContain', () => {
-      expect(filter.multiSelect('Tags').contains(['urgent', 'frontend'])).toEqual({
-        property: 'Tags',
-        multi_select: { contains: ['urgent', 'frontend'] },
-      });
-      expect(filter.multiSelect('Tags').doesNotContain(['archive', 'stale'])).toEqual({
-        property: 'Tags',
-        multi_select: { does_not_contain: ['archive', 'stale'] },
-      });
-    });
-
     it('should create isEmpty/isNotEmpty', () => {
       expect(filter.multiSelect('Tags').isEmpty()).toEqual({
         property: 'Tags',
@@ -242,17 +220,6 @@ describe('filter helpers', () => {
       expect(filter.status('Status').doesNotEqual('Archived')).toEqual({
         property: 'Status',
         status: { does_not_equal: 'Archived' },
-      });
-    });
-
-    it('should accept an array of values for equals/doesNotEqual', () => {
-      expect(filter.status('Status').equals(['Active', 'In Progress'])).toEqual({
-        property: 'Status',
-        status: { equals: ['Active', 'In Progress'] },
-      });
-      expect(filter.status('Status').doesNotEqual(['Archived', 'Done'])).toEqual({
-        property: 'Status',
-        status: { does_not_equal: ['Archived', 'Done'] },
       });
     });
 
@@ -448,31 +415,46 @@ describe('filter helpers', () => {
   // -----------------------------------------------------------------------
 
   describe('formula filter', () => {
-    it('should delegate to text sub-filter', () => {
+    it('should wrap a text sub-filter under formula.string', () => {
       expect(filter.formula('Computed').text().contains('abc')).toEqual({
         property: 'Computed',
-        formula: { contains: 'abc' },
+        formula: { string: { contains: 'abc' } },
       });
     });
 
-    it('should delegate to checkbox sub-filter', () => {
+    it('should wrap a checkbox sub-filter under formula.checkbox', () => {
       expect(filter.formula('IsActive').checkbox().equals(true)).toEqual({
         property: 'IsActive',
-        checkbox: { equals: true },
+        formula: { checkbox: { equals: true } },
       });
     });
 
-    it('should delegate to number sub-filter', () => {
+    it('should wrap a number sub-filter under formula.number', () => {
       expect(filter.formula('Score').number().greaterThan(50)).toEqual({
         property: 'Score',
-        number: { greater_than: 50 },
+        formula: { number: { greater_than: 50 } },
       });
     });
 
-    it('should delegate to date sub-filter', () => {
+    it('should wrap a date sub-filter under formula.date', () => {
       expect(filter.formula('ComputedDate').date().before('2025-01-01')).toEqual({
         property: 'ComputedDate',
-        date: { before: '2025-01-01' },
+        formula: { date: { before: '2025-01-01' } },
+      });
+    });
+
+    it('should wrap the empty checks for each formula kind', () => {
+      expect(filter.formula('Computed').text().isEmpty()).toEqual({
+        property: 'Computed',
+        formula: { string: { is_empty: true } },
+      });
+      expect(filter.formula('Score').number().isNotEmpty()).toEqual({
+        property: 'Score',
+        formula: { number: { is_not_empty: true } },
+      });
+      expect(filter.formula('ComputedDate').date().pastWeek()).toEqual({
+        property: 'ComputedDate',
+        formula: { date: { past_week: {} } },
       });
     });
   });

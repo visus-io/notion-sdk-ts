@@ -114,10 +114,11 @@ error.isServerError(); // 5xx: Notion server error, includes 529
 error.isRetryable(); // rate limited or server error
 ```
 
-**Retry behavior:** The SDK retries rate-limited (429) responses only when `retryOnRateLimit` is
-enabled. See [Configuration](/guides/configuration/). The SDK **always** retries service-overload
-(529) responses, no matter the value of `retryOnRateLimit`. The Notion API recommends this retry
-behavior.
+**Retry behavior:** The SDK retries every error that `isRetryable()` reports. It retries
+rate-limited (429) responses only when `retryOnRateLimit` is enabled. It **always** retries
+service-overload (529) responses and transient server errors (500 to 599), no matter the value
+of `retryOnRateLimit`. See [Configuration](/guides/configuration/). The Notion API recommends
+this retry behavior.
 
 ### Example
 
@@ -392,10 +393,10 @@ This table lists the Notion API error codes:
 | `object_not_found`                | 404    | Resource not found                                           |
 | `conflict_error`                  | 409    | Conflict with existing resource state                        |
 | `rate_limited`                    | 429    | Too many requests (retried if `retryOnRateLimit` is enabled) |
-| `internal_server_error`           | 500    | Notion internal error                                        |
-| `service_unavailable`             | 503    | Service temporarily unavailable                              |
-| `database_connection_unavailable` | 503    | Database connection error                                    |
-| `gateway_timeout`                 | 504    | Gateway timeout                                              |
+| `internal_server_error`           | 500    | Notion internal error (always auto-retried)                  |
+| `service_unavailable`             | 503    | Service temporarily unavailable (always auto-retried)        |
+| `database_connection_unavailable` | 503    | Database connection error (always auto-retried)              |
+| `gateway_timeout`                 | 504    | Gateway timeout (always auto-retried)                        |
 | `service_overload`                | 529    | Notion is overloaded (always auto-retried)                   |
 
 ### Common Error Scenarios
