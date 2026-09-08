@@ -3,6 +3,7 @@ import {
   LIMITS,
   NotionValidationError,
   validateArrayLength,
+  validateNumberRange,
   validateStringLength,
 } from './validation';
 import { richText } from './helpers/richText.helpers';
@@ -52,6 +53,31 @@ describe('validateArrayLength', () => {
     expect(() => validateArrayLength(new Array(101), 100, 'Items')).toThrow(
       'Items exceeds the 100-element limit (got 101)',
     );
+  });
+});
+
+describe('validateNumberRange', () => {
+  it('should accept a value inside the range', () => {
+    expect(() => validateNumberRange(25, 1, 50, 'limit')).not.toThrow();
+  });
+
+  it('should accept the range boundaries', () => {
+    expect(() => validateNumberRange(1, 1, 50, 'limit')).not.toThrow();
+    expect(() => validateNumberRange(50, 1, 50, 'limit')).not.toThrow();
+  });
+
+  it('should throw below the minimum', () => {
+    expect(() => validateNumberRange(0, 1, 50, 'limit')).toThrow(NotionValidationError);
+  });
+
+  it('should throw above the maximum', () => {
+    expect(() => validateNumberRange(51, 1, 50, 'limit')).toThrow(
+      'limit must be between 1 and 50 (got 51)',
+    );
+  });
+
+  it('should throw for a non-finite value', () => {
+    expect(() => validateNumberRange(Number.NaN, 1, 50, 'limit')).toThrow(NotionValidationError);
   });
 });
 

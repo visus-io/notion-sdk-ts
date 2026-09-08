@@ -85,7 +85,45 @@ describe('Page', () => {
 
     const page = new Page(pageData);
     expect(page.isInDatabase()).toBe(true);
+    expect(page.isInDataSource()).toBe(false);
     expect(page.isSubpage()).toBe(false);
+    expect(page.getParentDatabaseId()).toBe('323e4567-e89b-12d3-a456-426614174000');
+    expect(page.getParentDataSourceId()).toBeNull();
+  });
+
+  it('should identify data source pages', () => {
+    const pageData = {
+      object: 'page',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      created_time: '2023-01-01T00:00:00.000Z',
+      created_by: {
+        object: 'user',
+        id: '223e4567-e89b-12d3-a456-426614174000',
+      },
+      last_edited_time: '2023-01-02T00:00:00.000Z',
+      last_edited_by: {
+        object: 'user',
+        id: '223e4567-e89b-12d3-a456-426614174000',
+      },
+      in_trash: false,
+      icon: null,
+      cover: null,
+      properties: {},
+      parent: {
+        type: 'data_source_id',
+        data_source_id: '523e4567-e89b-12d3-a456-426614174000',
+        database_id: '323e4567-e89b-12d3-a456-426614174000',
+      },
+      url: 'https://notion.so/page',
+      public_url: null,
+    };
+
+    const page = new Page(pageData);
+    expect(page.isInDatabase()).toBe(true);
+    expect(page.isInDataSource()).toBe(true);
+    expect(page.isSubpage()).toBe(false);
+    expect(page.getParentDataSourceId()).toBe('523e4567-e89b-12d3-a456-426614174000');
+    expect(page.getParentDatabaseId()).toBe('323e4567-e89b-12d3-a456-426614174000');
   });
 
   it('should identify subpages', () => {
@@ -117,6 +155,9 @@ describe('Page', () => {
     const page = new Page(pageData);
     expect(page.isSubpage()).toBe(true);
     expect(page.isInDatabase()).toBe(false);
+    expect(page.isInDataSource()).toBe(false);
+    expect(page.getParentDatabaseId()).toBeNull();
+    expect(page.getParentDataSourceId()).toBeNull();
   });
 
   it('should get property by name', () => {

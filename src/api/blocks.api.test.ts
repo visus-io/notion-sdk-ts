@@ -221,5 +221,14 @@ describe('BlocksAPI', () => {
 
       await expect(blocksAPI.meetingNotes.query({ sort })).rejects.toThrow(NotionValidationError);
     });
+
+    it('should throw a validation error when limit is outside 1 to 50', async () => {
+      await expect(blocksAPI.meetingNotes.query({ limit: 0 })).rejects.toThrow(
+        NotionValidationError,
+      );
+      await expect(blocksAPI.meetingNotes.query({ limit: 51 })).rejects.toThrow(
+        NotionValidationError,
+      );
+    });
   });
 });

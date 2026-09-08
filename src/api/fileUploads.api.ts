@@ -2,6 +2,7 @@ import type { NotionClient } from '../client';
 import { fileUploadSchema, type NotionFileUpload } from '../schemas';
 import { FileUpload } from '../models';
 import { TRUSTED } from '../models/base.model';
+import { NotionValidationError } from '../validation';
 import { BaseAPI } from './base.api';
 
 /**
@@ -19,9 +20,12 @@ export interface InitiateFileUploadOptions {
 }
 
 /**
- * File data for uploading (can be Buffer, ArrayBuffer, Blob, or ReadableStream).
+ * File data for uploading. Accepts a `Buffer`, `Uint8Array`, `ArrayBuffer`, or
+ * `Blob`. The upload endpoint uses `multipart/form-data`, so the SDK cannot
+ * stream a `ReadableStream` without buffering it in full. Read a stream into a
+ * `Buffer` yourself before you call `upload()`.
  */
-export type FileData = Buffer | ArrayBuffer | Blob | ReadableStream;
+export type FileData = Buffer | Uint8Array | ArrayBuffer | Blob;
 
 /**
  * FileUploads API client for uploading files to Notion.
@@ -58,28 +62,49 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   }
 
   /**
-   * Upload file data to the upload URL.
-   * This method sends a PUT request directly to the upload URL. It does not go
-   * through the Notion API.
+   * Upload file data to the upload URL from initiate(). Sends `multipart/form-data`
+   * through the configured `NotionClient`.
    *
    * @param uploadUrl - The upload URL from initiate()
    * @param fileData - The file data to upload
    * @param contentType - The MIME type of the file
+   * @param partNumber - The 1-based part number, for a multi-part upload of a file
+   * larger than 20 MB. Pass a positive integer.
+   * @throws {NotionValidationError} If `partNumber` is not a positive integer.
+   * @throws {NotionAPIError} If the upload endpoint returns an error response.
    *
-   * @see https://developers.notion.com/reference/upload-a-file
+   * @see https://developers.notion.com/reference/upload-file
    */
-  async upload(uploadUrl: string, fileData: FileData, contentType: string): Promise<void> {
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': contentType,
-      },
-      body: fileData,
-    });
+  async upload(
+    uploadUrl: string,
+    fileData: FileData,
+    contentType: string,
+    partNumber?: number,
+  ): Promise<void> {
+    const form = new FormData();
+    form.append('file', FileUploadsAPI.toBlob(fileData, contentType));
 
-    if (!response.ok) {
-      throw new Error(`File upload failed: ${response.status} ${response.statusText}`);
+    if (partNumber !== undefined) {
+      if (!Number.isInteger(partNumber) || partNumber < 1) {
+        throw new NotionValidationError(
+          `partNumber must be a positive integer (got ${partNumber})`,
+        );
+      }
+      form.append('part_number', String(partNumber));
     }
+
+    await this.client.sendFileUpload(uploadUrl, form);
+  }
+
+  /**
+   * Convert file data into a `Blob` for the multipart request body.
+   */
+  private static toBlob(fileData: FileData, contentType: string): Blob {
+    if (fileData instanceof Blob) {
+      return fileData;
+    }
+
+    return new Blob([new Uint8Array(fileData as ArrayBuffer)], { type: contentType });
   }
 
   /**
@@ -128,17 +153,18 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
    * @returns The completed file upload object
    */
   async uploadFile(filename: string, fileData: FileData, contentType: string): Promise<FileUpload> {
-    // Get content length
     let contentLength: number;
     if (fileData instanceof Buffer) {
       contentLength = fileData.length;
+    } else if (fileData instanceof Uint8Array) {
+      contentLength = fileData.byteLength;
     } else if (fileData instanceof ArrayBuffer) {
       contentLength = fileData.byteLength;
     } else if (fileData instanceof Blob) {
       contentLength = fileData.size;
     } else {
       throw new TypeError(
-        'Cannot determine content length for ReadableStream. Use initiate/upload/complete separately.',
+        'Unsupported file data type. Pass a Buffer, Uint8Array, ArrayBuffer, or Blob.',
       );
     }
 

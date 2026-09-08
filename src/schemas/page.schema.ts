@@ -30,7 +30,8 @@ export const pageSchema = z.object({
   is_locked: z.boolean().optional(),
   icon: z.nullable(iconSchema),
   cover: z.nullable(fileSchema),
-  properties: z.record(z.string().trim(), pagePropertiesSchema),
+  // Do not trim: property names can carry significant leading/trailing spaces.
+  properties: z.record(z.string(), pagePropertiesSchema),
   parent: parentSchema,
   url: z.url(),
   public_url: z.url().nullable(),

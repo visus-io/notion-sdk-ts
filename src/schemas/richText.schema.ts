@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { NOTION_COLORS } from './colors';
+import { customEmojiSchema } from './customEmoji.schema';
 import { notionDateStringSchema } from './shared.schema';
 import { userSchema } from './user.schema';
 
@@ -36,6 +37,26 @@ const databaseMentionSchema = z.object({
   type: z.literal('database'),
   database: z.object({
     id: z.uuid(),
+  }),
+});
+
+const dataSourceMentionSchema = z.object({
+  type: z.literal('data_source'),
+  data_source: z.object({
+    id: z.uuid(),
+    database_id: z.uuid().optional(),
+  }),
+});
+
+const customEmojiMentionSchema = z.object({
+  type: z.literal('custom_emoji'),
+  custom_emoji: customEmojiSchema,
+});
+
+const linkMentionSchema = z.object({
+  type: z.literal('link_mention'),
+  link_mention: z.looseObject({
+    href: z.string().trim(),
   }),
 });
 
@@ -86,8 +107,11 @@ const userMentionSchema = z.object({
 });
 
 const mentionSchema = z.discriminatedUnion('type', [
+  customEmojiMentionSchema,
   databaseMentionSchema,
+  dataSourceMentionSchema,
   dateMentionSchema,
+  linkMentionSchema,
   linkPreviewMentionSchema,
   pageMentionSchema,
   templateMentionSchema,

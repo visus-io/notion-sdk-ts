@@ -76,10 +76,21 @@ export class Page extends BaseModel<NotionPage> {
   }
 
   /**
-   * Check if the page is a child of a database.
+   * Check if the page is a row in a database.
+   *
+   * On API version 2025-09-03 and later, a database row has a `data_source_id`
+   * parent. Older responses use a `database_id` parent. This method returns `true`
+   * for both.
    */
   isInDatabase(): boolean {
-    return this.data.parent.type === 'database_id';
+    return this.data.parent.type === 'data_source_id' || this.data.parent.type === 'database_id';
+  }
+
+  /**
+   * Check if the page is a row in a data source.
+   */
+  isInDataSource(): boolean {
+    return this.data.parent.type === 'data_source_id';
   }
 
   /**
@@ -87,5 +98,28 @@ export class Page extends BaseModel<NotionPage> {
    */
   isSubpage(): boolean {
     return this.data.parent.type === 'page_id';
+  }
+
+  /**
+   * Get the parent data source ID.
+   * Return `null` when the parent is not a data source.
+   */
+  getParentDataSourceId(): string | null {
+    return this.data.parent.type === 'data_source_id' ? this.data.parent.data_source_id : null;
+  }
+
+  /**
+   * Get the parent database ID.
+   * A `data_source_id` parent also carries its database ID. Return `null` when the
+   * parent is neither a database nor a data source.
+   */
+  getParentDatabaseId(): string | null {
+    if (this.data.parent.type === 'database_id') {
+      return this.data.parent.database_id;
+    }
+    if (this.data.parent.type === 'data_source_id') {
+      return this.data.parent.database_id;
+    }
+    return null;
   }
 }

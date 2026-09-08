@@ -58,8 +58,11 @@ page.getProperty('Name');
 page.getProperty('Status');
 
 // Check parent type
-page.isInDatabase(); // true if parent is a database
+page.isInDatabase(); // true if parent is a database or a data source
+page.isInDataSource(); // true if parent is a data source
 page.isSubpage(); // true if parent is a page
+page.getParentDataSourceId(); // data source ID, or null
+page.getParentDatabaseId(); // database ID, or null
 
 // Get raw validated data
 page.toJSON();

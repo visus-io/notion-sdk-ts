@@ -44,10 +44,36 @@ import type { PaginatedList } from '../schemas';
 export type PaginatedFetchFunction<T> = (cursor?: string) => Promise<PaginatedList<T>>;
 
 /**
+ * Return the cursor for the next page, or `undefined` when iteration must stop
+ * (`has_more` is `false`, or `next_cursor` is `null`). Warn when the result is a
+ * truncated query (`request_status.type === 'incomplete'`).
+ */
+function nextCursor<T>(response: PaginatedList<T>): string | undefined {
+  if (response.request_status?.type === 'incomplete') {
+    console.warn(
+      'Notion returned a truncated query result (the 10,000-result cap was reached). ' +
+        'This paginate helper stops here and the result set is incomplete. ' +
+        'Use collectAllDataSourceRows() or iterateAllDataSourceRows() to read every row.',
+    );
+  }
+
+  if (!response.has_more || response.next_cursor === null) {
+    return undefined;
+  }
+
+  return response.next_cursor ?? undefined;
+}
+
+/**
  * Collects all results from a paginated endpoint by automatically following cursors.
  *
- * This function fetches pages until `has_more` is `false`. It collects all results
- * into one array. Use this function when you need all results at once.
+ * This function fetches pages until `has_more` is `false` or `next_cursor` is `null`.
+ * It collects all results into one array. Use this function when you need all results
+ * at once.
+ *
+ * This helper does not work around the 10,000-result cap on data source, view, and
+ * meeting-notes queries. When a query hits that cap, the result set is truncated and
+ * this helper writes a warning. Use {@link collectAllDataSourceRows} for those queries.
  *
  * @param fetchPage - Function that fetches a single page of results
  * @returns Array containing all results from all pages
@@ -97,7 +123,7 @@ export async function paginate<T>(fetchPage: PaginatedFetchFunction<T>): Promise
   do {
     const response = await fetchPage(cursor);
     all.push(...response.results);
-    cursor = response.next_cursor ?? undefined;
+    cursor = nextCursor(response);
   } while (cursor);
 
   return all;
@@ -156,7 +182,7 @@ export async function* paginateIterator<T>(
     for (const item of response.results) {
       yield item;
     }
-    cursor = response.next_cursor ?? undefined;
+    cursor = nextCursor(response);
   } while (cursor);
 }
 
@@ -192,7 +218,7 @@ export async function paginateWithMetadata<T>(fetchPage: PaginatedFetchFunction<
   do {
     const response = await fetchPage(cursor);
     items.push(...response.results);
-    cursor = response.next_cursor ?? undefined;
+    cursor = nextCursor(response);
     pageCount++;
   } while (cursor);
 

@@ -79,6 +79,40 @@ describe('pagination helpers', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
+    it('should stop when has_more is false even if next_cursor is still set', async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        object: 'list',
+        results: [{ id: '1' }, { id: '2' }],
+        next_cursor: 'stale-cursor',
+        has_more: false,
+        type: 'page',
+      } as PaginatedList<{ id: string }>);
+
+      const results = await paginate(mockFetch);
+
+      expect(results).toEqual([{ id: '1' }, { id: '2' }]);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('should warn and stop when the query result is incomplete', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        object: 'list',
+        results: [{ id: '1' }],
+        next_cursor: null,
+        has_more: false,
+        type: 'page',
+        request_status: { type: 'incomplete', incomplete_reason: 'query_result_limit_reached' },
+      } as PaginatedList<{ id: string }>);
+
+      const results = await paginate(mockFetch);
+
+      expect(results).toEqual([{ id: '1' }]);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledOnce();
+      warnSpy.mockRestore();
+    });
+
     it('should pass cursor through correctly on subsequent calls', async () => {
       const mockFetch = vi
         .fn()

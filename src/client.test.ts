@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NOTION_VERSION, NotionClient } from './client';
-import { NotionAPIError } from './errors';
+import { NotionAPIError, NotionNetworkError, NotionRequestTimeoutError } from './errors';
+import { NotionValidationError } from './validation';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,6 +32,22 @@ const serviceOverloadBody = {
   status: 529,
   code: 'service_overload' as const,
   message: 'Service overloaded',
+};
+
+/** Internal-server-error body the Notion API returns for 500 responses. */
+const serverErrorBody = {
+  object: 'error' as const,
+  status: 500,
+  code: 'internal_server_error' as const,
+  message: 'Internal server error',
+};
+
+/** Service-unavailable body the Notion API returns for 503 responses. */
+const serviceUnavailableBody = {
+  object: 'error' as const,
+  status: 503,
+  code: 'service_unavailable' as const,
+  message: 'Service unavailable',
 };
 
 /** A successful JSON body. */
@@ -319,6 +336,172 @@ describe('NotionClient', () => {
 
       expect(result).toEqual(successBody);
       expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry a transient 503 and then succeed', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(503, serviceUnavailableBody))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry a 500 even when retryOnRateLimit is disabled', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(500, serverErrorBody))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should exhaust retries on a persistent 500 and throw the NotionAPIError', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(500, serverErrorBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 3,
+      });
+
+      let caughtError: unknown;
+      const promise = client
+        .request({ method: 'GET', path: '/pages/abc' })
+        .catch((error: unknown) => {
+          caughtError = error;
+        });
+
+      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(2000);
+      await vi.advanceTimersByTimeAsync(4000);
+
+      await promise;
+
+      expect(caughtError).toBeInstanceOf(NotionAPIError);
+      expect((caughtError as NotionAPIError).isServerError()).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+    });
+
+    it('should clamp a huge Retry-After header to 60 seconds', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(429, rateLimitedBody, { 'Retry-After': '86400' }))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('sendFileUpload', () => {
+    it('should POST the form to the upload URL with auth headers and no Content-Type override', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(200, {}));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      const form = new FormData();
+      form.append('file', new Blob(['bytes'], { type: 'text/plain' }));
+
+      await client.sendFileUpload('https://upload.test/send', form);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('https://upload.test/send');
+      expect(init.method).toBe('POST');
+      expect(init.body).toBe(form);
+      expect(init.headers.Authorization).toBe('Bearer test-token');
+      expect(init.headers['Notion-Version']).toBe(NOTION_VERSION);
+      expect(init.headers['Content-Type']).toBeUndefined();
+    });
+
+    it.each(['http://upload.test/send', 'ftp://upload.test/send', 'not a url'])(
+      'should reject a non-https upload URL (%s) before calling fetch',
+      async (uploadUrl) => {
+        const fetchMock = vi.fn();
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+        await expect(client.sendFileUpload(uploadUrl, new FormData())).rejects.toBeInstanceOf(
+          NotionValidationError,
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+      },
+    );
+
+    it('should throw a NotionAPIError when the upload response is not ok', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(400, {
+          object: 'error',
+          status: 400,
+          code: 'validation_error',
+          message: 'bad part',
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(
+        client.sendFileUpload('https://upload.test/send', new FormData()),
+      ).rejects.toBeInstanceOf(NotionAPIError);
+    });
+
+    it('should map a network failure to NotionNetworkError', async () => {
+      const fetchMock = vi.fn().mockRejectedValue(new Error('socket hang up'));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(
+        client.sendFileUpload('https://upload.test/send', new FormData()),
+      ).rejects.toBeInstanceOf(NotionNetworkError);
+    });
+
+    it('should map an aborted request to NotionRequestTimeoutError', async () => {
+      const fetchMock = vi.fn().mockImplementation(() => {
+        const err = new Error('aborted');
+        err.name = 'AbortError';
+        return Promise.reject(err);
+      });
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(
+        client.sendFileUpload('https://upload.test/send', new FormData()),
+      ).rejects.toBeInstanceOf(NotionRequestTimeoutError);
     });
   });
 });

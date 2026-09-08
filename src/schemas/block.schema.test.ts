@@ -298,47 +298,79 @@ describe('blockSchema', () => {
   });
 
   describe('media blocks', () => {
-    it('should parse image block', () => {
+    it('should parse an image block and keep its caption', () => {
       const block: NotionBlock = {
         ...baseBlock,
         type: 'image',
-        image: externalFile,
+        image: {
+          type: 'external',
+          external: { url: 'https://example.com/image.png' },
+          caption: richTextArray,
+        },
       };
 
       const result = blockSchema.safeParse(block);
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.image?.caption).toHaveLength(1);
+      }
     });
 
-    it('should parse video block', () => {
+    it('should parse a video block', () => {
       const block: NotionBlock = {
         ...baseBlock,
         type: 'video',
-        video: externalFile,
+        video: {
+          type: 'external',
+          external: { url: 'https://example.com/clip.mp4' },
+          caption: [],
+        },
       };
 
       const result = blockSchema.safeParse(block);
       expect(result.success).toBe(true);
     });
 
-    it('should parse audio block', () => {
+    it('should parse an audio block', () => {
       const block: NotionBlock = {
         ...baseBlock,
         type: 'audio',
-        audio: externalFile,
+        audio: {
+          type: 'external',
+          external: { url: 'https://example.com/track.mp3' },
+          caption: [],
+        },
       };
 
       const result = blockSchema.safeParse(block);
       expect(result.success).toBe(true);
     });
 
-    it('should parse pdf block with caption', () => {
+    it('should default caption to an empty array when the media block omits it', () => {
+      const block = {
+        ...baseBlock,
+        type: 'image',
+        image: {
+          type: 'external',
+          external: { url: 'https://example.com/image.png' },
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.image?.caption).toEqual([]);
+      }
+    });
+
+    it('should parse a pdf block with an inlined external file', () => {
       const block: NotionBlock = {
         ...baseBlock,
         type: 'pdf',
         pdf: {
           caption: richTextArray,
           type: 'external',
-          external: externalFile,
+          external: { url: 'https://example.com/document.pdf' },
           name: 'document.pdf',
         },
       };
@@ -347,20 +379,87 @@ describe('blockSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should parse file block', () => {
+    it('should parse a file block with an inlined Notion-hosted file', () => {
       const block: NotionBlock = {
         ...baseBlock,
         type: 'file',
         file: {
           caption: richTextArray,
-          type: 'file_upload',
-          file_upload: externalFile,
+          type: 'file',
+          file: {
+            url: 'https://s3.us-west-2.amazonaws.com/notion/data.csv',
+            expiry_time: '2024-02-01T00:00:00.000Z',
+          },
           name: 'data.csv',
         },
       };
 
       const result = blockSchema.safeParse(block);
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.file?.file?.url).toContain('data.csv');
+      }
+    });
+
+    it('should parse a file block that uses a file_upload reference', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'file',
+        file: {
+          caption: [],
+          type: 'file_upload',
+          file_upload: { id: '123e4567-e89b-12d3-a456-426614174010' },
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject a media block whose type has no matching file object', () => {
+      const block = {
+        ...baseBlock,
+        type: 'image',
+        image: {
+          type: 'external',
+          caption: [],
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('link_to_page block', () => {
+    it('should parse a link_to_page block', () => {
+      const block: NotionBlock = {
+        ...baseBlock,
+        type: 'link_to_page',
+        link_to_page: {
+          type: 'page_id',
+          page_id: '123e4567-e89b-12d3-a456-426614174011',
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.link_to_page?.page_id).toBe('123e4567-e89b-12d3-a456-426614174011');
+      }
+    });
+
+    it('should reject a link_to_page block whose type has no matching ID field', () => {
+      const block = {
+        ...baseBlock,
+        type: 'link_to_page',
+        link_to_page: {
+          type: 'page_id',
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(false);
     });
   });
 

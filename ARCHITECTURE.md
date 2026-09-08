@@ -124,10 +124,13 @@ The SDK has 4 error classes. Each class extends `Error` and sets `this.name`:
 - `NotionValidationError`: a client-side size limit violation. The SDK throws this error before it
   sends the request.
 
-The client retries 2 error types. It retries `rate_limited` errors, HTTP status 429, when
-`retryOnRateLimit` is enabled. It always retries `service_overload` errors, HTTP status 529. The
-client uses the `Retry-After` header when the header is present. Otherwise, the client uses
-exponential backoff: `2^attempt * 1000ms`, capped at 60 seconds.
+The client retries every error that `NotionAPIError.isRetryable()` reports. This covers
+`rate_limited` errors (HTTP status 429), `service_overload` errors (HTTP status 529), and
+transient server errors (HTTP status 500 to 599). The `retryOnRateLimit` option, when set to
+`false`, suppresses retries for `rate_limited` errors only. It does not affect the other
+retryable errors. The client uses the `Retry-After` header when the header is present.
+Otherwise, the client uses exponential backoff: `2^attempt * 1000ms`. The client clamps both
+the header value and the backoff delay to 60 seconds.
 
 The `LIMITS` constant in `validation.ts` defines client-side size limits. The SDK enforces these
 limits before it sends a request. Limit categories:

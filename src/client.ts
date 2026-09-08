@@ -4,6 +4,7 @@ import {
   NotionNetworkError,
   NotionRequestTimeoutError,
 } from './errors';
+import { NotionValidationError } from './validation';
 
 /**
  * The Notion API version this SDK uses.
@@ -12,6 +13,9 @@ import {
  * @category Client & Core
  */
 export const NOTION_VERSION = '2026-03-11' as const;
+
+/** Upper bound for a single retry wait, in milliseconds. */
+const MAX_RETRY_DELAY_MS = 60_000;
 
 /**
  * Configuration options for the Notion client.
@@ -83,11 +87,11 @@ export class NotionClient {
       try {
         return await this.makeRequest<T>(options);
       } catch (error) {
-        // Retry rate-limited requests (if enabled) and service-overload (529)
-        // responses, which the API recommends always retrying.
+        // Retry per isRetryable(); retryOnRateLimit:false suppresses only rate_limited.
         if (
           error instanceof NotionAPIError &&
-          ((error.isRateLimited() && this.retryOnRateLimit) || error.isServiceOverloaded()) &&
+          error.isRetryable() &&
+          !(error.isRateLimited() && !this.retryOnRateLimit) &&
           attempt < this.maxRetries
         ) {
           // Prefer the server-supplied Retry-After value; fall back to
@@ -108,23 +112,49 @@ export class NotionClient {
   }
 
   /**
+   * Send a `multipart/form-data` `POST` to a Notion file-upload URL. Reuses the
+   * configured `fetch` and the request timeout. Does not retry. Does not set
+   * `Content-Type`, so `fetch` adds the multipart boundary.
+   *
+   * @param uploadUrl - The absolute `upload_url` from `fileUploads.initiate()`.
+   * @param form - A `FormData` body with the file bytes under the `file` key.
+   * @throws {NotionValidationError} If `uploadUrl` is not a valid `https` URL.
+   * @throws {NotionAPIError} If the endpoint returns an error response.
+   * @throws {NotionRequestTimeoutError} If the request exceeds the timeout.
+   * @throws {NotionNetworkError} If a network problem blocks the request.
+   */
+  async sendFileUpload(uploadUrl: string, form: FormData): Promise<void> {
+    this.assertHttpsUrl(uploadUrl);
+
+    const { 'Content-Type': _contentType, ...headers } = this.requestHeaders;
+
+    try {
+      const response = await this.fetchWithTimeout(uploadUrl, {
+        method: 'POST',
+        headers,
+        body: form,
+      });
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+    } catch (error) {
+      this.mapTransportError(error);
+    }
+  }
+
+  /**
    * Send one HTTP request to the Notion API.
    */
   private async makeRequest<T>(options: RequestOptions): Promise<T> {
     const url = this.buildUrl(options.path, options.query);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
-
     try {
-      const response = await this.fetchImpl(url, {
+      const response = await this.fetchWithTimeout(url, {
         method: options.method,
         headers: this.requestHeaders,
         body: options.body ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
@@ -138,20 +168,61 @@ export class NotionClient {
       const data = await response.json();
       return data as T;
     } catch (error) {
+      this.mapTransportError(error);
+    }
+  }
+
+  /**
+   * Call the configured `fetch` with an abort timeout of `timeoutMs`.
+   * Clear the timer as soon as the response headers arrive or the request fails.
+   */
+  private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      return await this.fetchImpl(url, { ...init, signal: controller.signal });
+    } finally {
       clearTimeout(timeoutId);
+    }
+  }
 
-      if (error instanceof NotionAPIError) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new NotionRequestTimeoutError(`Request timed out after ${this.timeoutMs}ms`);
-        }
-        throw new NotionNetworkError('Network request failed', error);
-      }
-
+  /**
+   * Map a transport-layer failure to the matching SDK error and throw it.
+   * Rethrow a `NotionAPIError` unchanged. Map an `AbortError` to
+   * `NotionRequestTimeoutError`. Map any other `Error` to `NotionNetworkError`.
+   */
+  private mapTransportError(error: unknown): never {
+    if (error instanceof NotionAPIError) {
       throw error;
+    }
+
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new NotionRequestTimeoutError(`Request timed out after ${this.timeoutMs}ms`);
+      }
+      throw new NotionNetworkError('Network request failed', error);
+    }
+
+    throw error;
+  }
+
+  /**
+   * Assert that `url` is a valid `https` URL. The SDK sends the API token in the
+   * `Authorization` header of a file upload. Reject a plaintext `http` URL so the
+   * token never travels unencrypted.
+   */
+  private assertHttpsUrl(url: string): void {
+    let protocol: string;
+
+    try {
+      protocol = new URL(url).protocol;
+    } catch {
+      throw new NotionValidationError(`Invalid file upload URL: ${url}`);
+    }
+
+    if (protocol !== 'https:') {
+      throw new NotionValidationError(`File upload URL must use https, got "${protocol}"`);
     }
   }
 
@@ -162,7 +233,7 @@ export class NotionClient {
    */
   private getRetryAfter(attempt: number): number {
     const backoffMs = Math.pow(2, attempt) * 1000;
-    return Math.min(backoffMs, 60000); // Cap at 60 seconds
+    return Math.min(backoffMs, MAX_RETRY_DELAY_MS);
   }
 
   /**
@@ -199,8 +270,9 @@ export class NotionClient {
   }
 
   /**
-   * Parse the `Retry-After` response header into milliseconds.
-   * Return `undefined` if the header is missing or not a valid non-negative number.
+   * Parse the `Retry-After` response header into milliseconds, clamped to
+   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the header is missing or
+   * not a valid non-negative number.
    */
   private parseRetryAfterHeader(response: Response): number | undefined {
     const header = response.headers.get('Retry-After');
@@ -213,7 +285,7 @@ export class NotionClient {
       return undefined;
     }
 
-    return Math.ceil(seconds) * 1000;
+    return Math.min(Math.ceil(seconds) * 1000, MAX_RETRY_DELAY_MS);
   }
 
   /**

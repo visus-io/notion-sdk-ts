@@ -12,7 +12,7 @@ import {
 } from '../schemas';
 import { Block } from '../models';
 import { TRUSTED } from '../models/base.model';
-import { LIMITS, validateArrayLength } from '../validation';
+import { LIMITS, validateArrayLength, validateNumberRange } from '../validation';
 import { BaseAPI } from './base.api';
 
 /**
@@ -224,12 +224,17 @@ export class BlocksAPI extends BaseAPI<NotionBlock, Block> {
      *
      * @param options - Filter, sort, and limit options
      * @returns Matching meeting-notes blocks
+     * @throws {NotionValidationError} If `limit` is outside the range 1 to 50.
      *
      * @see https://developers.notion.com/reference/query-meeting-notes
      */
     query: async (options?: QueryMeetingNotesOptions): Promise<MeetingNotesQueryResult> => {
       if (options?.sort) {
         validateArrayLength(options.sort, LIMITS.ARRAY_ELEMENTS, 'sort');
+      }
+
+      if (options?.limit !== undefined) {
+        validateNumberRange(options.limit, 1, 50, 'limit');
       }
 
       const body: Record<string, unknown> = {};

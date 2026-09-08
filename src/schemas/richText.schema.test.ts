@@ -255,6 +255,80 @@ describe('richTextSchema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should parse data_source mention', () => {
+      const richText = [
+        {
+          type: 'mention' as const,
+          mention: {
+            type: 'data_source' as const,
+            data_source: {
+              id: '123e4567-e89b-12d3-a456-426614174000',
+              database_id: '123e4567-e89b-12d3-a456-426614174001',
+            },
+          },
+          annotations: baseAnnotations,
+          plain_text: 'Tasks',
+          href: null,
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+    });
+
+    it('should parse custom_emoji mention', () => {
+      const richText = [
+        {
+          type: 'mention' as const,
+          mention: {
+            type: 'custom_emoji' as const,
+            custom_emoji: {
+              id: '123e4567-e89b-12d3-a456-426614174000',
+              name: 'bufo',
+              url: 'https://example.com/bufo.png',
+            },
+          },
+          annotations: baseAnnotations,
+          plain_text: ':bufo:',
+          href: null,
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+    });
+
+    it('should parse link_mention and keep its unfurl fields', () => {
+      const richText = [
+        {
+          type: 'mention' as const,
+          mention: {
+            type: 'link_mention' as const,
+            link_mention: {
+              href: 'https://example.com/article',
+              title: 'An article',
+              description: 'A short summary',
+            },
+          },
+          annotations: baseAnnotations,
+          plain_text: 'An article',
+          href: 'https://example.com/article',
+        },
+      ];
+
+      const result = richTextSchema.safeParse(richText);
+      expect(result.success).toBe(true);
+      if (
+        result.success &&
+        result.data[0].type === 'mention' &&
+        result.data[0].mention.type === 'link_mention'
+      ) {
+        expect((result.data[0].mention.link_mention as Record<string, unknown>).title).toBe(
+          'An article',
+        );
+      }
+    });
+
     it('should parse template_mention with today', () => {
       const richText = [
         {

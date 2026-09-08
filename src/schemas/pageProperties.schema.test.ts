@@ -126,6 +126,36 @@ describe('pagePropertiesSchema', () => {
       const result = pagePropertiesSchema.safeParse(property);
       expect(result.success).toBe(true);
     });
+
+    it('should parse a date value whose time carries a UTC offset', () => {
+      const property = {
+        id: 'prop-8',
+        type: 'date' as const,
+        date: {
+          start: '2021-10-15T12:00:00.000-04:00',
+          end: '2021-10-15T13:30:00.000-04:00',
+          time_zone: null,
+        },
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+    });
+
+    it('should parse a date value whose time has no zone (time_zone set separately)', () => {
+      const property = {
+        id: 'prop-9',
+        type: 'date' as const,
+        date: {
+          start: '2021-10-15T12:00:00.000',
+          end: null,
+          time_zone: 'America/New_York',
+        },
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('email property', () => {
@@ -470,6 +500,50 @@ describe('pagePropertiesSchema', () => {
 
       const result = pagePropertiesSchema.safeParse(property);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('place property', () => {
+    it('should parse a place property value', () => {
+      const property = {
+        id: 'prop-place',
+        type: 'place' as const,
+        place: {
+          name: 'Notion HQ',
+          address: '2300 Harrison St, San Francisco, CA',
+          latitude: 37.762,
+          longitude: -122.413,
+          google_place_id: 'ChIJ-abc123',
+        },
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+    });
+
+    it('should parse a null place property value', () => {
+      const property = {
+        id: 'prop-place-null',
+        type: 'place' as const,
+        place: null,
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+    });
+
+    it('should keep unknown keys on a place property value', () => {
+      const property = {
+        id: 'prop-place-extra',
+        type: 'place' as const,
+        place: { name: 'Somewhere', region: 'CA', country: 'US' },
+      };
+
+      const result = pagePropertiesSchema.safeParse(property);
+      expect(result.success).toBe(true);
+      if (result.success && result.data.type === 'place' && result.data.place) {
+        expect((result.data.place as Record<string, unknown>).country).toBe('US');
+      }
     });
   });
 

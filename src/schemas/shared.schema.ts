@@ -7,17 +7,13 @@ import * as z from 'zod';
  */
 
 /**
- * Notion date string schema.
- *
- * This schema validates ISO 8601 date strings from the Notion API.
- * It accepts a date-only format ("2023-02-23") and a full date-time format
- * ("2023-02-23T00:00:00.000Z").
- *
- * The Notion API docs describe date fields as "A date, with an optional time".
+ * Notion date string schema. Accepts a date ("2023-02-23"), a UTC date-time
+ * ("2023-02-23T00:00:00.000Z"), and a date-time with a UTC offset or no zone
+ * ("2021-10-15T12:00:00.000-04:00", "2021-10-15T12:00:00.000").
  *
  * @category Shared Types
  */
 export const notionDateStringSchema = z.union([
-  z.iso.datetime(), // Full ISO 8601 datetime: "2023-02-23T00:00:00.000Z"
-  z.iso.date(), // Date only: "2023-02-23"
+  z.iso.datetime({ offset: true, local: true }),
+  z.iso.date(),
 ]);

@@ -97,7 +97,7 @@ export class CommentsAPI extends BaseAPI<NotionComment, Comment> {
    * @param params - Pagination parameters
    * @returns Paginated list of comments
    *
-   * @see https://developers.notion.com/reference/retrieve-a-comment
+   * @see https://developers.notion.com/reference/retrieve-a-comment-list
    */
   async list(parentId: string, params?: PaginationParameters): Promise<PaginatedList<Comment>> {
     const query: Record<string, string> = {

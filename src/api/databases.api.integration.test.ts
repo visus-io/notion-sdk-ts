@@ -60,6 +60,31 @@ describe('DatabasesAPI integration', () => {
       expect(result.results[0]).toBeInstanceOf(Page);
     });
 
+    it('should forward request_status from a truncated query result', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/databases/${databaseId}/query`, () =>
+          HttpResponse.json({
+            object: 'list',
+            results: [buildPageResponse()],
+            next_cursor: null,
+            has_more: false,
+            type: 'page',
+            request_status: {
+              type: 'incomplete',
+              incomplete_reason: 'query_result_limit_reached',
+            },
+          }),
+        ),
+      );
+
+      const result = await notion.databases.query(databaseId);
+
+      expect(result.request_status).toEqual({
+        type: 'incomplete',
+        incomplete_reason: 'query_result_limit_reached',
+      });
+    });
+
     it('should send filter_properties as repeated query string parameters, not in the body', async () => {
       server.use(
         http.post(
