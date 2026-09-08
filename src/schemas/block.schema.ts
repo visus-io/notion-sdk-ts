@@ -52,15 +52,23 @@ const headingsObjectSchema = z.object({
 /**
  * Content of a media block (`audio`, `image`, `video`, `file`, `pdf`). The file-object
  * body is inlined, so `external` is `{ url }`, not a full nested file object.
+ *
+ * The `type` field names which body object is present. The schema rejects a value
+ * whose `type` has no matching `file`, `external`, or `file_upload` object.
  */
-const mediaBlockContentSchema = z.object({
-  caption: richTextSchema.default([]),
-  type: z.enum(['file', 'file_upload', 'external']),
-  file: z.object({ url: z.url(), expiry_time: notionDateStringSchema }).optional(),
-  external: z.object({ url: z.url() }).optional(),
-  file_upload: z.object({ id: z.uuid() }).optional(),
-  name: z.string().trim().optional(),
-});
+const mediaBlockContentSchema = z
+  .object({
+    caption: richTextSchema.default([]),
+    type: z.enum(['file', 'file_upload', 'external']),
+    file: z.object({ url: z.url(), expiry_time: notionDateStringSchema }).optional(),
+    external: z.object({ url: z.url() }).optional(),
+    file_upload: z.object({ id: z.uuid() }).optional(),
+    name: z.string().trim().optional(),
+  })
+  .refine((value) => value[value.type] !== undefined, {
+    error: 'A media block must include the file object that matches its `type`.',
+    path: ['type'],
+  });
 
 /**
  * @category Blocks
@@ -200,6 +208,10 @@ export const blockSchema = z.object({
       data_source_id: z.uuid().optional(),
       database_id: z.uuid().optional(),
       comment_id: z.uuid().optional(),
+    })
+    .refine((value) => value[value.type] !== undefined, {
+      error: 'A link_to_page block must include the ID field that matches its `type`.',
+      path: ['type'],
     })
     .optional(),
   numbered_list_item: z

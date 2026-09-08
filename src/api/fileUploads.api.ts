@@ -2,6 +2,7 @@ import type { NotionClient } from '../client';
 import { fileUploadSchema, type NotionFileUpload } from '../schemas';
 import { FileUpload } from '../models';
 import { TRUSTED } from '../models/base.model';
+import { NotionValidationError } from '../validation';
 import { BaseAPI } from './base.api';
 
 /**
@@ -68,7 +69,8 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
    * @param fileData - The file data to upload
    * @param contentType - The MIME type of the file
    * @param partNumber - The 1-based part number, for a multi-part upload of a file
-   * larger than 20 MB.
+   * larger than 20 MB. Pass a positive integer.
+   * @throws {NotionValidationError} If `partNumber` is not a positive integer.
    * @throws {NotionAPIError} If the upload endpoint returns an error response.
    *
    * @see https://developers.notion.com/reference/upload-file
@@ -83,6 +85,11 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     form.append('file', FileUploadsAPI.toBlob(fileData, contentType));
 
     if (partNumber !== undefined) {
+      if (!Number.isInteger(partNumber) || partNumber < 1) {
+        throw new NotionValidationError(
+          `partNumber must be a positive integer (got ${partNumber})`,
+        );
+      }
       form.append('part_number', String(partNumber));
     }
 

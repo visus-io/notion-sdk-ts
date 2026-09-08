@@ -415,6 +415,20 @@ describe('blockSchema', () => {
       const result = blockSchema.safeParse(block);
       expect(result.success).toBe(true);
     });
+
+    it('should reject a media block whose type has no matching file object', () => {
+      const block = {
+        ...baseBlock,
+        type: 'image',
+        image: {
+          type: 'external',
+          caption: [],
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('link_to_page block', () => {
@@ -433,6 +447,19 @@ describe('blockSchema', () => {
       if (result.success) {
         expect(result.data.link_to_page?.page_id).toBe('123e4567-e89b-12d3-a456-426614174011');
       }
+    });
+
+    it('should reject a link_to_page block whose type has no matching ID field', () => {
+      const block = {
+        ...baseBlock,
+        type: 'link_to_page',
+        link_to_page: {
+          type: 'page_id',
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(false);
     });
   });
 

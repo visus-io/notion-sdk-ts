@@ -1,9 +1,29 @@
+import { NotionValidationError } from '../validation';
+
 // ---------------------------------------------------------------------------
 // Filter value types
 // ---------------------------------------------------------------------------
 
 /** A complete filter condition ready to pass to `databases.query()`. */
 type FilterCondition = Record<string, unknown>;
+
+/**
+ * Assert that a select-like filter value is a single string. Notion rejects an
+ * array for the `equals`, `does_not_equal`, `contains`, and `does_not_contain`
+ * operators on `select`, `status`, and `multi_select` properties.
+ *
+ * The parameter type still accepts `string[]` for backward compatibility. An
+ * array now fails fast with a clear error instead of a generic API 400.
+ *
+ * @throws {NotionValidationError} If `value` is an array.
+ */
+function assertScalarFilterValue(value: string | string[], label: string): asserts value is string {
+  if (Array.isArray(value)) {
+    throw new NotionValidationError(
+      `${label} accepts a single string, not an array. Compose an OR filter with filter.or(...) to match multiple values.`,
+    );
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Property filter builders
@@ -131,11 +151,13 @@ class CheckboxFilter {
 class SelectFilter {
   constructor(private readonly property: string) {}
 
-  equals(value: string): FilterCondition {
+  equals(value: string | string[]): FilterCondition {
+    assertScalarFilterValue(value, 'select().equals');
     return { property: this.property, select: { equals: value } };
   }
 
-  doesNotEqual(value: string): FilterCondition {
+  doesNotEqual(value: string | string[]): FilterCondition {
+    assertScalarFilterValue(value, 'select().doesNotEqual');
     return { property: this.property, select: { does_not_equal: value } };
   }
 
@@ -152,11 +174,13 @@ class SelectFilter {
 class MultiSelectFilter {
   constructor(private readonly property: string) {}
 
-  contains(value: string): FilterCondition {
+  contains(value: string | string[]): FilterCondition {
+    assertScalarFilterValue(value, 'multiSelect().contains');
     return { property: this.property, multi_select: { contains: value } };
   }
 
-  doesNotContain(value: string): FilterCondition {
+  doesNotContain(value: string | string[]): FilterCondition {
+    assertScalarFilterValue(value, 'multiSelect().doesNotContain');
     return { property: this.property, multi_select: { does_not_contain: value } };
   }
 
@@ -173,11 +197,13 @@ class MultiSelectFilter {
 class StatusFilter {
   constructor(private readonly property: string) {}
 
-  equals(value: string): FilterCondition {
+  equals(value: string | string[]): FilterCondition {
+    assertScalarFilterValue(value, 'status().equals');
     return { property: this.property, status: { equals: value } };
   }
 
-  doesNotEqual(value: string): FilterCondition {
+  doesNotEqual(value: string | string[]): FilterCondition {
+    assertScalarFilterValue(value, 'status().doesNotEqual');
     return { property: this.property, status: { does_not_equal: value } };
   }
 

@@ -125,6 +125,24 @@ describe('FileUploadsAPI', () => {
       expect(form.get('part_number')).toBe('2');
     });
 
+    it.each([0, -1, 1.5, Number.NaN])(
+      'should reject a non-positive-integer part number (%s)',
+      async (partNumber) => {
+        vi.mocked(mockClient.sendFileUpload).mockResolvedValue(undefined);
+
+        await expect(
+          fileUploadsAPI.upload(
+            'https://upload-url.test/send',
+            Buffer.from('part'),
+            'application/octet-stream',
+            partNumber,
+          ),
+        ).rejects.toThrow('partNumber must be a positive integer');
+
+        expect(mockClient.sendFileUpload).not.toHaveBeenCalled();
+      },
+    );
+
     it('should propagate an error from the client', async () => {
       vi.mocked(mockClient.sendFileUpload).mockRejectedValue(new Error('upload failed'));
 

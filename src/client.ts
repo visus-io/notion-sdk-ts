@@ -4,6 +4,7 @@ import {
   NotionNetworkError,
   NotionRequestTimeoutError,
 } from './errors';
+import { NotionValidationError } from './validation';
 
 /**
  * The Notion API version this SDK uses.
@@ -117,11 +118,14 @@ export class NotionClient {
    *
    * @param uploadUrl - The absolute `upload_url` from `fileUploads.initiate()`.
    * @param form - A `FormData` body with the file bytes under the `file` key.
+   * @throws {NotionValidationError} If `uploadUrl` is not a valid `https` URL.
    * @throws {NotionAPIError} If the endpoint returns an error response.
    * @throws {NotionRequestTimeoutError} If the request exceeds the timeout.
    * @throws {NotionNetworkError} If a network problem blocks the request.
    */
   async sendFileUpload(uploadUrl: string, form: FormData): Promise<void> {
+    this.assertHttpsUrl(uploadUrl);
+
     const { 'Content-Type': _contentType, ...headers } = this.requestHeaders;
 
     try {
@@ -201,6 +205,25 @@ export class NotionClient {
     }
 
     throw error;
+  }
+
+  /**
+   * Assert that `url` is a valid `https` URL. The SDK sends the API token in the
+   * `Authorization` header of a file upload. Reject a plaintext `http` URL so the
+   * token never travels unencrypted.
+   */
+  private assertHttpsUrl(url: string): void {
+    let protocol: string;
+
+    try {
+      protocol = new URL(url).protocol;
+    } catch {
+      throw new NotionValidationError(`Invalid file upload URL: ${url}`);
+    }
+
+    if (protocol !== 'https:') {
+      throw new NotionValidationError(`File upload URL must use https, got "${protocol}"`);
+    }
   }
 
   /**

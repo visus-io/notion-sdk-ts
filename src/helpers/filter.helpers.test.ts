@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { filter } from './filter.helpers';
+import { NotionValidationError } from '../validation';
 
 describe('filter helpers', () => {
   // -----------------------------------------------------------------------
@@ -171,6 +172,15 @@ describe('filter helpers', () => {
         select: { is_not_empty: true },
       });
     });
+
+    it('should reject an array value', () => {
+      expect(() => filter.select('Priority').equals(['High', 'Low'])).toThrow(
+        NotionValidationError,
+      );
+      expect(() => filter.select('Priority').doesNotEqual(['High', 'Low'])).toThrow(
+        NotionValidationError,
+      );
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -202,6 +212,13 @@ describe('filter helpers', () => {
         multi_select: { is_not_empty: true },
       });
     });
+
+    it('should reject an array value', () => {
+      expect(() => filter.multiSelect('Tags').contains(['a', 'b'])).toThrow(NotionValidationError);
+      expect(() => filter.multiSelect('Tags').doesNotContain(['a', 'b'])).toThrow(
+        NotionValidationError,
+      );
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -232,6 +249,15 @@ describe('filter helpers', () => {
         property: 'Status',
         status: { is_not_empty: true },
       });
+    });
+
+    it('should reject an array value', () => {
+      expect(() => filter.status('Status').equals(['Active', 'Done'])).toThrow(
+        NotionValidationError,
+      );
+      expect(() => filter.status('Status').doesNotEqual(['Active', 'Done'])).toThrow(
+        NotionValidationError,
+      );
     });
   });
 

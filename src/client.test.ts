@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NOTION_VERSION, NotionClient } from './client';
 import { NotionAPIError, NotionNetworkError, NotionRequestTimeoutError } from './errors';
+import { NotionValidationError } from './validation';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -451,6 +452,19 @@ describe('NotionClient', () => {
       expect(init.headers['Notion-Version']).toBe(NOTION_VERSION);
       expect(init.headers['Content-Type']).toBeUndefined();
     });
+
+    it.each(['http://upload.test/send', 'ftp://upload.test/send', 'not a url'])(
+      'should reject a non-https upload URL (%s) before calling fetch',
+      async (uploadUrl) => {
+        const fetchMock = vi.fn();
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+        await expect(client.sendFileUpload(uploadUrl, new FormData())).rejects.toBeInstanceOf(
+          NotionValidationError,
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+      },
+    );
 
     it('should throw a NotionAPIError when the upload response is not ok', async () => {
       const fetchMock = vi.fn().mockResolvedValue(
