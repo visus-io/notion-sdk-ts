@@ -13,11 +13,7 @@ import {
  */
 export const NOTION_VERSION = '2026-03-11' as const;
 
-/**
- * Upper bound for a single retry wait, in milliseconds.
- * The client clamps both the `Retry-After` header value and the exponential
- * backoff delay to this value.
- */
+/** Upper bound for a single retry wait, in milliseconds. */
 const MAX_RETRY_DELAY_MS = 60_000;
 
 /**
@@ -90,9 +86,7 @@ export class NotionClient {
       try {
         return await this.makeRequest<T>(options);
       } catch (error) {
-        // Retry the errors that `NotionAPIError.isRetryable()` reports: rate limits,
-        // service overload (529), and transient 5xx responses. `retryOnRateLimit`
-        // still suppresses retries for `rate_limited` only.
+        // Retry per isRetryable(); retryOnRateLimit:false suppresses only rate_limited.
         if (
           error instanceof NotionAPIError &&
           error.isRetryable() &&
@@ -112,23 +106,17 @@ export class NotionClient {
       }
     }
 
-    // Defensive: the loop always returns or throws before it reaches here,
-    // because the final iteration hits `throw error`. Keep this as a safety net.
+    // If we exhausted all retries, throw the last error
     throw lastError ?? new Error('Request failed after all retries');
   }
 
   /**
-   * Send the raw bytes of a file to a Notion file-upload URL.
-   *
-   * The file-upload send endpoint uses `multipart/form-data`, not JSON. It is the
-   * only Notion endpoint that does. This method reuses the configured `fetch`
-   * implementation and the request timeout. It does not retry.
-   *
-   * Do not set a `Content-Type` header. The `fetch` implementation adds the
-   * `multipart/form-data` header together with the correct boundary.
+   * Send a `multipart/form-data` `POST` to a Notion file-upload URL. Reuses the
+   * configured `fetch` and the request timeout. Does not retry. Does not set
+   * `Content-Type`, so `fetch` adds the multipart boundary.
    *
    * @param uploadUrl - The absolute `upload_url` from `fileUploads.initiate()`.
-   * @param form - A `FormData` body. Put the file bytes under the `file` key.
+   * @param form - A `FormData` body with the file bytes under the `file` key.
    * @throws {NotionAPIError} If the endpoint returns an error response.
    * @throws {NotionRequestTimeoutError} If the request exceeds the timeout.
    * @throws {NotionNetworkError} If a network problem blocks the request.
@@ -136,37 +124,18 @@ export class NotionClient {
   async sendFileUpload(uploadUrl: string, form: FormData): Promise<void> {
     const { 'Content-Type': _contentType, ...headers } = this.requestHeaders;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
-
     try {
-      const response = await this.fetchImpl(uploadUrl, {
+      const response = await this.fetchWithTimeout(uploadUrl, {
         method: 'POST',
         headers,
         body: form,
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
       }
     } catch (error) {
-      clearTimeout(timeoutId);
-
-      if (error instanceof NotionAPIError) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new NotionRequestTimeoutError(`Request timed out after ${this.timeoutMs}ms`);
-        }
-        throw new NotionNetworkError('Network request failed', error);
-      }
-
-      throw error;
+      this.mapTransportError(error);
     }
   }
 
@@ -176,18 +145,12 @@ export class NotionClient {
   private async makeRequest<T>(options: RequestOptions): Promise<T> {
     const url = this.buildUrl(options.path, options.query);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
-
     try {
-      const response = await this.fetchImpl(url, {
+      const response = await this.fetchWithTimeout(url, {
         method: options.method,
         headers: this.requestHeaders,
         body: options.body ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         await this.handleErrorResponse(response);
@@ -201,21 +164,43 @@ export class NotionClient {
       const data = await response.json();
       return data as T;
     } catch (error) {
+      this.mapTransportError(error);
+    }
+  }
+
+  /**
+   * Call the configured `fetch` with an abort timeout of `timeoutMs`.
+   * Clear the timer as soon as the response headers arrive or the request fails.
+   */
+  private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      return await this.fetchImpl(url, { ...init, signal: controller.signal });
+    } finally {
       clearTimeout(timeoutId);
+    }
+  }
 
-      if (error instanceof NotionAPIError) {
-        throw error;
-      }
-
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new NotionRequestTimeoutError(`Request timed out after ${this.timeoutMs}ms`);
-        }
-        throw new NotionNetworkError('Network request failed', error);
-      }
-
+  /**
+   * Map a transport-layer failure to the matching SDK error and throw it.
+   * Rethrow a `NotionAPIError` unchanged. Map an `AbortError` to
+   * `NotionRequestTimeoutError`. Map any other `Error` to `NotionNetworkError`.
+   */
+  private mapTransportError(error: unknown): never {
+    if (error instanceof NotionAPIError) {
       throw error;
     }
+
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new NotionRequestTimeoutError(`Request timed out after ${this.timeoutMs}ms`);
+      }
+      throw new NotionNetworkError('Network request failed', error);
+    }
+
+    throw error;
   }
 
   /**
@@ -262,10 +247,9 @@ export class NotionClient {
   }
 
   /**
-   * Parse the `Retry-After` response header into milliseconds.
-   * Return `undefined` if the header is missing or not a valid non-negative number.
-   * Clamp the value to {@link MAX_RETRY_DELAY_MS} so a bad header cannot stall a
-   * request for minutes or hours.
+   * Parse the `Retry-After` response header into milliseconds, clamped to
+   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the header is missing or
+   * not a valid non-negative number.
    */
   private parseRetryAfterHeader(response: Response): number | undefined {
     const header = response.headers.get('Retry-After');

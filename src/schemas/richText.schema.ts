@@ -55,8 +55,6 @@ const customEmojiMentionSchema = z.object({
 
 const linkMentionSchema = z.object({
   type: z.literal('link_mention'),
-  // Notion keeps adding fields to a rich-link unfurl. Keep unknown keys instead
-  // of failing the parse.
   link_mention: z.looseObject({
     href: z.string().trim(),
   }),

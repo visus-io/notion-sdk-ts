@@ -139,12 +139,7 @@ const phoneNumberPropertySchema = z.object({
   phone_number: z.string().trim().nullable(),
 });
 
-/**
- * Place property.
- *
- * The location value is kept as a loose object. Notion is still adding fields to
- * this value, so unknown keys pass through instead of failing the parse.
- */
+/** Place property. Unknown keys on the location value pass through. */
 const placePropertySchema = z.object({
   id: z.string().trim(),
   type: z.literal('place'),

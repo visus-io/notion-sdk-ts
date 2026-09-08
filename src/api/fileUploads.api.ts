@@ -19,10 +19,12 @@ export interface InitiateFileUploadOptions {
 }
 
 /**
- * File data for uploading. Accepts a `Buffer`, `Uint8Array`, `ArrayBuffer`,
- * `Blob`, or `ReadableStream`.
+ * File data for uploading. Accepts a `Buffer`, `Uint8Array`, `ArrayBuffer`, or
+ * `Blob`. The upload endpoint uses `multipart/form-data`, so the SDK cannot
+ * stream a `ReadableStream` without buffering it in full. Read a stream into a
+ * `Buffer` yourself before you call `upload()`.
  */
-export type FileData = Buffer | Uint8Array | ArrayBuffer | Blob | ReadableStream;
+export type FileData = Buffer | Uint8Array | ArrayBuffer | Blob;
 
 /**
  * FileUploads API client for uploading files to Notion.
@@ -59,17 +61,14 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   }
 
   /**
-   * Upload file data to the upload URL from initiate().
-   *
-   * This method sends a `multipart/form-data` `POST` to the upload URL. The
-   * request goes through the configured `NotionClient`, so it reuses the custom
-   * `fetch` implementation, the request timeout, and the authentication headers.
+   * Upload file data to the upload URL from initiate(). Sends `multipart/form-data`
+   * through the configured `NotionClient`.
    *
    * @param uploadUrl - The upload URL from initiate()
    * @param fileData - The file data to upload
    * @param contentType - The MIME type of the file
-   * @param partNumber - The 1-based part number. Set this only for a multi-part
-   * upload of a file larger than 20 MB.
+   * @param partNumber - The 1-based part number, for a multi-part upload of a file
+   * larger than 20 MB.
    * @throws {NotionAPIError} If the upload endpoint returns an error response.
    *
    * @see https://developers.notion.com/reference/upload-file
@@ -81,7 +80,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     partNumber?: number,
   ): Promise<void> {
     const form = new FormData();
-    form.append('file', await FileUploadsAPI.toBlob(fileData, contentType));
+    form.append('file', FileUploadsAPI.toBlob(fileData, contentType));
 
     if (partNumber !== undefined) {
       form.append('part_number', String(partNumber));
@@ -93,17 +92,11 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
   /**
    * Convert file data into a `Blob` for the multipart request body.
    */
-  private static async toBlob(fileData: FileData, contentType: string): Promise<Blob> {
+  private static toBlob(fileData: FileData, contentType: string): Blob {
     if (fileData instanceof Blob) {
       return fileData;
     }
 
-    if (fileData instanceof ReadableStream) {
-      return new Response(fileData).blob();
-    }
-
-    // Copy Buffer / Uint8Array / ArrayBuffer into a plain Uint8Array so the value
-    // is a valid BlobPart across TypeScript lib versions.
     return new Blob([new Uint8Array(fileData as ArrayBuffer)], { type: contentType });
   }
 
@@ -153,7 +146,6 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
    * @returns The completed file upload object
    */
   async uploadFile(filename: string, fileData: FileData, contentType: string): Promise<FileUpload> {
-    // Get content length
     let contentLength: number;
     if (fileData instanceof Buffer) {
       contentLength = fileData.length;
@@ -165,7 +157,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
       contentLength = fileData.size;
     } else {
       throw new TypeError(
-        'Cannot determine content length for ReadableStream. Use initiate/upload/complete separately.',
+        'Unsupported file data type. Pass a Buffer, Uint8Array, ArrayBuffer, or Blob.',
       );
     }
 

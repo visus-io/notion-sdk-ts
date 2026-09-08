@@ -50,17 +50,11 @@ const headingsObjectSchema = z.object({
 });
 
 /**
- * Content of a media block (`audio`, `image`, `video`, `file`, `pdf`).
- *
- * The Notion API inlines the file-object body directly on the block content. It does
- * not nest a full file object. The `external`, `file`, and `file_upload` fields hold
- * only their own inner values. For example `image.external` is `{ url }`, not
- * `{ type: 'external', external: { url } }`.
- *
- * Notion API reference: https://developers.notion.com/reference/block
+ * Content of a media block (`audio`, `image`, `video`, `file`, `pdf`). The file-object
+ * body is inlined, so `external` is `{ url }`, not a full nested file object.
  */
 const mediaBlockContentSchema = z.object({
-  caption: richTextSchema,
+  caption: richTextSchema.default([]),
   type: z.enum(['file', 'file_upload', 'external']),
   file: z.object({ url: z.url(), expiry_time: notionDateStringSchema }).optional(),
   external: z.object({ url: z.url() }).optional(),

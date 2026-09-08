@@ -89,7 +89,6 @@ describe('FileUploadsAPI integration', () => {
             }),
           ),
         ),
-        // The SDK POSTs multipart/form-data to the upload URL through NotionClient.
         http.post(uploadUrl, async ({ request }) => {
           uploadAuthHeader = request.headers.get('Authorization');
           uploadVersionHeader = request.headers.get('Notion-Version');

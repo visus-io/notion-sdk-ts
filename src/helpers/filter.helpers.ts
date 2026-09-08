@@ -11,11 +11,6 @@ type FilterCondition = Record<string, unknown>;
 
 /** Operators common to text-like properties (title, rich_text, url, email, phone_number). */
 class TextFilter {
-  /**
-   * @param property - The property name.
-   * @param propertyType - The property-filter key (for example `rich_text`, `title`, `url`).
-   * @param isFormula - When `true`, wrap the condition as `formula: { string: ... }`.
-   */
   constructor(
     private readonly property: string,
     private readonly propertyType: string,
@@ -64,10 +59,6 @@ class TextFilter {
 
 /** Operators for number properties. */
 class NumberFilter {
-  /**
-   * @param property - The property name.
-   * @param isFormula - When `true`, wrap the condition as `formula: { number: ... }`.
-   */
   constructor(
     private readonly property: string,
     private readonly isFormula = false,
@@ -115,10 +106,6 @@ class NumberFilter {
 
 /** Operators for checkbox properties. */
 class CheckboxFilter {
-  /**
-   * @param property - The property name.
-   * @param isFormula - When `true`, wrap the condition as `formula: { checkbox: ... }`.
-   */
   constructor(
     private readonly property: string,
     private readonly isFormula = false,
@@ -205,11 +192,6 @@ class StatusFilter {
 
 /** Operators for date properties and timestamp filters. */
 class DateFilter {
-  /**
-   * @param key - The property name, or the timestamp name (`created_time` / `last_edited_time`).
-   * @param isTimestamp - When `true`, build a `timestamp` filter instead of a `property` filter.
-   * @param isFormula - When `true`, wrap the condition as `formula: { date: ... }`.
-   */
   constructor(
     private readonly key: string,
     private readonly isTimestamp: boolean,

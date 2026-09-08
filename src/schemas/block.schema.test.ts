@@ -346,6 +346,23 @@ describe('blockSchema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should default caption to an empty array when the media block omits it', () => {
+      const block = {
+        ...baseBlock,
+        type: 'image',
+        image: {
+          type: 'external',
+          external: { url: 'https://example.com/image.png' },
+        },
+      };
+
+      const result = blockSchema.safeParse(block);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.image?.caption).toEqual([]);
+      }
+    });
+
     it('should parse a pdf block with an inlined external file', () => {
       const block: NotionBlock = {
         ...baseBlock,

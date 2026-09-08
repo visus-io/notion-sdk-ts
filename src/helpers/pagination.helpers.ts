@@ -44,13 +44,9 @@ import type { PaginatedList } from '../schemas';
 export type PaginatedFetchFunction<T> = (cursor?: string) => Promise<PaginatedList<T>>;
 
 /**
- * Return the cursor for the next page, or `undefined` when iteration must stop.
- * Iteration stops when `has_more` is `false` or `next_cursor` is `null`.
- *
- * When the response is a truncated data source, view, or meeting-notes query
- * (`request_status.type === 'incomplete'`), this function writes a warning. The
- * generic pagination helpers cannot work around the 10,000-result cap. Use
- * {@link collectAllDataSourceRows} or {@link iterateAllDataSourceRows} instead.
+ * Return the cursor for the next page, or `undefined` when iteration must stop
+ * (`has_more` is `false`, or `next_cursor` is `null`). Warn when the result is a
+ * truncated query (`request_status.type === 'incomplete'`).
  */
 function nextCursor<T>(response: PaginatedList<T>): string | undefined {
   if (response.request_status?.type === 'incomplete') {

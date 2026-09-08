@@ -398,7 +398,6 @@ describe('NotionClient', () => {
           caughtError = error;
         });
 
-      // Backoff delays: 1000, 2000, 4000 ms.
       await vi.advanceTimersByTimeAsync(1000);
       await vi.advanceTimersByTimeAsync(2000);
       await vi.advanceTimersByTimeAsync(4000);
@@ -407,7 +406,6 @@ describe('NotionClient', () => {
 
       expect(caughtError).toBeInstanceOf(NotionAPIError);
       expect((caughtError as NotionAPIError).isServerError()).toBe(true);
-      // Initial attempt + 3 retries = 4 total calls.
       expect(fetchMock).toHaveBeenCalledTimes(4);
     });
 
@@ -425,7 +423,6 @@ describe('NotionClient', () => {
 
       const promise = client.request({ method: 'GET', path: '/pages/abc' });
 
-      // The wait is clamped to 60s, not 24h.
       await vi.advanceTimersByTimeAsync(60_000);
 
       const result = await promise;

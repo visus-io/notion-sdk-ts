@@ -238,12 +238,14 @@ describe('FileUploadsAPI', () => {
       });
     });
 
-    it('should throw error for ReadableStream without content length', async () => {
-      const mockStream = new ReadableStream() as ReadableStream;
+    it('should throw for an unsupported file data type', async () => {
+      const unsupported = new ReadableStream() as unknown as Parameters<
+        typeof fileUploadsAPI.uploadFile
+      >[1];
 
       await expect(
-        fileUploadsAPI.uploadFile('stream.dat', mockStream, 'application/octet-stream'),
-      ).rejects.toThrow('Cannot determine content length for ReadableStream');
+        fileUploadsAPI.uploadFile('stream.dat', unsupported, 'application/octet-stream'),
+      ).rejects.toThrow('Unsupported file data type');
     });
   });
 });
