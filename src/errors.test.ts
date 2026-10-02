@@ -30,11 +30,57 @@ describe('NotionAPIError', () => {
       expect(error.retryAfterMs).toBeUndefined();
     });
 
+    it('should expose an unrecognized code string as-is', () => {
+      const response = createErrorResponse('future_error_code' as NotionErrorResponse['code'], 400);
+      const error = new NotionAPIError(response);
+
+      expect(error.code).toBe('future_error_code');
+    });
+
+    it('should fall back to internal_server_error when code is not a string', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('invalid_request', 500),
+        code: 7 as unknown as NotionErrorResponse['code'],
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.code).toBe('internal_server_error');
+      // status stays authoritative and unaffected by the malformed code.
+      expect(error.status).toBe(500);
+    });
+
     it('should include retryAfterMs when provided', () => {
       const response = createErrorResponse('rate_limited', 429);
       const error = new NotionAPIError(response, 5000);
 
       expect(error.retryAfterMs).toBe(5000);
+    });
+
+    it('should expose rateLimitReason from additional_data when present', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 'public_api_endpoint_rate_limit', retry_after: '5' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.rateLimitReason).toBe('public_api_endpoint_rate_limit');
+    });
+
+    it('should leave rateLimitReason undefined when additional_data is absent', () => {
+      const response = createErrorResponse('rate_limited', 429);
+      const error = new NotionAPIError(response);
+
+      expect(error.rateLimitReason).toBeUndefined();
+    });
+
+    it('should ignore a non-string rate_limit_reason instead of exposing it as-is', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 42 as unknown as string },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.rateLimitReason).toBeUndefined();
     });
 
     it('should be an instance of Error', () => {
@@ -67,6 +113,20 @@ describe('NotionAPIError', () => {
       const error = new NotionAPIError(response);
 
       expect(error.isRateLimited()).toBe(false);
+    });
+
+    it('should return false for a malformed body that claims code rate_limited at a non-429 status', () => {
+      const response = createErrorResponse('rate_limited', 404);
+      const error = new NotionAPIError(response);
+
+      expect(error.isRateLimited()).toBe(false);
+    });
+
+    it('should return true for a real 429 even when a malformed body reports a different code', () => {
+      const response = createErrorResponse('internal_server_error', 429);
+      const error = new NotionAPIError(response);
+
+      expect(error.isRateLimited()).toBe(true);
     });
   });
 
@@ -164,6 +224,53 @@ describe('NotionAPIError', () => {
       const error = new NotionAPIError(response);
 
       expect(error.isRetryable()).toBe(expected);
+    });
+
+    it('should return false for rate_limited when rateLimitReason is public_api_request_blocked', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 'public_api_request_blocked' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(false);
+    });
+
+    it('should return true for rate_limited when rateLimitReason is a different reason', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 'public_api_endpoint_rate_limit' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(true);
+    });
+
+    it('should return true for a server error whose body carries a blocked rate_limit_reason', () => {
+      // additional_data is not exclusive to rate_limited responses; a 5xx response
+      // should stay retryable even if it happens to carry this field.
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('internal_server_error', 500),
+        additional_data: { rate_limit_reason: 'public_api_request_blocked' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(true);
+    });
+
+    it('should return true for a 500 whose malformed body falsely reports code rate_limited', () => {
+      // Only the HTTP status (429), not the body-reported code, should gate the
+      // blocked-reason exception. A real 500 must stay retryable regardless.
+      const response: NotionErrorResponse = {
+        object: 'error',
+        status: 500,
+        code: 'rate_limited',
+        message: 'Malformed body',
+        additional_data: { rate_limit_reason: 'public_api_request_blocked' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(true);
     });
   });
 });

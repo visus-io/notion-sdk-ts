@@ -400,6 +400,7 @@ describe('PagesAPI', () => {
         method: 'PATCH',
         path: '/pages/123e4567-e89b-12d3-a456-426614174000/markdown',
         body: options,
+        retryOnGatewayTimeout: false,
       });
       expect(result.object).toBe('page_markdown');
     });

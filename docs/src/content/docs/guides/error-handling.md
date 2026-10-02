@@ -100,6 +100,8 @@ a 4xx or 5xx status code.
 error.status; // HTTP status code (e.g., 404, 401, 429)
 error.code; // Notion error code (e.g., 'object_not_found')
 error.message; // Error message from API
+error.retryAfterMs; // Wait time before retry, in milliseconds (rate-limited and overload responses)
+error.rateLimitReason; // Why the API rate-limited the request (rate-limited responses only)
 ```
 
 ### Type Guards
@@ -119,6 +121,27 @@ rate-limited (429) responses only when `retryOnRateLimit` is enabled. It **alway
 service-overload (529) responses and transient server errors (500 to 599), no matter the value
 of `retryOnRateLimit`. See [Configuration](/guides/configuration/). The Notion API recommends
 this retry behavior.
+
+**Exception:** `notion.pages.updateMarkdown()` does not retry a `504 gateway_timeout`
+automatically, unlike other transient server errors. A `504` does not guarantee that the write
+failed, so check the page content before you retry.
+
+**Rate limit reason:** A rate-limited response may add a `rate_limit_reason` value to
+`additional_data`. Read it from `error.rateLimitReason`. Notion documents these values:
+
+- `public_api_request_rate_limit` — a per-connection limit
+- `public_api_space_request_rate_limit` — a shared workspace limit
+- `public_api_endpoint_rate_limit` — a limit on one endpoint
+- `mcp_tool_rate_limit`
+- `collection_router_upstream_429`
+- `public_api_request_blocked`
+
+Notion may add new values over time. Treat an unrecognized value the same as any other
+`rate_limited` response. `error.rateLimitReason` still holds the string. `isRetryable()` still
+returns its normal result.
+
+A `public_api_request_blocked` request cannot succeed on retry. `isRetryable()` returns `false`
+for this reason, so the SDK does not retry it automatically.
 
 ### Example
 
@@ -381,23 +404,26 @@ async function bulkUpdatePages(pageIds: string[]) {
 
 This table lists the Notion API error codes:
 
-| Code                              | Status | Description                                                  |
-| --------------------------------- | ------ | ------------------------------------------------------------ |
-| `invalid_json`                    | 400    | Request body is not valid JSON                               |
-| `invalid_request_url`             | 400    | Invalid request URL                                          |
-| `invalid_request`                 | 400    | Request is invalid                                           |
-| `validation_error`                | 400    | Validation failed on request parameters                      |
-| `missing_version`                 | 400    | Notion-Version header missing                                |
-| `unauthorized`                    | 401    | Invalid token or insufficient permissions                    |
-| `restricted_resource`             | 403    | Forbidden access to resource                                 |
-| `object_not_found`                | 404    | Resource not found                                           |
-| `conflict_error`                  | 409    | Conflict with existing resource state                        |
-| `rate_limited`                    | 429    | Too many requests (retried if `retryOnRateLimit` is enabled) |
-| `internal_server_error`           | 500    | Notion internal error (always auto-retried)                  |
-| `service_unavailable`             | 503    | Service temporarily unavailable (always auto-retried)        |
-| `database_connection_unavailable` | 503    | Database connection error (always auto-retried)              |
-| `gateway_timeout`                 | 504    | Gateway timeout (always auto-retried)                        |
-| `service_overload`                | 529    | Notion is overloaded (always auto-retried)                   |
+| Code                              | Status | Description                                                      |
+| --------------------------------- | ------ | ---------------------------------------------------------------- |
+| `invalid_json`                    | 400    | Request body is not valid JSON                                   |
+| `invalid_request_url`             | 400    | Invalid request URL                                              |
+| `invalid_request`                 | 400    | Request is invalid                                               |
+| `validation_error`                | 400    | Validation failed on request parameters                          |
+| `missing_version`                 | 400    | Notion-Version header missing                                    |
+| `unauthorized`                    | 401    | Invalid token or insufficient permissions                        |
+| `restricted_resource`             | 403    | Forbidden access to resource                                     |
+| `object_not_found`                | 404    | Resource not found                                               |
+| `conflict_error`                  | 409    | Conflict with existing resource state                            |
+| `rate_limited`                    | 429    | Too many requests (retried if `retryOnRateLimit` is enabled)     |
+| `internal_server_error`           | 500    | Notion internal error (always auto-retried)                      |
+| `service_unavailable`             | 503    | Service temporarily unavailable (always auto-retried)            |
+| `database_connection_unavailable` | 503    | Database connection error (always auto-retried)                  |
+| `gateway_timeout`                 | 504    | Gateway timeout (always auto-retried, except `updateMarkdown()`) |
+| `service_overload`                | 529    | Notion is overloaded (always auto-retried)                       |
+
+Notion may add new codes over time. Treat an unrecognized code the same as any other error
+response. `error.code` still holds the string. Read `error.status` to classify the error.
 
 ### Common Error Scenarios
 

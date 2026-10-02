@@ -236,6 +236,10 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    * In that case, the API returns an `async_task` handle instead of the completed
    * content. Poll the task with `notion.asyncTasks.poll(task.id)`.
    *
+   * A `504 gateway_timeout` response does not guarantee the write failed. The SDK
+   * does not retry this call automatically on a `504`. Verify the page content before
+   * you retry.
+   *
    * @param pageId - The ID of the page to update
    * @param options - The markdown update to apply
    * @returns The updated markdown content, or an async task handle if processed asynchronously
@@ -250,6 +254,7 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
       method: 'PATCH',
       path: `/pages/${pageId}/markdown`,
       body: options,
+      retryOnGatewayTimeout: false,
     });
 
     return markdownContentResponseSchema.parse(response);

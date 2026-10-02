@@ -18,6 +18,17 @@ function mockResponse(status: number, body: unknown, headers?: Record<string, st
   } as unknown as Response;
 }
 
+/** Build a mock Response whose body is not valid JSON, like an HTML error page from a proxy. */
+function mockMalformedResponse(status: number): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: 'Gateway Timeout',
+    headers: new Headers(),
+    json: () => Promise.reject(new SyntaxError('Unexpected token < in JSON')),
+  } as unknown as Response;
+}
+
 /** Rate-limited error body the Notion API returns. */
 const rateLimitedBody = {
   object: 'error' as const,
@@ -48,6 +59,20 @@ const serviceUnavailableBody = {
   status: 503,
   code: 'service_unavailable' as const,
   message: 'Service unavailable',
+};
+
+/** Gateway-timeout error body the Notion API returns for 504 responses. */
+const gatewayTimeoutBody = {
+  object: 'error' as const,
+  status: 504,
+  code: 'gateway_timeout' as const,
+  message: 'Gateway timeout',
+};
+
+/** Rate-limited error body for a request the Notion API will never allow through. */
+const blockedRateLimitedBody = {
+  ...rateLimitedBody,
+  additional_data: { rate_limit_reason: 'public_api_request_blocked' as const },
 };
 
 /** A successful JSON body. */
@@ -174,6 +199,132 @@ describe('NotionClient', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(NotionAPIError);
         expect((error as NotionAPIError).retryAfterMs).toBe(2000);
+      }
+    });
+
+    it('should fall back to additional_data.retry_after in the body when the header is absent', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(429, {
+          ...rateLimitedBody,
+          additional_data: { retry_after: '7' },
+        }),
+      );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).retryAfterMs).toBe(7000);
+      }
+    });
+
+    it('should ignore a non-string additional_data.retry_after instead of throwing', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(429, {
+          ...rateLimitedBody,
+          additional_data: { retry_after: 7 },
+        }),
+      );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        // A malformed, non-string retry_after must not crash body parsing and
+        // must not get misclassified as a network error.
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).retryAfterMs).toBeUndefined();
+      }
+    });
+
+    it('should fall back to the body when the Retry-After header is blank', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(
+          mockResponse(
+            429,
+            { ...rateLimitedBody, additional_data: { retry_after: '9' } },
+            { 'Retry-After': '' },
+          ),
+        );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        // A blank header must not be treated as a valid zero-second delay.
+        expect((error as NotionAPIError).retryAfterMs).toBe(9000);
+      }
+    });
+
+    it('should prefer the header over additional_data.retry_after when both are present', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(
+          mockResponse(
+            429,
+            { ...rateLimitedBody, additional_data: { retry_after: '7' } },
+            { 'Retry-After': '3' },
+          ),
+        );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).retryAfterMs).toBe(3000);
+      }
+    });
+
+    it('should expose rateLimitReason from additional_data on the thrown error', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(429, {
+          ...rateLimitedBody,
+          additional_data: { rate_limit_reason: 'public_api_space_request_rate_limit' },
+        }),
+      );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).rateLimitReason).toBe(
+          'public_api_space_request_rate_limit',
+        );
       }
     });
   });
@@ -383,6 +534,29 @@ describe('NotionClient', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
+    it('should retry a 500 with a malformed rate_limited code when retryOnRateLimit is disabled', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(500, { ...serverErrorBody, code: 'rate_limited' }))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
     it('should exhaust retries on a persistent 500 and throw the NotionAPIError', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockResponse(500, serverErrorBody));
 
@@ -430,6 +604,206 @@ describe('NotionClient', () => {
 
       expect(result).toEqual(successBody);
       expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry a 504 by default', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(504, gatewayTimeoutBody))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not retry a 504 when retryOnGatewayTimeout is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(504, gatewayTimeoutBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      try {
+        await client.request({
+          method: 'PATCH',
+          path: '/pages/abc/markdown',
+          retryOnGatewayTimeout: false,
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).code).toBe('gateway_timeout');
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not retry a 504 with an unparseable body when retryOnGatewayTimeout is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockMalformedResponse(504));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      try {
+        await client.request({
+          method: 'PATCH',
+          path: '/pages/abc/markdown',
+          retryOnGatewayTimeout: false,
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        const apiError = error as NotionAPIError;
+        expect(apiError.status).toBe(504);
+        // The body could not be parsed, so handleErrorResponse() falls back to this code.
+        expect(apiError.code).toBe('internal_server_error');
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should still throw NotionAPIError, not a TypeError, for a non-object JSON error body', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers(),
+        json: () => Promise.resolve(null),
+      } as unknown as Response);
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 0,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        const apiError = error as NotionAPIError;
+        expect(apiError.status).toBe(500);
+        // The body was not an object, so handleErrorResponse() falls back to this code.
+        expect(apiError.code).toBe('internal_server_error');
+      }
+    });
+
+    it('should not treat a JSON array error body as a valid record', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers(),
+        json: () => Promise.resolve(['unexpected', 'array', 'body']),
+      } as unknown as Response);
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 0,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        const apiError = error as NotionAPIError;
+        expect(apiError.status).toBe(500);
+        // The body was an array, not a record, so handleErrorResponse() falls back to this code.
+        expect(apiError.code).toBe('internal_server_error');
+      }
+    });
+
+    it('should use the real HTTP status, not a mismatched body status, to gate the 504 opt-out', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(mockResponse(504, { ...gatewayTimeoutBody, status: 500 }));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      try {
+        await client.request({
+          method: 'PATCH',
+          path: '/pages/abc/markdown',
+          retryOnGatewayTimeout: false,
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        // The HTTP status is 504; the body's (wrong) self-reported status is ignored.
+        expect((error as NotionAPIError).status).toBe(504);
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should still retry a 500 whose body falsely claims status 504', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(500, { ...serverErrorBody, status: 504 }))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({
+        method: 'PATCH',
+        path: '/pages/abc/markdown',
+        retryOnGatewayTimeout: false,
+      });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not retry a blocked rate-limited request', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(429, blockedRateLimitedBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).isRetryable()).toBe(false);
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -208,6 +208,33 @@ describe('PagesAPI integration', () => {
         expect((error as NotionAPIError).isValidationError()).toBe(true);
       }
     });
+
+    it('should not retry a 504 gateway timeout and should surface the error', async () => {
+      let callCount = 0;
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/markdown`, () => {
+          callCount++;
+          return HttpResponse.json(buildErrorBody(504, 'gateway_timeout', 'Gateway timeout'), {
+            status: 504,
+          });
+        }),
+      );
+
+      try {
+        await notion.pages.updateMarkdown(pageId, {
+          type: 'replace_content',
+          new_str: 'Replaced content',
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        const apiError = error as NotionAPIError;
+        expect(apiError.status).toBe(504);
+        expect(apiError.code).toBe('gateway_timeout');
+      }
+
+      expect(callCount).toBe(1);
+    });
   });
 
   describe('trash / restore', () => {

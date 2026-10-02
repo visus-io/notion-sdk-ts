@@ -116,9 +116,9 @@ Test files stay in the same directory as their source files. Each test file has 
 The SDK has 4 error classes. Each class extends `Error` and sets `this.name`:
 
 - `NotionAPIError`: an HTTP error response. It has these properties: `status`, `code`, `body`,
-  and `retryAfterMs`. It has these helper methods: `isRateLimited()`, `isServiceOverloaded()`,
-  `isNotFound()`, `isUnauthorized()`, `isValidationError()`, `isServerError()`,
-  `isRestrictedResource()`, and `isRetryable()`.
+  `retryAfterMs`, and `rateLimitReason`. It has these helper methods: `isRateLimited()`,
+  `isServiceOverloaded()`, `isNotFound()`, `isUnauthorized()`, `isValidationError()`,
+  `isServerError()`, `isRestrictedResource()`, and `isRetryable()`.
 - `NotionNetworkError`: a connectivity failure. It has an optional `cause` property.
 - `NotionRequestTimeoutError`: the request exceeded the timeout.
 - `NotionValidationError`: a client-side size limit violation. The SDK throws this error before it
@@ -128,9 +128,24 @@ The client retries every error that `NotionAPIError.isRetryable()` reports. This
 `rate_limited` errors (HTTP status 429), `service_overload` errors (HTTP status 529), and
 transient server errors (HTTP status 500 to 599). The `retryOnRateLimit` option, when set to
 `false`, suppresses retries for `rate_limited` errors only. It does not affect the other
-retryable errors. The client uses the `Retry-After` header when the header is present.
-Otherwise, the client uses exponential backoff: `2^attempt * 1000ms`. The client clamps both
-the header value and the backoff delay to 60 seconds.
+retryable errors. The client uses the `Retry-After` header when the header is present and valid.
+If the header is missing or invalid, the client reads `additional_data.retry_after` from the
+error body instead. The Notion API repeats the wait time there for clients that cannot read
+response headers. If neither value is present or valid, the client uses exponential backoff:
+`2^attempt * 1000ms`. The client clamps the header value, the body value, and the backoff delay
+to 60 seconds.
+
+A `rate_limited` response may also carry a `rate_limit_reason` in `additional_data`. The SDK
+exposes this value as `NotionAPIError.rateLimitReason`. See `RateLimitReason` in `errors.ts` for
+the documented values. Notion may add new values over time; `RateLimitReason` accepts any string,
+so a new value still type-checks. `isRetryable()` returns `false` when `rateLimitReason` is
+`public_api_request_blocked`, since a blocked request cannot succeed on retry. It returns its
+normal result for every other reason, including one the SDK does not yet document.
+
+A write that is not safe to repeat blindly can set `RequestOptions.retryOnGatewayTimeout` to
+`false`. This suppresses the client's automatic retry on a `504 gateway_timeout` response only;
+it does not change retry behavior for other retryable errors. `pages.updateMarkdown()` sets this,
+because a `504` does not guarantee the write failed.
 
 The `LIMITS` constant in `validation.ts` defines client-side size limits. The SDK enforces these
 limits before it sends a request. Limit categories:
