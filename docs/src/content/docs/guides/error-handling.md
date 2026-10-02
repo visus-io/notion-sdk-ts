@@ -122,6 +122,9 @@ service-overload (529) responses and transient server errors (500 to 599), no ma
 of `retryOnRateLimit`. See [Configuration](/guides/configuration/). The Notion API recommends
 this retry behavior.
 
+A `504 gateway_timeout` does not guarantee that a write failed. `notion.pages.updateMarkdown()`
+does not retry a `504` automatically, so you can check the page content before you retry.
+
 **Rate limit reason:** A rate-limited response may add a `rate_limit_reason` value to
 `additional_data`. Read it from `error.rateLimitReason`. The possible values are:
 
@@ -131,6 +134,9 @@ this retry behavior.
 - `mcp_tool_rate_limit`
 - `collection_router_upstream_429`
 - `public_api_request_blocked`
+
+A `public_api_request_blocked` request cannot succeed on retry. `isRetryable()` returns `false`
+for this reason, so the SDK does not retry it automatically.
 
 ### Example
 

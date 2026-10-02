@@ -187,6 +187,10 @@ const notion = new Notion({
 > value of `retryOnRateLimit`. This matches
 > [`NotionAPIError.isRetryable()`](/guides/error-handling/#notionapierror).
 
+> **Note:** The SDK never retries a `429` response whose `rateLimitReason` is
+> `public_api_request_blocked`, no matter the value of `retryOnRateLimit`. A blocked request
+> cannot succeed on retry.
+
 ### Custom Max Retries
 
 ```typescript
@@ -204,6 +208,13 @@ const notion = new Notion({
   maxRetries: 0, // Never retry
 });
 ```
+
+### Gateway Timeouts on Writes
+
+A `504 gateway_timeout` does not guarantee that a write failed; the request may have already
+applied on Notion's side. `notion.pages.updateMarkdown()` does not retry a `504` automatically, so
+you can check the page content before you retry. This does not change retry behavior for `429` or
+other `5xx` responses on that call.
 
 ### Rate Limit Error Handling
 

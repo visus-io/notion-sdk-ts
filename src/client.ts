@@ -50,6 +50,13 @@ export interface RequestOptions {
   path: string;
   query?: Record<string, string | number | boolean | string[] | undefined>;
   body?: unknown;
+
+  /**
+   * Whether to retry a `504 gateway_timeout` response automatically (default: `true`).
+   * A `504` does not guarantee the original request failed, so set this to `false` for
+   * a write that is not safe to repeat blindly, such as a non-idempotent content update.
+   */
+  retryOnGatewayTimeout?: boolean;
 }
 
 /**
@@ -88,10 +95,12 @@ export class NotionClient {
         return await this.makeRequest<T>(options);
       } catch (error) {
         // Retry per isRetryable(); retryOnRateLimit:false suppresses only rate_limited.
+        // options.retryOnGatewayTimeout:false suppresses only gateway_timeout.
         if (
           error instanceof NotionAPIError &&
           error.isRetryable() &&
           !(error.isRateLimited() && !this.retryOnRateLimit) &&
+          !(error.code === 'gateway_timeout' && options.retryOnGatewayTimeout === false) &&
           attempt < this.maxRetries
         ) {
           // Prefer the server-supplied Retry-After value; fall back to

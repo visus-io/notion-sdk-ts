@@ -50,6 +50,20 @@ const serviceUnavailableBody = {
   message: 'Service unavailable',
 };
 
+/** Gateway-timeout error body the Notion API returns for 504 responses. */
+const gatewayTimeoutBody = {
+  object: 'error' as const,
+  status: 504,
+  code: 'gateway_timeout' as const,
+  message: 'Gateway timeout',
+};
+
+/** Rate-limited error body for a request the Notion API will never allow through. */
+const blockedRateLimitedBody = {
+  ...rateLimitedBody,
+  additional_data: { rate_limit_reason: 'public_api_request_blocked' as const },
+};
+
 /** A successful JSON body. */
 const successBody = { object: 'page', id: 'page-id' };
 
@@ -504,6 +518,72 @@ describe('NotionClient', () => {
 
       expect(result).toEqual(successBody);
       expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry a 504 by default', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(504, gatewayTimeoutBody))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not retry a 504 when retryOnGatewayTimeout is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(504, gatewayTimeoutBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      try {
+        await client.request({
+          method: 'PATCH',
+          path: '/pages/abc/markdown',
+          retryOnGatewayTimeout: false,
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).code).toBe('gateway_timeout');
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not retry a blocked rate-limited request', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(429, blockedRateLimitedBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).isRetryable()).toBe(false);
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
 

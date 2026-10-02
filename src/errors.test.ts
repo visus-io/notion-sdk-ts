@@ -182,6 +182,26 @@ describe('NotionAPIError', () => {
 
       expect(error.isRetryable()).toBe(expected);
     });
+
+    it('should return false for rate_limited when rateLimitReason is public_api_request_blocked', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 'public_api_request_blocked' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(false);
+    });
+
+    it('should return true for rate_limited when rateLimitReason is a different reason', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 'public_api_endpoint_rate_limit' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(true);
+    });
   });
 });
 

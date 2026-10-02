@@ -143,8 +143,14 @@ export class NotionAPIError extends Error {
 
   /**
    * Check if the error is retryable (rate limit or server error).
+   * A `rate_limited` error is not retryable when `rateLimitReason` is
+   * `public_api_request_blocked`, since the request cannot succeed.
    */
   isRetryable(): boolean {
+    if (this.rateLimitReason === 'public_api_request_blocked') {
+      return false;
+    }
+
     return this.isRateLimited() || this.isServerError();
   }
 }
