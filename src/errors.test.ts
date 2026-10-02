@@ -202,6 +202,18 @@ describe('NotionAPIError', () => {
 
       expect(error.isRetryable()).toBe(true);
     });
+
+    it('should return true for a server error whose body carries a blocked rate_limit_reason', () => {
+      // additional_data is not exclusive to rate_limited responses; a 5xx response
+      // should stay retryable even if it happens to carry this field.
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('internal_server_error', 500),
+        additional_data: { rate_limit_reason: 'public_api_request_blocked' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(true);
+    });
   });
 });
 

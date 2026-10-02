@@ -150,7 +150,7 @@ export class NotionAPIError extends Error {
    * `public_api_request_blocked`, since the request cannot succeed.
    */
   isRetryable(): boolean {
-    if (this.rateLimitReason === 'public_api_request_blocked') {
+    if (this.isRateLimited() && this.rateLimitReason === 'public_api_request_blocked') {
       return false;
     }
 
