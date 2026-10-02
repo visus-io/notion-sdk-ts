@@ -214,6 +214,21 @@ describe('NotionAPIError', () => {
 
       expect(error.isRetryable()).toBe(true);
     });
+
+    it('should return true for a 500 whose malformed body falsely reports code rate_limited', () => {
+      // Only the HTTP status (429), not the body-reported code, should gate the
+      // blocked-reason exception. A real 500 must stay retryable regardless.
+      const response: NotionErrorResponse = {
+        object: 'error',
+        status: 500,
+        code: 'rate_limited',
+        message: 'Malformed body',
+        additional_data: { rate_limit_reason: 'public_api_request_blocked' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.isRetryable()).toBe(true);
+    });
   });
 });
 

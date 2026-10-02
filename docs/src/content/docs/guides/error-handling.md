@@ -137,8 +137,8 @@ failed, so check the page content before you retry.
 - `public_api_request_blocked`
 
 Notion may add new values over time. Treat an unrecognized value the same as any other
-`rate_limited` response: `error.rateLimitReason` still holds the string, and `isRetryable()`
-still returns its normal result.
+`rate_limited` response. `error.rateLimitReason` still holds the string. `isRetryable()` still
+returns its normal result.
 
 A `public_api_request_blocked` request cannot succeed on retry. `isRetryable()` returns `false`
 for this reason, so the SDK does not retry it automatically.

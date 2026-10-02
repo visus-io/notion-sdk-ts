@@ -225,6 +225,31 @@ describe('NotionClient', () => {
       }
     });
 
+    it('should ignore a non-string additional_data.retry_after instead of throwing', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(429, {
+          ...rateLimitedBody,
+          additional_data: { retry_after: 7 },
+        }),
+      );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        // A malformed, non-string retry_after must not crash body parsing and
+        // must not get misclassified as a network error.
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).retryAfterMs).toBeUndefined();
+      }
+    });
+
     it('should fall back to the body when the Retry-After header is blank', async () => {
       const fetchMock = vi
         .fn()

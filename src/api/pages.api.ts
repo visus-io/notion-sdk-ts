@@ -236,7 +236,7 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    * In that case, the API returns an `async_task` handle instead of the completed
    * content. Poll the task with `notion.asyncTasks.poll(task.id)`.
    *
-   * A `504 gateway_timeout` response does not guarantee the write failed, so the SDK
+   * A `504 gateway_timeout` response does not guarantee the write failed. The SDK
    * does not retry this call automatically on a `504`. Verify the page content before
    * you retry.
    *

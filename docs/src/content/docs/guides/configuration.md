@@ -166,8 +166,8 @@ const notion = new Notion({
 3. If the header is missing or invalid, the SDK reads `additional_data.retry_after` from the
    error body instead.
 4. The SDK waits for the duration it finds. The SDK clamps this wait to 60 seconds.
-5. If neither value is present or valid, the SDK uses exponential backoff instead: 1 second, 2
-   seconds, 4 seconds, 8 seconds, and so on, up to a maximum of 60 seconds.
+5. If neither value is present or valid, the SDK uses exponential backoff instead. The delay
+   doubles each attempt: 1 second, 2 seconds, 4 seconds, 8 seconds, up to a maximum of 60 seconds.
 6. The SDK retries the request automatically, up to `maxRetries` times.
 
 > **Note:** The Notion API repeats the `Retry-After` wait time under

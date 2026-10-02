@@ -41,7 +41,7 @@ export const RATE_LIMIT_REASONS = [
  *
  * @category Errors
  */
-export type RateLimitReason = (typeof RATE_LIMIT_REASONS)[number] | (string & {});
+export type RateLimitReason = (typeof RATE_LIMIT_REASONS)[number] | (string & Record<never, never>);
 
 /**
  * Notion API error response structure.
@@ -146,11 +146,13 @@ export class NotionAPIError extends Error {
 
   /**
    * Check if the error is retryable (rate limit or server error).
-   * A `rate_limited` error is not retryable when `rateLimitReason` is
-   * `public_api_request_blocked`, since the request cannot succeed.
+   * A `429` is not retryable when `rateLimitReason` is `public_api_request_blocked`,
+   * since the request cannot succeed. Check `status`, not `code`, for this
+   * exception: a malformed 5xx body could otherwise report `code: 'rate_limited'`
+   * and incorrectly suppress a retry that should always happen.
    */
   isRetryable(): boolean {
-    if (this.isRateLimited() && this.rateLimitReason === 'public_api_request_blocked') {
+    if (this.status === 429 && this.rateLimitReason === 'public_api_request_blocked') {
       return false;
     }
 

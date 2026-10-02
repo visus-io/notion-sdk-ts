@@ -53,7 +53,7 @@ export interface RequestOptions {
 
   /**
    * Whether to retry a `504 gateway_timeout` response automatically (default: `true`).
-   * A `504` does not guarantee the original request failed, so set this to `false` for
+   * A `504` does not guarantee the original request failed. Set this to `false` for
    * a write that is not safe to repeat blindly, such as a non-idempotent content update.
    */
   retryOnGatewayTimeout?: boolean;
@@ -282,11 +282,12 @@ export class NotionClient {
 
   /**
    * Convert a whole-seconds string into milliseconds, clamped to
-   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the value is missing,
-   * blank, or not a valid non-negative number.
+   * {@link MAX_RETRY_DELAY_MS}. `value` comes from an unvalidated header or
+   * JSON body, so this accepts `unknown`. Return `undefined` if it is not a
+   * non-blank string, or not a valid non-negative number.
    */
-  private secondsToClampedMs(value: string | null | undefined): number | undefined {
-    if (value === null || value === undefined || value.trim() === '') {
+  private secondsToClampedMs(value: unknown): number | undefined {
+    if (typeof value !== 'string' || value.trim() === '') {
       return undefined;
     }
 
