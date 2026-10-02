@@ -101,7 +101,7 @@ error.status; // HTTP status code (e.g., 404, 401, 429)
 error.code; // Notion error code (e.g., 'object_not_found')
 error.message; // Error message from API
 error.retryAfterMs; // Wait time before retry, in milliseconds (rate-limited and overload responses)
-error.rateLimitReason; // Which limit was exceeded (rate-limited responses only)
+error.rateLimitReason; // Why the API rate-limited the request (rate-limited responses only)
 ```
 
 ### Type Guards

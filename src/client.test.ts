@@ -534,6 +534,29 @@ describe('NotionClient', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
+    it('should retry a 500 with a malformed rate_limited code when retryOnRateLimit is disabled', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(500, { ...serverErrorBody, code: 'rate_limited' }))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+        maxRetries: 1,
+      });
+
+      const promise = client.request({ method: 'GET', path: '/pages/abc' });
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const result = await promise;
+
+      expect(result).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
     it('should exhaust retries on a persistent 500 and throw the NotionAPIError', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockResponse(500, serverErrorBody));
 
@@ -654,6 +677,60 @@ describe('NotionClient', () => {
       }
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not throw when the error body is valid JSON but not an object', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers(),
+        json: () => Promise.resolve(null),
+      } as unknown as Response);
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 0,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        const apiError = error as NotionAPIError;
+        expect(apiError.status).toBe(500);
+        // The body was not an object, so handleErrorResponse() falls back to this code.
+        expect(apiError.code).toBe('internal_server_error');
+      }
+    });
+
+    it('should not treat a JSON array error body as a valid record', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers(),
+        json: () => Promise.resolve(['unexpected', 'array', 'body']),
+      } as unknown as Response);
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 0,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        const apiError = error as NotionAPIError;
+        expect(apiError.status).toBe(500);
+        // The body was an array, not a record, so handleErrorResponse() falls back to this code.
+        expect(apiError.code).toBe('internal_server_error');
+      }
     });
 
     it('should use the real HTTP status, not a mismatched body status, to gate the 504 opt-out', async () => {

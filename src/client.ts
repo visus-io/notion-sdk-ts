@@ -94,10 +94,11 @@ export class NotionClient {
       try {
         return await this.makeRequest<T>(options);
       } catch (error) {
-        // Retry per isRetryable(); retryOnRateLimit:false suppresses only rate_limited.
-        // options.retryOnGatewayTimeout:false suppresses only HTTP 504. Check `status`,
-        // not `code`: a 504 with an unparseable body still reports status 504, but
-        // handleErrorResponse() falls back to code 'internal_server_error' for it.
+        // Retry per isRetryable(); retryOnRateLimit:false suppresses only HTTP 429
+        // (isRateLimited() is status-based, so this holds regardless of a
+        // malformed body's `code`). options.retryOnGatewayTimeout:false suppresses
+        // only HTTP 504; `status` is always authoritative there too (see
+        // handleErrorResponse()).
         if (
           error instanceof NotionAPIError &&
           error.isRetryable() &&
@@ -320,21 +321,43 @@ export class NotionClient {
   }
 
   /**
+   * Check if `value` is a plain, non-null, non-array object. Use this to
+   * guard a cast from unvalidated JSON before treating it as a record.
+   */
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  /**
+   * Build a generic error body for a response the SDK cannot parse into a
+   * {@link NotionErrorResponse}.
+   */
+  private genericErrorBody(response: Response): NotionErrorResponse {
+    return {
+      object: 'error',
+      status: response.status,
+      code: 'internal_server_error',
+      message: response.statusText || 'Unknown error occurred',
+    };
+  }
+
+  /**
    * Handle an error response from the API.
    */
   private async handleErrorResponse(response: Response): Promise<never> {
     let errorBody: NotionErrorResponse;
 
     try {
-      errorBody = (await response.json()) as NotionErrorResponse;
+      const parsed = await response.json();
+      // A syntactically valid body can still be non-object JSON, such as `null`
+      // or a bare string. Fall back to a generic error body in that case too;
+      // otherwise assigning `status` below would throw.
+      errorBody = this.isRecord(parsed)
+        ? (parsed as unknown as NotionErrorResponse)
+        : this.genericErrorBody(response);
     } catch {
       // If the SDK cannot parse the error body, create a generic error
-      errorBody = {
-        object: 'error',
-        status: response.status,
-        code: 'internal_server_error',
-        message: response.statusText || 'Unknown error occurred',
-      };
+      errorBody = this.genericErrorBody(response);
     }
 
     // The HTTP response status is authoritative. A proxy or a malformed body

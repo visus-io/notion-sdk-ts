@@ -58,7 +58,7 @@ export interface NotionErrorResponse {
   additional_data?: {
     /** Present on `rate_limited` responses. Duplicates `Retry-After` as whole seconds. */
     retry_after?: string;
-    /** Present on `rate_limited` responses. Identifies which limit the request exceeded. */
+    /** Present on `rate_limited` responses. Identifies why the API rate-limited the request. */
     rate_limit_reason?: RateLimitReason;
   } & Record<string, unknown>;
 }
@@ -95,10 +95,14 @@ export class NotionAPIError extends Error {
   }
 
   /**
-   * Check if the error is a rate limit error.
+   * Check if the error is a rate limit error (HTTP 429).
+   * Check `status`, not `code`. A malformed body could report the wrong
+   * `code` for a real 429, or report `rate_limited` for a real non-429
+   * status. `status` always matches the real HTTP response. See
+   * `NotionClient.handleErrorResponse()`.
    */
   isRateLimited(): boolean {
-    return this.code === 'rate_limited';
+    return this.status === 429;
   }
 
   /**
@@ -147,12 +151,10 @@ export class NotionAPIError extends Error {
   /**
    * Check if the error is retryable (rate limit or server error).
    * A `429` is not retryable when `rateLimitReason` is `public_api_request_blocked`,
-   * since the request cannot succeed. Check `status`, not `code`, for this
-   * exception: a malformed 5xx body could otherwise report `code: 'rate_limited'`
-   * and incorrectly suppress a retry that should always happen.
+   * since the request cannot succeed.
    */
   isRetryable(): boolean {
-    if (this.status === 429 && this.rateLimitReason === 'public_api_request_blocked') {
+    if (this.isRateLimited() && this.rateLimitReason === 'public_api_request_blocked') {
       return false;
     }
 

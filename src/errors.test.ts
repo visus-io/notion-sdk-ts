@@ -85,6 +85,20 @@ describe('NotionAPIError', () => {
 
       expect(error.isRateLimited()).toBe(false);
     });
+
+    it('should return false for a malformed body that claims code rate_limited at a non-429 status', () => {
+      const response = createErrorResponse('rate_limited', 404);
+      const error = new NotionAPIError(response);
+
+      expect(error.isRateLimited()).toBe(false);
+    });
+
+    it('should return true for a real 429 even when a malformed body reports a different code', () => {
+      const response = createErrorResponse('internal_server_error', 429);
+      const error = new NotionAPIError(response);
+
+      expect(error.isRateLimited()).toBe(true);
+    });
   });
 
   describe('isUnauthorized', () => {
