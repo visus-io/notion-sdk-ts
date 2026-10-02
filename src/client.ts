@@ -282,11 +282,11 @@ export class NotionClient {
 
   /**
    * Convert a whole-seconds string into milliseconds, clamped to
-   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the value is missing or
-   * not a valid non-negative number.
+   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the value is missing,
+   * blank, or not a valid non-negative number.
    */
   private secondsToClampedMs(value: string | null | undefined): number | undefined {
-    if (value === null || value === undefined) {
+    if (value === null || value === undefined || value.trim() === '') {
       return undefined;
     }
 
@@ -300,8 +300,8 @@ export class NotionClient {
 
   /**
    * Parse the `Retry-After` response header into milliseconds, clamped to
-   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the header is missing or
-   * not a valid non-negative number.
+   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the header is missing,
+   * blank, or not a valid non-negative number.
    */
   private parseRetryAfterHeader(response: Response): number | undefined {
     return this.secondsToClampedMs(response.headers.get('Retry-After'));
@@ -311,7 +311,8 @@ export class NotionClient {
    * Parse `additional_data.retry_after` from the error body into milliseconds,
    * clamped to {@link MAX_RETRY_DELAY_MS}. The Notion API repeats the
    * `Retry-After` value here for clients that cannot read response headers.
-   * Return `undefined` if the field is missing or not a valid non-negative number.
+   * Return `undefined` if the field is missing, blank, or not a valid
+   * non-negative number.
    */
   private parseRetryAfterBody(errorBody: NotionErrorResponse): number | undefined {
     return this.secondsToClampedMs(errorBody.additional_data?.retry_after);
@@ -334,6 +335,10 @@ export class NotionClient {
         message: response.statusText || 'Unknown error occurred',
       };
     }
+
+    // The HTTP response status is authoritative. A proxy or a malformed body
+    // can report a `status` field that disagrees with it, or omit it.
+    errorBody.status = response.status;
 
     // Prefer the header. Use the body only when the header is missing or invalid.
     const retryAfterMs =
