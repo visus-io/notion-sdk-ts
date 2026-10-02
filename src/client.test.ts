@@ -18,6 +18,17 @@ function mockResponse(status: number, body: unknown, headers?: Record<string, st
   } as unknown as Response;
 }
 
+/** Build a mock Response whose body is not valid JSON, like an HTML error page from a proxy. */
+function mockMalformedResponse(status: number): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: 'Gateway Timeout',
+    headers: new Headers(),
+    json: () => Promise.reject(new SyntaxError('Unexpected token < in JSON')),
+  } as unknown as Response;
+}
+
 /** Rate-limited error body the Notion API returns. */
 const rateLimitedBody = {
   object: 'error' as const,
@@ -561,6 +572,33 @@ describe('NotionClient', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(NotionAPIError);
         expect((error as NotionAPIError).code).toBe('gateway_timeout');
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not retry a 504 with an unparseable body when retryOnGatewayTimeout is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockMalformedResponse(504));
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        maxRetries: 2,
+      });
+
+      try {
+        await client.request({
+          method: 'PATCH',
+          path: '/pages/abc/markdown',
+          retryOnGatewayTimeout: false,
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        const apiError = error as NotionAPIError;
+        expect(apiError.status).toBe(504);
+        // The body could not be parsed, so handleErrorResponse() falls back to this code.
+        expect(apiError.code).toBe('internal_server_error');
       }
 
       expect(fetchMock).toHaveBeenCalledTimes(1);

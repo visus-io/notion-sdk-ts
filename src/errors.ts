@@ -36,9 +36,12 @@ export const RATE_LIMIT_REASONS = [
 ] as const;
 
 /**
+ * Notion may add new reason strings over time. Treat an unrecognized value the
+ * same as any other `rate_limited` response.
+ *
  * @category Errors
  */
-export type RateLimitReason = (typeof RATE_LIMIT_REASONS)[number];
+export type RateLimitReason = (typeof RATE_LIMIT_REASONS)[number] | (string & {});
 
 /**
  * Notion API error response structure.

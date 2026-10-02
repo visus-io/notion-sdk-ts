@@ -126,7 +126,7 @@ A `504 gateway_timeout` does not guarantee that a write failed. `notion.pages.up
 does not retry a `504` automatically, so you can check the page content before you retry.
 
 **Rate limit reason:** A rate-limited response may add a `rate_limit_reason` value to
-`additional_data`. Read it from `error.rateLimitReason`. The possible values are:
+`additional_data`. Read it from `error.rateLimitReason`. Notion documents these values:
 
 - `public_api_request_rate_limit` — a per-connection limit
 - `public_api_space_request_rate_limit` — a shared workspace limit
@@ -134,6 +134,10 @@ does not retry a `504` automatically, so you can check the page content before y
 - `mcp_tool_rate_limit`
 - `collection_router_upstream_429`
 - `public_api_request_blocked`
+
+Notion may add new values over time. Treat an unrecognized value the same as any other
+`rate_limited` response: `error.rateLimitReason` still holds the string, and `isRetryable()`
+still returns its normal result.
 
 A `public_api_request_blocked` request cannot succeed on retry. `isRetryable()` returns `false`
 for this reason, so the SDK does not retry it automatically.

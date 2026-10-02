@@ -95,12 +95,14 @@ export class NotionClient {
         return await this.makeRequest<T>(options);
       } catch (error) {
         // Retry per isRetryable(); retryOnRateLimit:false suppresses only rate_limited.
-        // options.retryOnGatewayTimeout:false suppresses only gateway_timeout.
+        // options.retryOnGatewayTimeout:false suppresses only HTTP 504. Check `status`,
+        // not `code`: a 504 with an unparseable body still reports status 504, but
+        // handleErrorResponse() falls back to code 'internal_server_error' for it.
         if (
           error instanceof NotionAPIError &&
           error.isRetryable() &&
           !(error.isRateLimited() && !this.retryOnRateLimit) &&
-          !(error.code === 'gateway_timeout' && options.retryOnGatewayTimeout === false) &&
+          !(error.status === 504 && options.retryOnGatewayTimeout === false) &&
           attempt < this.maxRetries
         ) {
           // Prefer the server-supplied Retry-After value; fall back to

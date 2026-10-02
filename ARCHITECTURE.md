@@ -136,8 +136,10 @@ clamps the header value, the body value, and the backoff delay to 60 seconds.
 
 A `rate_limited` response may also carry a `rate_limit_reason` in `additional_data`. The SDK
 exposes this value as `NotionAPIError.rateLimitReason`. See `RateLimitReason` in `errors.ts` for
-the possible values. `isRetryable()` returns `false` when `rateLimitReason` is
-`public_api_request_blocked`, since a blocked request cannot succeed on retry.
+the documented values. Notion may add new values over time; `RateLimitReason` accepts any string,
+so a new value still type-checks. `isRetryable()` returns `false` when `rateLimitReason` is
+`public_api_request_blocked`, since a blocked request cannot succeed on retry. It returns its
+normal result for every other reason, including one the SDK does not yet document.
 
 A write that is not safe to repeat blindly can set `RequestOptions.retryOnGatewayTimeout` to
 `false`. This suppresses the client's automatic retry on a `504 gateway_timeout` response only;
