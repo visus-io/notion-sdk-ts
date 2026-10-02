@@ -100,6 +100,8 @@ a 4xx or 5xx status code.
 error.status; // HTTP status code (e.g., 404, 401, 429)
 error.code; // Notion error code (e.g., 'object_not_found')
 error.message; // Error message from API
+error.retryAfterMs; // Wait time before retry, in milliseconds (rate-limited and overload responses)
+error.rateLimitReason; // Which limit was exceeded (rate-limited responses only)
 ```
 
 ### Type Guards
@@ -119,6 +121,16 @@ rate-limited (429) responses only when `retryOnRateLimit` is enabled. It **alway
 service-overload (529) responses and transient server errors (500 to 599), no matter the value
 of `retryOnRateLimit`. See [Configuration](/guides/configuration/). The Notion API recommends
 this retry behavior.
+
+**Rate limit reason:** A rate-limited response may add a `rate_limit_reason` value to
+`additional_data`. Read it from `error.rateLimitReason`. The possible values are:
+
+- `public_api_request_rate_limit` — a per-connection limit
+- `public_api_space_request_rate_limit` — a shared workspace limit
+- `public_api_endpoint_rate_limit` — a limit on one endpoint
+- `mcp_tool_rate_limit`
+- `collection_router_upstream_429`
+- `public_api_request_blocked`
 
 ### Example
 

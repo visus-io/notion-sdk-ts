@@ -163,10 +163,15 @@ const notion = new Notion({
 1. The SDK receives a retryable response: `429 Too Many Requests`, `529 Service Overload`, or a
    `500` to `599` server error.
 2. The SDK checks the `Retry-After` header from the Notion API.
-3. The SDK waits for the duration in the header. The SDK clamps this wait to 60 seconds.
-4. If the header is missing, the SDK uses exponential backoff instead: 1 second, 2 seconds, 4
+3. If the header is missing, the SDK reads `additional_data.retry_after` from the error body
+   instead.
+4. The SDK waits for the duration it finds. The SDK clamps this wait to 60 seconds.
+5. If neither value is present, the SDK uses exponential backoff instead: 1 second, 2 seconds, 4
    seconds, 8 seconds, and so on, up to a maximum of 60 seconds.
-5. The SDK retries the request automatically, up to `maxRetries` times.
+6. The SDK retries the request automatically, up to `maxRetries` times.
+
+> **Note:** The Notion API repeats the `Retry-After` wait time under
+> `additional_data.retry_after` in the error body, for clients that cannot read response headers.
 
 ### Disable Automatic Retries
 
@@ -212,6 +217,7 @@ try {
 } catch (error) {
   if (error instanceof NotionAPIError && error.isRateLimited()) {
     console.error('Rate limited after retries');
+    console.error('Reason:', error.rateLimitReason);
     console.error('Retry after:', error.message);
   }
 }

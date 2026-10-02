@@ -270,17 +270,16 @@ export class NotionClient {
   }
 
   /**
-   * Parse the `Retry-After` response header into milliseconds, clamped to
-   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the header is missing or
+   * Convert a whole-seconds string into milliseconds, clamped to
+   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the value is missing or
    * not a valid non-negative number.
    */
-  private parseRetryAfterHeader(response: Response): number | undefined {
-    const header = response.headers.get('Retry-After');
-    if (header === null) {
+  private secondsToClampedMs(value: string | null | undefined): number | undefined {
+    if (value === null || value === undefined) {
       return undefined;
     }
 
-    const seconds = Number(header);
+    const seconds = Number(value);
     if (!Number.isFinite(seconds) || seconds < 0) {
       return undefined;
     }
@@ -289,17 +288,34 @@ export class NotionClient {
   }
 
   /**
+   * Parse the `Retry-After` response header into milliseconds, clamped to
+   * {@link MAX_RETRY_DELAY_MS}. Return `undefined` if the header is missing or
+   * not a valid non-negative number.
+   */
+  private parseRetryAfterHeader(response: Response): number | undefined {
+    return this.secondsToClampedMs(response.headers.get('Retry-After'));
+  }
+
+  /**
+   * Parse `additional_data.retry_after` from the error body into milliseconds,
+   * clamped to {@link MAX_RETRY_DELAY_MS}. The Notion API repeats the
+   * `Retry-After` value here for clients that cannot read response headers.
+   * Return `undefined` if the field is missing or not a valid non-negative number.
+   */
+  private parseRetryAfterBody(errorBody: NotionErrorResponse): number | undefined {
+    return this.secondsToClampedMs(errorBody.additional_data?.retry_after);
+  }
+
+  /**
    * Handle an error response from the API.
    */
   private async handleErrorResponse(response: Response): Promise<never> {
-    const retryAfterMs = this.parseRetryAfterHeader(response);
-
     let errorBody: NotionErrorResponse;
 
     try {
       errorBody = (await response.json()) as NotionErrorResponse;
     } catch {
-      // If we can't parse the error body, create a generic error
+      // If the SDK cannot parse the error body, create a generic error
       errorBody = {
         object: 'error',
         status: response.status,
@@ -307,6 +323,10 @@ export class NotionClient {
         message: response.statusText || 'Unknown error occurred',
       };
     }
+
+    // Prefer the header. Use the body only when the header is missing.
+    const retryAfterMs =
+      this.parseRetryAfterHeader(response) ?? this.parseRetryAfterBody(errorBody);
 
     throw new NotionAPIError(errorBody, retryAfterMs);
   }

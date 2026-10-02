@@ -21,6 +21,26 @@ export type NotionErrorCode =
   | 'gateway_timeout';
 
 /**
+ * Reasons the Notion API gives for a `rate_limited` response.
+ * Appears in `NotionErrorResponse.additional_data.rate_limit_reason`.
+ *
+ * @category Errors
+ */
+export const RATE_LIMIT_REASONS = [
+  'public_api_request_rate_limit',
+  'public_api_space_request_rate_limit',
+  'public_api_endpoint_rate_limit',
+  'mcp_tool_rate_limit',
+  'collection_router_upstream_429',
+  'public_api_request_blocked',
+] as const;
+
+/**
+ * @category Errors
+ */
+export type RateLimitReason = (typeof RATE_LIMIT_REASONS)[number];
+
+/**
  * Notion API error response structure.
  *
  * @category Errors
@@ -32,7 +52,12 @@ export interface NotionErrorResponse {
   message: string;
 
   /** Extra machine-readable context for some error codes, for example `restricted_resource`. */
-  additional_data?: Record<string, unknown>;
+  additional_data?: {
+    /** Present on `rate_limited` responses. Duplicates `Retry-After` as whole seconds. */
+    retry_after?: string;
+    /** Present on `rate_limited` responses. Identifies which limit the request exceeded. */
+    rate_limit_reason?: RateLimitReason;
+  } & Record<string, unknown>;
 }
 
 /**
@@ -45,6 +70,7 @@ export class NotionAPIError extends Error {
   readonly code: NotionErrorCode;
   readonly body: NotionErrorResponse;
   readonly retryAfterMs?: number;
+  readonly rateLimitReason?: RateLimitReason;
 
   constructor(response: NotionErrorResponse, retryAfterMs?: number) {
     super(response.message);
@@ -53,6 +79,7 @@ export class NotionAPIError extends Error {
     this.code = response.code;
     this.body = response;
     this.retryAfterMs = retryAfterMs;
+    this.rateLimitReason = response.additional_data?.rate_limit_reason;
 
     // Maintain proper stack trace for V8 engines
     if ('captureStackTrace' in Error) {

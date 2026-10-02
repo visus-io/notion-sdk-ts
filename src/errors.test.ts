@@ -37,6 +37,23 @@ describe('NotionAPIError', () => {
       expect(error.retryAfterMs).toBe(5000);
     });
 
+    it('should expose rateLimitReason from additional_data when present', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 'public_api_endpoint_rate_limit', retry_after: '5' },
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.rateLimitReason).toBe('public_api_endpoint_rate_limit');
+    });
+
+    it('should leave rateLimitReason undefined when additional_data is absent', () => {
+      const response = createErrorResponse('rate_limited', 429);
+      const error = new NotionAPIError(response);
+
+      expect(error.rateLimitReason).toBeUndefined();
+    });
+
     it('should be an instance of Error', () => {
       const response = createErrorResponse('internal_server_error', 500);
       const error = new NotionAPIError(response);

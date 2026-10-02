@@ -176,6 +176,80 @@ describe('NotionClient', () => {
         expect((error as NotionAPIError).retryAfterMs).toBe(2000);
       }
     });
+
+    it('should fall back to additional_data.retry_after in the body when the header is absent', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(429, {
+          ...rateLimitedBody,
+          additional_data: { retry_after: '7' },
+        }),
+      );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).retryAfterMs).toBe(7000);
+      }
+    });
+
+    it('should prefer the header over additional_data.retry_after when both are present', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(
+          mockResponse(
+            429,
+            { ...rateLimitedBody, additional_data: { retry_after: '7' } },
+            { 'Retry-After': '3' },
+          ),
+        );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).retryAfterMs).toBe(3000);
+      }
+    });
+
+    it('should expose rateLimitReason from additional_data on the thrown error', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(429, {
+          ...rateLimitedBody,
+          additional_data: { rate_limit_reason: 'public_api_space_request_rate_limit' },
+        }),
+      );
+
+      const client = new NotionClient({
+        auth: 'test-token',
+        fetch: fetchMock,
+        retryOnRateLimit: false,
+      });
+
+      try {
+        await client.request({ method: 'GET', path: '/pages/abc' });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotionAPIError);
+        expect((error as NotionAPIError).rateLimitReason).toBe(
+          'public_api_space_request_rate_limit',
+        );
+      }
+    });
   });
 
   describe('retry logic with Retry-After', () => {
