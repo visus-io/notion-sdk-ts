@@ -128,11 +128,12 @@ The client retries every error that `NotionAPIError.isRetryable()` reports. This
 `rate_limited` errors (HTTP status 429), `service_overload` errors (HTTP status 529), and
 transient server errors (HTTP status 500 to 599). The `retryOnRateLimit` option, when set to
 `false`, suppresses retries for `rate_limited` errors only. It does not affect the other
-retryable errors. The client uses the `Retry-After` header when the header is present. If the
-header is absent, the client reads `additional_data.retry_after` from the error body instead.
-The Notion API repeats the wait time there for clients that cannot read response headers. If
-neither value is present, the client uses exponential backoff: `2^attempt * 1000ms`. The client
-clamps the header value, the body value, and the backoff delay to 60 seconds.
+retryable errors. The client uses the `Retry-After` header when the header is present and valid.
+If the header is missing or invalid, the client reads `additional_data.retry_after` from the
+error body instead. The Notion API repeats the wait time there for clients that cannot read
+response headers. If neither value is present or valid, the client uses exponential backoff:
+`2^attempt * 1000ms`. The client clamps the header value, the body value, and the backoff delay
+to 60 seconds.
 
 A `rate_limited` response may also carry a `rate_limit_reason` in `additional_data`. The SDK
 exposes this value as `NotionAPIError.rateLimitReason`. See `RateLimitReason` in `errors.ts` for

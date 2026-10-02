@@ -105,8 +105,8 @@ export class NotionClient {
           !(error.status === 504 && options.retryOnGatewayTimeout === false) &&
           attempt < this.maxRetries
         ) {
-          // Prefer the server-supplied Retry-After value; fall back to
-          // exponential backoff when the header is absent.
+          // Prefer the server-supplied Retry-After value (header or body fallback);
+          // fall back to exponential backoff when neither is present or valid.
           const retryAfter = error.retryAfterMs ?? this.getRetryAfter(attempt);
           await this.sleep(retryAfter);
           lastError = error;
@@ -335,7 +335,7 @@ export class NotionClient {
       };
     }
 
-    // Prefer the header. Use the body only when the header is missing.
+    // Prefer the header. Use the body only when the header is missing or invalid.
     const retryAfterMs =
       this.parseRetryAfterHeader(response) ?? this.parseRetryAfterBody(errorBody);
 
