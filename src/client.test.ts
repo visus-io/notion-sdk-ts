@@ -679,7 +679,7 @@ describe('NotionClient', () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
-    it('should not throw when the error body is valid JSON but not an object', async () => {
+    it('should still throw NotionAPIError, not a TypeError, for a non-object JSON error body', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: false,
         status: 500,

@@ -30,6 +30,25 @@ describe('NotionAPIError', () => {
       expect(error.retryAfterMs).toBeUndefined();
     });
 
+    it('should expose an unrecognized code string as-is', () => {
+      const response = createErrorResponse('future_error_code' as NotionErrorResponse['code'], 400);
+      const error = new NotionAPIError(response);
+
+      expect(error.code).toBe('future_error_code');
+    });
+
+    it('should fall back to internal_server_error when code is not a string', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('invalid_request', 500),
+        code: 7 as unknown as NotionErrorResponse['code'],
+      };
+      const error = new NotionAPIError(response);
+
+      expect(error.code).toBe('internal_server_error');
+      // status stays authoritative and unaffected by the malformed code.
+      expect(error.status).toBe(500);
+    });
+
     it('should include retryAfterMs when provided', () => {
       const response = createErrorResponse('rate_limited', 429);
       const error = new NotionAPIError(response, 5000);
@@ -49,6 +68,16 @@ describe('NotionAPIError', () => {
 
     it('should leave rateLimitReason undefined when additional_data is absent', () => {
       const response = createErrorResponse('rate_limited', 429);
+      const error = new NotionAPIError(response);
+
+      expect(error.rateLimitReason).toBeUndefined();
+    });
+
+    it('should ignore a non-string rate_limit_reason instead of exposing it as-is', () => {
+      const response: NotionErrorResponse = {
+        ...createErrorResponse('rate_limited', 429),
+        additional_data: { rate_limit_reason: 42 as unknown as string },
+      };
       const error = new NotionAPIError(response);
 
       expect(error.rateLimitReason).toBeUndefined();

@@ -3,22 +3,31 @@
  *
  * @category Errors
  */
-export type NotionErrorCode =
-  | 'invalid_json'
-  | 'invalid_request_url'
-  | 'invalid_request'
-  | 'validation_error'
-  | 'missing_version'
-  | 'unauthorized'
-  | 'restricted_resource'
-  | 'object_not_found'
-  | 'conflict_error'
-  | 'rate_limited'
-  | 'internal_server_error'
-  | 'service_unavailable'
-  | 'service_overload'
-  | 'database_connection_unavailable'
-  | 'gateway_timeout';
+export const NOTION_ERROR_CODES = [
+  'invalid_json',
+  'invalid_request_url',
+  'invalid_request',
+  'validation_error',
+  'missing_version',
+  'unauthorized',
+  'restricted_resource',
+  'object_not_found',
+  'conflict_error',
+  'rate_limited',
+  'internal_server_error',
+  'service_unavailable',
+  'service_overload',
+  'database_connection_unavailable',
+  'gateway_timeout',
+] as const;
+
+/**
+ * Notion may add new error codes over time. Treat an unrecognized code the
+ * same as any other error response; read `status` to classify it.
+ *
+ * @category Errors
+ */
+export type NotionErrorCode = (typeof NOTION_ERROR_CODES)[number] | (string & Record<never, never>);
 
 /**
  * Reasons the Notion API gives for a `rate_limited` response.
@@ -79,10 +88,21 @@ export class NotionAPIError extends Error {
     super(response.message);
     this.name = 'NotionAPIError';
     this.status = response.status;
-    this.code = response.code;
     this.body = response;
     this.retryAfterMs = retryAfterMs;
-    this.rateLimitReason = response.additional_data?.rate_limit_reason;
+
+    // response comes from an unvalidated JSON body cast to NotionErrorResponse, so
+    // `code` could be any JSON type at runtime despite its string type. Check the
+    // runtime type before exposing it. Fall back to a generic code; `status` stays
+    // the authoritative field for classifying the error.
+    const rawCode: unknown = response.code;
+    this.code = typeof rawCode === 'string' ? rawCode : 'internal_server_error';
+
+    // additional_data comes from the same unvalidated body, so rate_limit_reason
+    // could likewise be any JSON type at runtime despite its string type. Check
+    // the runtime type before exposing it on this public property.
+    const rawRateLimitReason: unknown = response.additional_data?.rate_limit_reason;
+    this.rateLimitReason = typeof rawRateLimitReason === 'string' ? rawRateLimitReason : undefined;
 
     // Maintain proper stack trace for V8 engines
     if ('captureStackTrace' in Error) {

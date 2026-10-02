@@ -422,6 +422,9 @@ This table lists the Notion API error codes:
 | `gateway_timeout`                 | 504    | Gateway timeout (always auto-retried, except `updateMarkdown()`) |
 | `service_overload`                | 529    | Notion is overloaded (always auto-retried)                       |
 
+Notion may add new codes over time. Treat an unrecognized code the same as any other error
+response. `error.code` still holds the string. Read `error.status` to classify the error.
+
 ### Common Error Scenarios
 
 **404 Not Found (`object_not_found`):**
