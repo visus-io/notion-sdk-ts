@@ -151,6 +151,11 @@ export default defineConfig({
           'sha256-VgrgcKBvIM3XpiLJ6fEv1Vy6YHBwlKLkYtFdfBMouTo=',
           'sha256-Ea413tp1wK4s9fLz1jrJ/IHfcyY4cAWxjvgazyc+2N0=',
         ],
+        // Pagefind powers site search and instantiates WebAssembly, which CSP gates
+        // behind `script-src`. Without this the search index fails to load.
+        // `resources` replaces Astro's defaults rather than extending them, so `'self'`
+        // has to be repeated here or every external module script is blocked too.
+        resources: ["'self'", "'wasm-unsafe-eval'"],
       },
     },
   },
