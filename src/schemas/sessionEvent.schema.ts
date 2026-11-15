@@ -56,7 +56,7 @@ const fileContentSchema = z.looseObject({
  *
  * @category Agents
  */
-const KNOWN_CONTENT_TYPES: readonly string[] = ['text', 'file'];
+const KNOWN_CONTENT_TYPES: ReadonlySet<string> = new Set(['text', 'file']);
 
 /**
  * A content type that this SDK does not know yet. A known type never matches this schema.
@@ -67,7 +67,7 @@ const unknownContentSchema = z
     type: z
       .string()
       .trim()
-      .refine((type) => !KNOWN_CONTENT_TYPES.includes(type), {
+      .refine((type) => !KNOWN_CONTENT_TYPES.has(type), {
         error: 'Known content types must match their own schema',
       }),
   })
@@ -92,7 +92,8 @@ const userMessageEventSchema = z.looseObject({
   type: z.literal('user.message'),
   content: z.array(sessionEventContentSchema),
   created_by: eventCreatorSchema.nullish(),
-  metadata: z.record(z.string(), z.string().trim()).nullish(),
+  // eslint-disable-next-line zod/prefer-string-schema-with-trim -- metadata values must round-trip unchanged
+  metadata: z.record(z.string(), z.string()).nullish(),
 });
 
 const agentMessageEventSchema = z.looseObject({
@@ -141,7 +142,7 @@ const knownSessionEventSchema = z.discriminatedUnion('type', [
   sessionStatusEventSchema,
 ]);
 
-const KNOWN_EVENT_TYPES: readonly string[] = SESSION_EVENT_TYPES;
+const KNOWN_EVENT_TYPES: ReadonlySet<string> = new Set(SESSION_EVENT_TYPES);
 
 /**
  * An event type that this SDK does not know yet. A known type never matches this schema.
@@ -154,7 +155,7 @@ const unknownSessionEventSchema = z
     type: z
       .string()
       .trim()
-      .refine((type) => !KNOWN_EVENT_TYPES.includes(type), {
+      .refine((type) => !KNOWN_EVENT_TYPES.has(type), {
         error: 'Known session event types must match their own schema',
       }),
   })

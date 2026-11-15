@@ -103,13 +103,13 @@ describe('AsyncTasksAPI', () => {
       expect(caughtError).toBeInstanceOf(NotionRequestTimeoutError);
     });
 
-    it('should return a task that succeeds during the last capped sleep', async () => {
+    it('should poll again at the deadline when the full interval fits exactly', async () => {
       vi.mocked(mockClient.request)
-        .mockResolvedValueOnce({ ...baseTask, status: 'running', poll_after_seconds: 100 })
+        .mockResolvedValueOnce({ ...baseTask, status: 'running', poll_after_seconds: 1 })
         .mockResolvedValueOnce({ ...baseTask, status: 'succeeded' });
 
-      const promise = asyncTasksAPI.poll(baseTask.id, { timeoutMs: 150 });
-      await vi.advanceTimersByTimeAsync(150);
+      const promise = asyncTasksAPI.poll(baseTask.id, { timeoutMs: 1_000 });
+      await vi.advanceTimersByTimeAsync(1_000);
 
       expect((await promise).status).toBe('succeeded');
     });
@@ -136,8 +136,8 @@ describe('AsyncTasksAPI', () => {
       await promise;
 
       expect(caughtError).toBeInstanceOf(NotionRequestTimeoutError);
-      // One retrieve before the capped sleep, and one final retrieve at the deadline.
-      expect(mockClient.request).toHaveBeenCalledTimes(2);
+      // No second retrieve: it would come sooner than poll_after_seconds.
+      expect(mockClient.request).toHaveBeenCalledTimes(1);
     });
   });
 });

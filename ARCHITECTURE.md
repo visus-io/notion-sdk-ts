@@ -166,7 +166,8 @@ client rethrows the abort reason of that signal. It maps a body read failure to
 the JSON response. It does not retry a `504` response. `skills.upload()` uses it.
 
 `sessions.stream()` parses the `data` of each frame as a `SessionStreamEnvelope`. After a
-`stream.timeout` envelope or a dropped connection, it reconnects with `continue_from`. It uses the
+`stream.timeout` envelope or a dropped connection, it reconnects with `continue_from`. A body
+that ends with no end, error, or timeout envelope counts as a dropped connection. It uses the
 ID of the last `event.committed` event. `maxResumes` limits the reconnects.
 
 The `LIMITS` constant in `validation.ts` defines client-side size limits. The SDK enforces these

@@ -339,7 +339,7 @@ export function buildSessionEventResponse(
     'agent.tool_result': { tool_use_id: 'tool-1', tool_name: 'search', is_error: false },
     'session.status': { status: 'completed' },
   };
-  return { ...base, ...(byType[type] ?? {}), ...overrides };
+  return { ...base, ...byType[type], ...overrides };
 }
 
 /** Build an agent insights API response. */

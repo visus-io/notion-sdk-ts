@@ -77,19 +77,32 @@ function toFrame(state: FrameState): SseFrame | undefined {
   return frame;
 }
 
+const LINE_END = /\r\n|\r|\n/;
+
 /**
- * Parse a stream of text chunks into server-sent events.
- * A frame with no `data` field is not dispatched. A final frame without a trailing blank line
- * is dispatched when the input ends.
- *
- * @param chunks - Decoded text chunks, in order
- * @returns An async generator of frames
- *
- * @category Client & Core
+ * Split a buffer into complete lines. Return the lines, the text after the last line ending,
+ * and whether the buffer ends with a `\r`. That `\r` can be the first half of a `\r\n` that
+ * the next chunk completes.
  */
-export async function* parseSseStream(chunks: AsyncIterable<string>): AsyncGenerator<SseFrame> {
+function takeLines(buffer: string): { lines: string[]; rest: string; endsWithCr: boolean } {
+  const lines: string[] = [];
+  let rest = buffer;
+  let endsWithCr = false;
+
+  for (let match = LINE_END.exec(rest); match; match = LINE_END.exec(rest)) {
+    endsWithCr = match[0] === '\r' && match.index === rest.length - 1;
+    lines.push(rest.slice(0, match.index));
+    rest = rest.slice(match.index + match[0].length);
+  }
+
+  return { lines, rest, endsWithCr };
+}
+
+/**
+ * Turn text chunks into lines. Yield the text after the last line ending when the input ends.
+ */
+async function* splitLines(chunks: AsyncIterable<string>): AsyncGenerator<string> {
   let buffer = '';
-  let state = emptyState();
   // A chunk can end between `\r` and `\n`. Skip that `\n` at the start of the next chunk.
   let skipLeadingLf = false;
 
@@ -104,35 +117,43 @@ export async function* parseSseStream(chunks: AsyncIterable<string>): AsyncGener
     if (skipLeadingLf && buffer.startsWith('\n')) {
       buffer = buffer.slice(1);
     }
-    skipLeadingLf = false;
 
-    for (;;) {
-      const match = /\r\n|\r|\n/.exec(buffer);
-      if (!match) {
-        break;
-      }
-
-      // A `\r` at the end of the buffer can be the first half of `\r\n`.
-      if (match[0] === '\r' && match.index === buffer.length - 1) {
-        skipLeadingLf = true;
-      }
-
-      const line = buffer.slice(0, match.index);
-      buffer = buffer.slice(match.index + match[0].length);
-
-      if (applyLine(state, line)) {
-        const frame = toFrame(state);
-        state = emptyState(state.id);
-        if (frame) {
-          yield frame;
-        }
-      }
-    }
+    const { lines, rest, endsWithCr } = takeLines(buffer);
+    buffer = rest;
+    skipLeadingLf = endsWithCr;
+    yield* lines;
   }
 
   if (buffer !== '') {
-    applyLine(state, buffer);
+    yield buffer;
   }
+}
+
+/**
+ * Parse a stream of text chunks into server-sent events.
+ * A frame with no `data` field is not dispatched. A final frame without a trailing blank line
+ * is dispatched when the input ends.
+ *
+ * @param chunks - Decoded text chunks, in order
+ * @returns An async generator of frames
+ *
+ * @category Client & Core
+ */
+export async function* parseSseStream(chunks: AsyncIterable<string>): AsyncGenerator<SseFrame> {
+  let state = emptyState();
+
+  for await (const line of splitLines(chunks)) {
+    if (!applyLine(state, line)) {
+      continue;
+    }
+
+    const frame = toFrame(state);
+    state = emptyState(state.id);
+    if (frame) {
+      yield frame;
+    }
+  }
+
   const last = toFrame(state);
   if (last) {
     yield last;

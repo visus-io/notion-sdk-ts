@@ -111,7 +111,8 @@ export const agentSchema = z.looseObject({
   icon: z.unknown().optional(),
   instructions_page_id: z.string().trim().nullish(),
   /** Inline instructions. Notion sends them only when `verbose` is `true`. */
-  instructions: z.string().trim().nullish(),
+  // eslint-disable-next-line zod/prefer-string-schema-with-trim -- instructions are content and must preserve whitespace from Notion API
+  instructions: z.string().nullish(),
   model: agentModelSchema.optional(),
   /** Documented values: see {@link AGENT_STATUSES}. Notion can add new values. */
   status: agentStatusSchema,

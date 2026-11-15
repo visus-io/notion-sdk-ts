@@ -101,6 +101,14 @@ describe('sessionEventSchema', () => {
     });
   });
 
+  it('should keep the whitespace of user message metadata values', () => {
+    const result = sessionEventSchema.parse(
+      buildSessionEventResponse('user.message', { metadata: { source: '  x  ' } }),
+    );
+
+    expect(result.type === 'user.message' && result.metadata).toEqual({ source: '  x  ' });
+  });
+
   it('should parse a file content item', () => {
     const result = sessionEventSchema.parse(
       buildSessionEventResponse('user.message', {

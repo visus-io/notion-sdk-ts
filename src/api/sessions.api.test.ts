@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionsAPI, type StreamSessionRequest } from './sessions.api';
 import type { NotionClient } from '../client';
-import { NotionRequestTimeoutError } from '../errors';
+import { NotionNetworkError, NotionRequestTimeoutError } from '../errors';
 import type { SseFrame } from '../sse';
-import { buildSessionResponse } from '../testUtils/fixtures';
+import { buildSessionEventResponse, buildSessionResponse, SESSION_ID } from '../testUtils/fixtures';
 import { NotionValidationError } from '../validation';
 
 describe('SessionsAPI', () => {
@@ -168,11 +168,34 @@ describe('SessionsAPI', () => {
       expect(vi.mocked(mockClient.stream).mock.calls[0][0].retryOnGatewayTimeout).toBe(true);
     });
 
-    it('should end without an envelope when the server closes the stream with no end', async () => {
+    it('should throw NotionNetworkError when the stream ends early with no checkpoint', async () => {
       vi.mocked(mockClient.stream).mockReturnValue(frames());
 
-      await expect(drain({ agent_id: 'a', message: 'Hi' })).resolves.toBeUndefined();
+      await expect(drain({ agent_id: 'a', message: 'Hi' })).rejects.toBeInstanceOf(
+        NotionNetworkError,
+      );
       expect(mockClient.stream).toHaveBeenCalledTimes(1);
+    });
+
+    it('should resume from the last committed event when the stream ends early', async () => {
+      const committed = {
+        type: 'event.committed',
+        event: buildSessionEventResponse('agent.message', { id: 'evt-7' }),
+      };
+      vi.mocked(mockClient.stream)
+        .mockReturnValueOnce(frames(JSON.stringify(committed)))
+        .mockReturnValueOnce(
+          frames(
+            JSON.stringify({ type: 'stream.end', session_id: SESSION_ID, status: 'completed' }),
+          ),
+        );
+
+      await drain({ agent_id: 'a', message: 'Hi' });
+
+      expect(vi.mocked(mockClient.stream).mock.calls[1][0].body).toEqual({
+        session_id: SESSION_ID,
+        continue_from: 'evt-7',
+      });
     });
 
     it('should resume a replay request from its own continue_from after a timeout', async () => {

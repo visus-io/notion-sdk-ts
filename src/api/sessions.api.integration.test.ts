@@ -417,6 +417,31 @@ describe('SessionsAPI integration', () => {
       expect(types).toEqual(['event.committed', 'stream.timeout']);
     });
 
+    it('should resume when the body ends without an end envelope', async () => {
+      const bodies: unknown[] = [];
+      server.use(
+        http.post(SESSIONS_URL, async ({ request }) => {
+          bodies.push(await request.json());
+          return bodies.length === 1
+            ? sseResponse([snapshot, committed('evt-1')])
+            : sseResponse([streamEnd]);
+        }),
+      );
+
+      const types = await collect(notion.sessions.stream({ agent_id: AGENT_ID, message: 'Hi' }));
+
+      expect(bodies[1]).toEqual({ session_id: SESSION_ID, continue_from: 'evt-1' });
+      expect(types).toEqual(['session.snapshot', 'event.committed', 'stream.end']);
+    });
+
+    it('should throw NotionNetworkError when the body ends early before a committed event', async () => {
+      server.use(http.post(SESSIONS_URL, () => sseResponse([snapshot])));
+
+      await expect(
+        collect(notion.sessions.stream({ agent_id: AGENT_ID, message: 'Hi' })),
+      ).rejects.toBeInstanceOf(NotionNetworkError);
+    });
+
     it('should yield stream.timeout when no committed event arrived before it', async () => {
       server.use(http.post(SESSIONS_URL, () => sseResponse([snapshot, streamTimeout])));
 

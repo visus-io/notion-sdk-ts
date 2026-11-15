@@ -52,6 +52,12 @@ describe('agentSchema', () => {
     expect((result as Record<string, unknown>).future_field).toBe(1);
   });
 
+  it('should keep the whitespace of inline instructions', () => {
+    const instructions = '    indented code\n\nBe brief.\n';
+
+    expect(agentSchema.parse(buildAgentResponse({ instructions })).instructions).toBe(instructions);
+  });
+
   it('should accept a status that Notion adds later', () => {
     expect(agentSchema.parse({ ...buildAgentResponse(), status: 'archived' }).status).toBe(
       'archived',

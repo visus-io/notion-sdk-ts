@@ -431,7 +431,9 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    *
    * The stream ends after a `stream.end` or `stream.error` envelope. A `stream.error` envelope
    * does not throw. Read `error.retryable` to decide what to do. With `autoResume` (the
-   * default), the SDK reconnects after a `stream.timeout` envelope or a dropped connection.
+   * default), the SDK reconnects after a `stream.timeout` envelope or a dropped connection. A
+   * stream that ends with no `stream.end`, `stream.error`, or `stream.timeout` envelope counts
+   * as a dropped connection.
    * It needs the ID of a committed event to resume. If it cannot resume, it yields the
    * `stream.timeout` envelope, or throws the network error, and stops.
    *
@@ -523,7 +525,12 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
       throw error;
     }
 
-    return { kind: 'done' };
+    // The body ended without `stream.end`, `stream.error`, or `stream.timeout`. The turn can
+    // still run, so treat this the same as a dropped connection.
+    return {
+      kind: 'dropped',
+      error: new NotionNetworkError('The session stream ended before the turn ended'),
+    };
   }
 
   /**

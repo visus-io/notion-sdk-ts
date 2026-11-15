@@ -178,7 +178,9 @@ throw. Read `error.retryable` to decide what to do.
 Notion can end a stream early with a `stream.timeout` envelope while the turn continues. By
 default, the SDK reconnects. It sends `session_id` and `continue_from` with the ID of the last
 `event.committed` event. The stream then continues after that event. The SDK does not yield the
-`stream.timeout` envelope when it resumes. It also resumes after a dropped connection.
+`stream.timeout` envelope when it resumes. It also resumes after a dropped connection. A stream
+that ends with no `stream.end`, `stream.error`, or `stream.timeout` envelope counts as a dropped
+connection.
 
 The SDK cannot resume before the first committed event arrives. In that case it yields the
 `stream.timeout` envelope, or throws the `NotionNetworkError`, and stops. Then call

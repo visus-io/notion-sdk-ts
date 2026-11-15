@@ -55,7 +55,7 @@ const knownEnvelopeSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
-const KNOWN_ENVELOPE_TYPES: readonly string[] = SESSION_STREAM_ENVELOPE_TYPES;
+const KNOWN_ENVELOPE_TYPES: ReadonlySet<string> = new Set(SESSION_STREAM_ENVELOPE_TYPES);
 
 /**
  * An envelope type that this SDK does not know yet. A known type never matches this schema.
@@ -66,7 +66,7 @@ const unknownEnvelopeSchema = z
     type: z
       .string()
       .trim()
-      .refine((type) => !KNOWN_ENVELOPE_TYPES.includes(type), {
+      .refine((type) => !KNOWN_ENVELOPE_TYPES.has(type), {
         error: 'Known stream envelope types must match their own schema',
       }),
   })
