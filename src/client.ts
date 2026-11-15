@@ -105,7 +105,8 @@ export class NotionClient {
    *
    * The client sends `Accept: text/event-stream`. It retries the connection the same way as
    * {@link request}. It does not retry after the first event arrives. The `timeoutMs` timeout
-   * applies until the response headers arrive. It does not apply to the body.
+   * applies until the response headers arrive. It does not apply to the body. When `signal`
+   * aborts, the stream throws the abort reason before it yields the next frame.
    *
    * @param options - The request, and an optional `signal` that stops the stream
    * @returns An async generator of server-sent events
@@ -120,7 +121,11 @@ export class NotionClient {
       throw new NotionNetworkError('The stream response has no body');
     }
 
-    yield* parseSseStream(this.readText(response.body, options.signal));
+    for await (const frame of parseSseStream(this.readText(response.body, options.signal))) {
+      // One chunk can hold several frames. Stop at once when the caller aborts between them.
+      this.throwIfAborted(options.signal);
+      yield frame;
+    }
   }
 
   /**

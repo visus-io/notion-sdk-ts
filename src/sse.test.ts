@@ -76,6 +76,18 @@ describe('parseSseStream', () => {
     expect(frames).toEqual([{ event: 'message', data: 'last' }]);
   });
 
+  it('should remove one leading byte order mark and keep a later one', async () => {
+    const frames = await collect('', '\uFEFFdata: first\n\n', 'data: \uFEFFsecond\n\n');
+
+    expect(frames.map((frame) => frame.data)).toEqual(['first', '\uFEFFsecond']);
+  });
+
+  it('should not treat a byte order mark after the first chunk as a marker', async () => {
+    const frames = await collect('data: a\n\n', '\uFEFFdata: b\n\n');
+
+    expect(frames).toEqual([{ event: 'message', data: 'a' }]);
+  });
+
   it('should yield nothing for an empty stream', async () => {
     expect(await collect()).toEqual([]);
     expect(await collect('')).toEqual([]);

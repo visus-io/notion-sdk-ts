@@ -2,7 +2,8 @@
  * Server-sent events (SSE) parser.
  *
  * This parser follows the WHATWG event stream format. It handles `\n`, `\r\n`, and `\r` line
- * endings, multi-line `data` fields, comment lines, and chunks that split a line.
+ * endings, multi-line `data` fields, comment lines, chunks that split a line, and one leading
+ * byte order mark.
  *
  * @see https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation
  */
@@ -105,6 +106,8 @@ async function* splitLines(chunks: AsyncIterable<string>): AsyncGenerator<string
   let buffer = '';
   // A chunk can end between `\r` and `\n`. Skip that `\n` at the start of the next chunk.
   let skipLeadingLf = false;
+  // The event stream format allows one byte order mark at the start. Remove only that one.
+  let isFirstText = true;
 
   for await (const chunk of chunks) {
     // An empty chunk (for example, a partial multi-byte character) must not reset
@@ -113,7 +116,8 @@ async function* splitLines(chunks: AsyncIterable<string>): AsyncGenerator<string
       continue;
     }
 
-    buffer += chunk;
+    buffer += isFirstText && chunk.startsWith('\uFEFF') ? chunk.slice(1) : chunk;
+    isFirstText = false;
     if (skipLeadingLf && buffer.startsWith('\n')) {
       buffer = buffer.slice(1);
     }

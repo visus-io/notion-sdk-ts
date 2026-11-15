@@ -1072,6 +1072,29 @@ describe('NotionClient', () => {
       }
     });
 
+    it('should stop between frames of one chunk when the caller aborts', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('data: first\n\ndata: second\n\n', {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+      const controller = new AbortController();
+      const reason = new Error('stopped by caller');
+
+      const iterator = client.stream({
+        method: 'POST',
+        path: '/sessions',
+        body: {},
+        signal: controller.signal,
+      });
+      expect((await iterator.next()).value).toEqual({ event: 'message', data: 'first' });
+      controller.abort(reason);
+
+      await expect(iterator.next()).rejects.toBe(reason);
+    });
+
     it('should not send a request when the signal already aborted', async () => {
       const fetchMock = vi.fn();
       const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
