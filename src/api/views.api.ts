@@ -28,6 +28,20 @@ export interface ListViewsOptions extends PaginationParameters {
 }
 
 /**
+ * Settings for the new database that {@link CreateViewOptions.create_database} creates.
+ */
+export interface CreateViewDatabase {
+  /** The page that holds the new linked database */
+  parent: { type: 'page_id'; page_id: string };
+
+  /** Where to put the new database on the page (default: end of the page) */
+  position?: { type: 'after_block'; block_id: string };
+
+  /** Whether Notion shows the data source title above the views (default: `true`) */
+  show_data_source_title?: boolean;
+}
+
+/**
  * Options for creating a view. Provide exactly one of
  * `database_id`/`view_id`/`create_database` to select the parent context.
  */
@@ -47,8 +61,8 @@ export interface CreateViewOptions {
   /** Clone the configuration of this existing view */
   view_id?: string;
 
-  /** Create a new database to hold the view */
-  create_database?: true;
+  /** Create a new linked database to hold the view */
+  create_database?: CreateViewDatabase;
 
   /** Filter configuration */
   filter?: Record<string, unknown>;
@@ -193,6 +207,7 @@ export class ViewsAPI extends BaseAPI<NotionView, View> {
    * @returns The created view wrapped in a View model
    *
    * @throws {NotionValidationError} If not exactly one of `database_id`/`view_id`/`create_database` is provided
+   * @throws {NotionValidationError} If `create_database` is not an object
    *
    * @see https://developers.notion.com/guides/data-apis/working-with-views
    */
@@ -204,6 +219,16 @@ export class ViewsAPI extends BaseAPI<NotionView, View> {
     if (selectorCount !== 1) {
       throw new NotionValidationError(
         'Exactly one of database_id, view_id, or create_database must be provided',
+      );
+    }
+
+    const createDatabase: unknown = options.create_database;
+    if (
+      createDatabase !== undefined &&
+      (typeof createDatabase !== 'object' || createDatabase === null)
+    ) {
+      throw new NotionValidationError(
+        'create_database must be an object with a parent, for example { parent: { type: "page_id", page_id } }',
       );
     }
 

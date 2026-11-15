@@ -4,6 +4,7 @@ import { iconSchema } from './icon.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
 import { notionDateStringSchema } from './shared.schema';
+import { syncMetadataSchema } from './syncMetadata.schema';
 import { userSchema } from './user.schema';
 import { propertiesObjectSchema } from './propertyObjects.schema';
 import { DATABASE_TYPES } from './database.schema';
@@ -73,6 +74,9 @@ export const dataSourceSchema = z.object({
 
   /** Canonical database type this data source's parent database was built from, if any */
   database_type: z.enum(DATABASE_TYPES).optional(),
+
+  /** Read-only sync metadata. Notion sends it only for a synced data source. */
+  sync_metadata: syncMetadataSchema.optional(),
 });
 
 /**

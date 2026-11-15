@@ -81,6 +81,38 @@ describe('SearchAPI integration', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should send filter_properties as query params and keep the JSON body', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/search`, async ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.getAll('filter_properties')).toEqual(['title', 'abc%3D']);
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.query).toBe('roadmap');
+          return HttpResponse.json({
+            object: 'list',
+            results: [buildPageResponse()],
+            next_cursor: null,
+            has_more: false,
+            type: 'page_or_data_source',
+            page_or_data_source: {},
+          });
+        }),
+      );
+
+      const result = await notion.search.query({
+        query: 'roadmap',
+        filter_properties: ['title', 'abc%3D'],
+      });
+
+      expect(result.results[0]).toBeInstanceOf(Page);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------
 

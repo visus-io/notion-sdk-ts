@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { NotionAPIError } from '../errors';
 import { DataSource, Page } from '../models';
 import { Notion } from '../notion';
-import { buildDataSourceResponse, buildErrorBody, buildPageResponse } from '../testUtils/fixtures';
+import {
+  buildDataSourceResponse,
+  buildErrorBody,
+  buildPageResponse,
+  buildSyncMetadata,
+} from '../testUtils/fixtures';
 import { useMswServer } from '../testUtils/mswLifecycle';
 import { NOTION_TEST_AUTH_TOKEN, NOTION_TEST_BASE_URL, server } from '../testUtils/mswServer';
 
@@ -216,6 +221,46 @@ describe('DataSourcesAPI integration', () => {
 
       const untrashed = await notion.dataSources.untrash(dataSourceId);
       expect(untrashed.inTrash).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should parse sync_metadata and a status default_option', async () => {
+      const dataSourceId = '123e4567-e89b-12d3-a456-426614174000';
+      server.use(
+        http.get(`${NOTION_TEST_BASE_URL}/v1/data_sources/${dataSourceId}`, () =>
+          HttpResponse.json(
+            buildDataSourceResponse({
+              sync_metadata: buildSyncMetadata(),
+              properties: {
+                Name: { id: 'title', name: 'Name', type: 'title', title: {} },
+                Status: {
+                  id: 'stat',
+                  name: 'Status',
+                  type: 'status',
+                  status: {
+                    options: [{ id: 'opt1', name: 'Not started', color: 'default' }],
+                    groups: [{ id: 'grp1', name: 'To-do', color: 'gray', option_ids: ['opt1'] }],
+                    default_option: 'Not started',
+                  },
+                },
+              },
+            }),
+          ),
+        ),
+      );
+
+      const result = await notion.dataSources.retrieve(dataSourceId);
+
+      expect(result).toBeInstanceOf(DataSource);
+      expect(result.syncMetadata?.health?.ok).toBe(true);
+      expect(result.syncMetadata?.resource).toBe('octo-org/octo-repo');
+      const status = result.properties.Status;
+      expect(status.type === 'status' && status.status.default_option).toBe('Not started');
     });
   });
 

@@ -38,7 +38,7 @@ data.
 | Relation pages               | 100 pages    | `prop.relation()`                                                                                                |
 | People users                 | 100 users    | `prop.people()`                                                                                                  |
 | Comment attachments          | 3 files      | `comments.create()`                                                                                              |
-| `filter_properties`          | 100 items    | `pages.retrieve()`, `databases.retrieve/query()`, `dataSources.retrieve/query()`                                 |
+| `filter_properties`          | 100 items    | `pages.retrieve()`, `databases.retrieve/query()`, `dataSources.retrieve/query()`, `search.query()`               |
 
 ---
 

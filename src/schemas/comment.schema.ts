@@ -68,6 +68,8 @@ export const commentSchema = z.object({
   rich_text: richTextSchema,
   attachments: z.array(commentAttachmentSchema).optional(),
   display_name: commentDisplayNameSchema.optional(),
+  /** The `id` of the page property that the comment is on. Notion omits it for other comments. */
+  property_id: z.string().trim().optional(),
 });
 
 /**

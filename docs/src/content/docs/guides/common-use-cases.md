@@ -560,15 +560,18 @@ const page = await notion.pages.create({
 });
 
 // Example 2: Read a page's content back as markdown
-const content = await notion.pages.getMarkdown(page.id);
+const content = await notion.pages.getMarkdown(page.id, { markdown_version: 'v2' });
 console.log(content.markdown);
 
 if (content.truncated) {
   console.log('Content was truncated; fetch the block tree for the full page.');
 }
 
-// Example 3: Find-and-replace an exact markdown substring
-await notion.pages.updateMarkdown(page.id, {
+// Example 3: Find-and-replace an exact markdown substring.
+// Notion applies each edit that matches. It reports each edit that does not match in
+// `warnings`. The request fails only when no edit that changes content matches.
+const edit = await notion.pages.updateMarkdown(page.id, {
+  markdown_version: 'v2', // Notion-flavored Markdown. `v1` is deprecated.
   type: 'update_content',
   content_updates: [
     {
@@ -578,14 +581,28 @@ await notion.pages.updateMarkdown(page.id, {
   ],
 });
 
-// Example 4: Replace the entire page body
+if (edit.object === 'page_markdown' && edit.warnings) {
+  for (const warning of edit.warnings) {
+    console.warn(`${warning.code}: ${warning.message}`);
+  }
+}
+
+// Example 4: Edit a page without notifications.
+// `pages.create()`, `pages.update()`, and `blocks.children.append()` accept this option.
+// Automations, reminders, and webhooks still run.
+await notion.pages.update(page.id, {
+  properties: { Status: { status: { name: 'Done' } } },
+  notifications: { mode: 'silent' },
+});
+
+// Example 5: Replace the entire page body
 await notion.pages.updateMarkdown(page.id, {
   type: 'replace_content',
   new_str: '# Rewritten\n\nThis page was replaced in one call.',
   allow_deleting_content: true,
 });
 
-// Example 5: Large writes can process asynchronously. Discriminate the response
+// Example 6: Large writes can process asynchronously. Discriminate the response
 // by `object`, then poll the async task through `notion.asyncTasks`.
 const largeMarkdown = readFileSync('./release-notes.md', 'utf8');
 const result = await notion.pages.updateMarkdown(page.id, {
@@ -627,11 +644,24 @@ for (const view of views.results) {
   console.log(`${view.name} (${view.type})`);
 }
 
-// Example 2: Create a board view grouped by status
+// Example 2: Create a board view grouped by status.
+// Give exactly one of `database_id`, `view_id`, or `create_database`.
 const boardView = await notion.views.create({
   data_source_id: dataSourceId,
+  database_id: 'your-database-id',
   name: 'By Status',
   type: 'board',
+});
+
+// Or create the view in a new linked database on a page, without the data source title.
+const linkedView = await notion.views.create({
+  data_source_id: dataSourceId,
+  name: 'Roadmap',
+  type: 'table',
+  create_database: {
+    parent: { type: 'page_id', page_id: 'your-page-id' },
+    show_data_source_title: false,
+  },
 });
 
 // Example 3: Query a view's rows and check for the 10,000-result cap.
@@ -652,6 +682,7 @@ if (query.requestStatus?.incomplete_reason === 'query_result_limit_reached') {
 // Example 4: Clean up the query and the view
 await notion.views.queries.delete(boardView.id, query.id);
 await notion.views.delete(boardView.id);
+await notion.views.delete(linkedView.id);
 ```
 
 ---

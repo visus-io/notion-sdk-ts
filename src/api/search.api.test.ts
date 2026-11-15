@@ -3,6 +3,7 @@ import { SearchAPI } from './search.api';
 import type { NotionClient } from '../client';
 import { DataSource, Page } from '../models';
 import { dataSourceSchema, pageSchema } from '../schemas';
+import { NotionValidationError } from '../validation';
 
 describe('SearchAPI', () => {
   const mockClient = {
@@ -110,6 +111,46 @@ describe('SearchAPI', () => {
       expect(result.results).toHaveLength(1);
       expect(result.results[0]).toBeInstanceOf(Page);
       expect(result.type).toBe('page_or_data_source');
+    });
+
+    it('should send filter_properties as query params', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue({
+        object: 'list',
+        results: [],
+        next_cursor: null,
+        has_more: false,
+      });
+
+      await searchAPI.query({ filter_properties: ['title', 'abc%3D'] });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/search',
+        query: { filter_properties: ['title', 'abc%3D'] },
+        body: undefined,
+      });
+    });
+
+    it('should accept exactly 100 filter_properties', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue({
+        object: 'list',
+        results: [],
+        next_cursor: null,
+        has_more: false,
+      });
+
+      await expect(
+        searchAPI.query({ filter_properties: Array.from({ length: 100 }, (_, i) => `p${i}`) }),
+      ).resolves.toBeDefined();
+    });
+
+    it('should reject more than 100 filter_properties before the request', async () => {
+      vi.mocked(mockClient.request).mockClear();
+
+      await expect(
+        searchAPI.query({ filter_properties: Array.from({ length: 101 }, (_, i) => `p${i}`) }),
+      ).rejects.toThrow(NotionValidationError);
+      expect(mockClient.request).not.toHaveBeenCalled();
     });
 
     it('should search with query string', async () => {

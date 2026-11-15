@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DataSource } from '.';
 import type { NotionDataSource } from '../schemas';
+import { buildDataSourceResponse, buildSyncMetadata } from '../testUtils/fixtures';
 
 describe('DataSource', () => {
   it('should create a valid data source model', () => {
@@ -575,5 +576,30 @@ describe('DataSource', () => {
     const dataSource = new DataSource(dataSourceData);
     expect(dataSource.title).toEqual(dataSourceData.title);
     expect(dataSource.description).toEqual(dataSourceData.description);
+  });
+
+  // ---------------------------------------------------------------------------
+  // syncMetadata
+  // ---------------------------------------------------------------------------
+
+  it('should return sync_metadata when present', () => {
+    const syncMetadata = buildSyncMetadata();
+    const dataSource = new DataSource(buildDataSourceResponse({ sync_metadata: syncMetadata }));
+    expect(dataSource.syncMetadata).toEqual(syncMetadata);
+    expect(dataSource.syncMetadata?.health?.checks?.last_execution_succeeded_at).toBe(
+      '2026-11-05T12:00:00.000Z',
+    );
+  });
+
+  it('should keep a null health value', () => {
+    const dataSource = new DataSource(
+      buildDataSourceResponse({ sync_metadata: buildSyncMetadata({ health: null }) }),
+    );
+    expect(dataSource.syncMetadata?.health).toBeNull();
+  });
+
+  it('should return undefined for syncMetadata when the data source is not synced', () => {
+    const dataSource = new DataSource(buildDataSourceResponse());
+    expect(dataSource.syncMetadata).toBeUndefined();
   });
 });

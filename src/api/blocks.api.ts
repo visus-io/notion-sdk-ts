@@ -4,6 +4,7 @@ import {
   blockSchema,
   type MeetingNotesQueryProperty,
   meetingNotesQueryResponseSchema,
+  type NotificationOptions,
   type NotionBlock,
   type PaginatedList,
   paginatedListSchema,
@@ -79,6 +80,9 @@ export interface AppendBlockChildrenOptions {
 
   /** Position to insert the children (default: end) */
   position?: BlockPosition;
+
+  /** Set `{ mode: 'silent' }` to skip the notifications for this change */
+  notifications?: NotificationOptions;
 }
 
 /**

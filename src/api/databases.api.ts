@@ -109,6 +109,9 @@ export interface CreateDatabaseOptions {
 
   /** Whether the database is inline */
   is_inline?: boolean;
+
+  /** Whether Notion shows the data source title above the database views */
+  show_data_source_title?: boolean;
 }
 
 /**
@@ -134,6 +137,9 @@ export interface UpdateDatabaseOptions {
 
   /** Whether the database is inline */
   is_inline?: boolean;
+
+  /** Whether Notion shows the data source title above the database views */
+  show_data_source_title?: boolean;
 
   /** Move the database to a different parent */
   parent?: CreateDatabaseParent;

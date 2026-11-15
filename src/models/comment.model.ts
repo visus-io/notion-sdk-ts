@@ -90,6 +90,14 @@ export class Comment extends BaseModel<NotionComment> {
   }
 
   /**
+   * Returns the ID of the page property that the comment is on.
+   * Returns `undefined` when the comment is not on a page property.
+   */
+  get propertyId(): string | undefined {
+    return this.data.property_id;
+  }
+
+  /**
    * Extracts the plain text content from the comment.
    */
   getPlainText(): string {

@@ -76,6 +76,27 @@ describe('UsersAPI integration', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should parse agent_id on a Custom Agent bot user', async () => {
+      const botId = '223e4567-e89b-12d3-a456-426614174000';
+      server.use(
+        http.get(`${NOTION_TEST_BASE_URL}/v1/users/${botId}`, () =>
+          HttpResponse.json(buildBotUserResponse({ agent_id: 'agent-123' })),
+        ),
+      );
+
+      const result = await notion.users.retrieve(botId);
+
+      expect(result).toBeInstanceOf(User);
+      expect(result.isCustomAgent()).toBe(true);
+      expect(result.agentId).toBe('agent-123');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------
 

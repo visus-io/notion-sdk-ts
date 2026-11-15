@@ -74,7 +74,9 @@ page.toJSON();
 `pages.getMarkdown()` and `pages.updateMarkdown()` read and write a page's content as markdown
 directly, instead of a block tree. `updateMarkdown()` returns an `AsyncTask` handle instead of the
 finished content when `allow_async: true` triggers asynchronous processing; poll it with
-`notion.asyncTasks.poll()`. See
+`notion.asyncTasks.poll()`. A partial `update_content` edit returns a `warnings` array. It lists
+each edit that did not match. Set `markdown_version: 'v2'` to use Notion-flavored Markdown. Version
+`v1` is deprecated. See
 [Working with Markdown Content](/guides/common-use-cases/#working-with-markdown-content) for a
 full example.
 
@@ -220,6 +222,7 @@ db.createdTime; // Date
 db.lastEditedTime; // Date
 db.inTrash; // boolean
 db.isLocked; // boolean
+db.showDataSourceTitle; // boolean | undefined
 ```
 
 > **Note:** There is no `db.archived` getter. Use `db.inTrash` to check trash status instead.
@@ -279,7 +282,11 @@ ds.parent; // Parent database reference
 ds.createdTime; // Date
 ds.lastEditedTime; // Date
 ds.inTrash; // boolean
+ds.syncMetadata; // SyncMetadata | undefined (synced data sources only)
 ```
+
+A `syncMetadata.health` value of `null` means that Notion could not get the health. It does not
+mean that the sync is unhealthy.
 
 > **Note:** There is no `ds.archived` getter. Use `ds.inTrash` to check trash status instead.
 
@@ -342,6 +349,7 @@ user.id; // UUID
 user.type; // 'person' | 'bot' | undefined
 user.name; // string | undefined
 user.avatarUrl; // string | null | undefined
+user.agentId; // string | undefined (Custom Agents only)
 ```
 
 ### Methods
@@ -350,6 +358,7 @@ user.avatarUrl; // string | null | undefined
 // Type guards
 user.isPerson(); // true if type === 'person'
 user.isBot(); // true if type === 'bot'
+user.isCustomAgent(); // true if the bot user is a Custom Agent
 
 // Person-specific
 user.getEmail(); // Email (person users only)
@@ -403,6 +412,7 @@ comment.createdBy; // User reference
 comment.parent; // Parent reference
 comment.attachments; // File attachments
 comment.displayName; // Custom display name (if set)
+comment.propertyId; // Page property ID (comments on a page property only)
 ```
 
 ### Methods

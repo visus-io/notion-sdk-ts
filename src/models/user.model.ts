@@ -46,6 +46,20 @@ export class User extends BaseModel<NotionUser> {
   }
 
   /**
+   * Check if this bot user is a Custom Agent.
+   */
+  isCustomAgent(): this is User & { data: BotUser & { agent_id: string } } {
+    return this.isBot() && this.data.agent_id !== undefined;
+  }
+
+  /**
+   * Get the Custom Agent ID. Returns `undefined` when the user is not a Custom Agent.
+   */
+  get agentId(): string | undefined {
+    return this.isBot() ? this.data.agent_id : undefined;
+  }
+
+  /**
    * Get email if this is a person user.
    */
   getEmail(): string | undefined {

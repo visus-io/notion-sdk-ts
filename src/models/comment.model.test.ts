@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Comment } from '.';
+import { buildCommentResponse } from '../testUtils/fixtures';
 
 describe('Comment', () => {
   it('should create a valid comment model', () => {
@@ -353,5 +354,19 @@ describe('Comment', () => {
     const comment = new Comment(commentData);
     const json = comment.toJSON();
     expect(json).toEqual(commentData);
+  });
+
+  // ---------------------------------------------------------------------------
+  // propertyId
+  // ---------------------------------------------------------------------------
+
+  it('should return property_id for a comment on a page property', () => {
+    const comment = new Comment(buildCommentResponse({ property_id: 'abc%3D' }));
+    expect(comment.propertyId).toBe('abc%3D');
+  });
+
+  it('should return undefined for propertyId on other comments', () => {
+    const comment = new Comment(buildCommentResponse());
+    expect(comment.propertyId).toBeUndefined();
   });
 });

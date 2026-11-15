@@ -8,6 +8,7 @@ import type {
   NotionPage,
   NotionRichText,
   NotionUser,
+  SyncMetadata,
 } from '../schemas';
 
 const PERSON_USER_ID = '323e4567-e89b-12d3-a456-426614174000';
@@ -129,6 +130,30 @@ export function buildDataSourceResponse(
     in_trash: false,
     is_inline: false,
     public_url: null,
+    ...overrides,
+  };
+}
+
+/** Build realistic sync metadata for a GitHub-synced data source. */
+export function buildSyncMetadata(overrides: Partial<SyncMetadata> = {}): SyncMetadata {
+  return {
+    external_database_sync: {
+      sync_id: '623e4567-e89b-12d3-a456-426614174000',
+      provider: 'github',
+    },
+    synced_collection_key: 'issues',
+    owner_user_id: '723e4567-e89b-12d3-a456-426614174000',
+    resource: 'octo-org/octo-repo',
+    health: {
+      paused: false,
+      stage: 'steady',
+      ok: true,
+      checks: {
+        sync_version_updated_at: '2026-11-01T00:00:00.000Z',
+        last_execution_succeeded_at: '2026-11-05T12:00:00.000Z',
+        delta_synced_through_at: '2026-11-05T11:59:00.000Z',
+      },
+    },
     ...overrides,
   };
 }

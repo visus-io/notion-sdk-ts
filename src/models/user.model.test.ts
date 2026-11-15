@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { User } from '.';
+import { buildBotUserResponse, buildUserResponse } from '../testUtils/fixtures';
 
 describe('User', () => {
   it('should create a valid person user model', () => {
@@ -162,5 +163,28 @@ describe('User', () => {
 
     const user = new User(unverifiedData);
     expect(user.getEmailVerified()).toBeUndefined();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Custom Agents
+  // ---------------------------------------------------------------------------
+
+  it('should identify a Custom Agent bot user and return its agent ID', () => {
+    const user = new User(buildBotUserResponse({ agent_id: 'agent-123' }));
+    expect(user.isBot()).toBe(true);
+    expect(user.isCustomAgent()).toBe(true);
+    expect(user.agentId).toBe('agent-123');
+  });
+
+  it('should not identify a bot user without agent_id as a Custom Agent', () => {
+    const user = new User(buildBotUserResponse());
+    expect(user.isCustomAgent()).toBe(false);
+    expect(user.agentId).toBeUndefined();
+  });
+
+  it('should not identify a person user as a Custom Agent', () => {
+    const user = new User(buildUserResponse());
+    expect(user.isCustomAgent()).toBe(false);
+    expect(user.agentId).toBeUndefined();
   });
 });

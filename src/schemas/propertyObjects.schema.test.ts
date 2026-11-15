@@ -511,6 +511,32 @@ describe('propertyObjectSchema', () => {
       const result = propertyObjectSchema.safeParse(property);
       expect(result.success).toBe(true);
     });
+
+    it('should parse a status default_option name', () => {
+      const result = propertyObjectSchema.parse({
+        type: 'status',
+        id: 'prop-26',
+        name: 'Status',
+        status: {
+          options: [{ id: 'opt-1', name: 'Not Started', color: 'gray' }],
+          groups: [],
+          default_option: 'Not Started',
+        },
+      });
+
+      expect(result.type === 'status' && result.status.default_option).toBe('Not Started');
+    });
+
+    it('should parse a null status default_option', () => {
+      const result = propertyObjectSchema.parse({
+        type: 'status',
+        id: 'prop-26',
+        name: 'Status',
+        status: { options: [], groups: [], default_option: null },
+      });
+
+      expect(result.type === 'status' && result.status.default_option).toBeNull();
+    });
   });
 
   describe('title property', () => {

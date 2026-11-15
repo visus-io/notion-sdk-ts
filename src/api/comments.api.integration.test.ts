@@ -119,6 +119,49 @@ describe('CommentsAPI integration', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should send markdown_version and parse property_id on a property comment', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/comments`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.markdown_version).toBe('v2');
+          return HttpResponse.json(buildCommentResponse({ property_id: 'abc%3D' }));
+        }),
+      );
+
+      const result = await notion.comments.create({
+        parent: { page_id: '223e4567-e89b-12d3-a456-426614174000' },
+        markdown: '**Looks good**',
+        markdown_version: 'v2',
+      });
+
+      expect(result).toBeInstanceOf(Comment);
+      expect(result.propertyId).toBe('abc%3D');
+    });
+
+    it('should send markdown_version when updating a comment', async () => {
+      const commentId = '123e4567-e89b-12d3-a456-426614174000';
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/comments/${commentId}`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.markdown_version).toBe('v2');
+          return HttpResponse.json(buildCommentResponse());
+        }),
+      );
+
+      const result = await notion.comments.update(commentId, {
+        markdown: 'Edited',
+        markdown_version: 'v2',
+      });
+
+      expect(result.propertyId).toBeUndefined();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------
 

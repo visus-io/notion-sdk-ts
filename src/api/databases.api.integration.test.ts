@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { NotionAPIError } from '../errors';
 import { Database, Page } from '../models';
 import { Notion } from '../notion';
-import { buildDatabaseResponse, buildErrorBody, buildPageResponse } from '../testUtils/fixtures';
+import {
+  buildDatabaseResponse,
+  buildErrorBody,
+  buildPageResponse,
+  buildSyncMetadata,
+} from '../testUtils/fixtures';
 import { useMswServer } from '../testUtils/mswLifecycle';
 import { NOTION_TEST_AUTH_TOKEN, NOTION_TEST_BASE_URL, server } from '../testUtils/mswServer';
 
@@ -192,6 +197,70 @@ describe('DatabasesAPI integration', () => {
 
       const restored = await notion.databases.restore(databaseId);
       expect(restored.inTrash).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should send show_data_source_title on create and parse it from the response', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/databases`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.show_data_source_title).toBe(false);
+          return HttpResponse.json(buildDatabaseResponse({ show_data_source_title: false }));
+        }),
+      );
+
+      const result = await notion.databases.create({
+        parent: { page_id: '523e4567-e89b-12d3-a456-426614174000' },
+        initial_data_source: { properties: { Name: { title: {} } } },
+        show_data_source_title: false,
+      });
+
+      expect(result).toBeInstanceOf(Database);
+      expect(result.showDataSourceTitle).toBe(false);
+    });
+
+    it('should send show_data_source_title on update', async () => {
+      const databaseId = '123e4567-e89b-12d3-a456-426614174000';
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/databases/${databaseId}`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.show_data_source_title).toBe(true);
+          return HttpResponse.json(buildDatabaseResponse({ show_data_source_title: true }));
+        }),
+      );
+
+      const result = await notion.databases.update(databaseId, { show_data_source_title: true });
+
+      expect(result.showDataSourceTitle).toBe(true);
+    });
+
+    it('should parse sync_metadata on each data source reference', async () => {
+      const databaseId = '123e4567-e89b-12d3-a456-426614174000';
+      server.use(
+        http.get(`${NOTION_TEST_BASE_URL}/v1/databases/${databaseId}`, () =>
+          HttpResponse.json(
+            buildDatabaseResponse({
+              data_sources: [
+                {
+                  id: '823e4567-e89b-12d3-a456-426614174000',
+                  name: 'Issues',
+                  sync_metadata: buildSyncMetadata({ health: null }),
+                },
+              ],
+            }),
+          ),
+        ),
+      );
+
+      const result = await notion.databases.retrieve(databaseId);
+
+      expect(result.dataSources[0].sync_metadata?.health).toBeNull();
+      expect(result.dataSources[0].sync_metadata?.external_database_sync?.provider).toBe('github');
     });
   });
 

@@ -9,6 +9,7 @@ import {
 } from '../schemas';
 import { DataSource, Page } from '../models';
 import { TRUSTED } from '../models/base.model';
+import { buildFilterPropertiesQuery } from './base.api';
 
 /**
  * Search filter object type.
@@ -61,6 +62,12 @@ export interface SearchOptions extends PaginationParameters {
 
   /** Sort configuration */
   sort?: SearchSort;
+
+  /**
+   * Page property names or IDs to include in each page result (max 100). Notion skips a
+   * name or ID that does not exist on a page.
+   */
+  filter_properties?: string[];
 }
 
 /**
@@ -81,7 +88,7 @@ export class SearchAPI {
    * Search across all pages and data sources in the workspace.
    * As of API version 2025-09-03, search returns data sources instead of databases.
    *
-   * @param options - Search options (query, filter, sort, pagination)
+   * @param options - Search options (query, filter, sort, pagination, filter properties)
    * @returns Paginated list of pages and/or data sources matching the search
    *
    * @see https://developers.notion.com/reference/post-search
@@ -101,9 +108,13 @@ export class SearchAPI {
       body.start_cursor = options.start_cursor;
     }
 
+    const filterQuery = buildFilterPropertiesQuery(options?.filter_properties);
+    const query = Object.keys(filterQuery).length > 0 ? filterQuery : undefined;
+
     const response = await this.client.request<PaginatedList<NotionPage | NotionDataSource>>({
       method: 'POST',
       path: '/search',
+      query,
       body: Object.keys(body).length > 0 ? body : undefined,
     });
 

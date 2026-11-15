@@ -153,6 +153,14 @@ export class Database extends BaseModel<NotionDatabase> {
   }
 
   /**
+   * Returns whether Notion shows the data source title above the database views.
+   * Returns `undefined` when the response does not include this field.
+   */
+  get showDataSourceTitle(): boolean | undefined {
+    return this.data.show_data_source_title;
+  }
+
+  /**
    * Extracts the plain text title from the database.
    */
   getTitle(): string {
