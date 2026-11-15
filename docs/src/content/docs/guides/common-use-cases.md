@@ -587,11 +587,12 @@ if (edit.object === 'page_markdown' && edit.warnings) {
   }
 }
 
-// Example 4: Edit a page without notifications.
+// Example 4: Rename the page without notifications.
 // `pages.create()`, `pages.update()`, and `blocks.children.append()` accept this option.
 // Automations, reminders, and webhooks still run.
+// A page with a page parent has only the `title` property.
 await notion.pages.update(page.id, {
-  properties: { Status: { status: { name: 'Done' } } },
+  properties: { title: { title: [{ type: 'text', text: { content: 'Release Notes (final)' } }] } },
   notifications: { mode: 'silent' },
 });
 
