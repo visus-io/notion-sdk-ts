@@ -251,6 +251,62 @@ describe('ViewsAPI integration', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should send a create_database object with show_data_source_title', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/views`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.create_database).toEqual({
+            parent: { type: 'page_id', page_id: 'parent-page-id' },
+            show_data_source_title: false,
+          });
+          return HttpResponse.json(buildViewResponse());
+        }),
+      );
+
+      const result = await notion.views.create({
+        data_source_id: dataSourceId,
+        name: 'Board',
+        type: 'board',
+        create_database: {
+          parent: { type: 'page_id', page_id: 'parent-page-id' },
+          show_data_source_title: false,
+        },
+      });
+
+      expect(result).toBeInstanceOf(View);
+    });
+
+    it('should send a create_database position after a block', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/views`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.create_database).toEqual({
+            parent: { type: 'page_id', page_id: 'parent-page-id' },
+            position: { type: 'after_block', block_id: 'heading-block-id' },
+          });
+          return HttpResponse.json(buildViewResponse());
+        }),
+      );
+
+      const result = await notion.views.create({
+        data_source_id: dataSourceId,
+        name: 'Table',
+        type: 'table',
+        create_database: {
+          parent: { type: 'page_id', page_id: 'parent-page-id' },
+          position: { type: 'after_block', block_id: 'heading-block-id' },
+        },
+      });
+
+      expect(result).toBeInstanceOf(View);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------
 

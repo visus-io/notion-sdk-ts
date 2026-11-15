@@ -39,6 +39,8 @@ export class UsersAPI extends BaseAPI<NotionUser, User> {
   /**
    * List all users in the workspace (paginated).
    *
+   * The result does not include Custom Agents.
+   *
    * @param params - Pagination parameters
    * @returns Paginated list of users
    *
@@ -52,6 +54,8 @@ export class UsersAPI extends BaseAPI<NotionUser, User> {
 
   /**
    * Retrieve the bot user associated with the API token.
+   *
+   * This method also works for a connection that has only comment capabilities.
    *
    * @returns The bot user wrapped in a User model
    *

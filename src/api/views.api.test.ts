@@ -28,6 +28,30 @@ describe('ViewsAPI', () => {
   });
 
   describe('create', () => {
+    it('should reject create_database: true before the request', async () => {
+      await expect(
+        viewsAPI.create({
+          data_source_id: 'ds-id',
+          name: 'Board',
+          type: 'board',
+          create_database: true as unknown as { parent: { type: 'page_id'; page_id: string } },
+        }),
+      ).rejects.toThrow(/create_database must be an object/);
+      expect(mockClient.request).not.toHaveBeenCalled();
+    });
+
+    it('should reject create_database: null before the request', async () => {
+      await expect(
+        viewsAPI.create({
+          data_source_id: 'ds-id',
+          name: 'Board',
+          type: 'board',
+          create_database: null as unknown as { parent: { type: 'page_id'; page_id: string } },
+        }),
+      ).rejects.toThrow(NotionValidationError);
+      expect(mockClient.request).not.toHaveBeenCalled();
+    });
+
     it('should throw a validation error when no parent selector is provided', async () => {
       await expect(
         viewsAPI.create({ data_source_id: 'ds-id', name: 'View', type: 'table' }),

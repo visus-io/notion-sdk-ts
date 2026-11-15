@@ -40,6 +40,8 @@ const botUserSchema = z.object({
   id: z.uuid(),
   type: z.literal('bot'),
   name: z.string().trim().optional(),
+  /** The Custom Agent ID. Notion sends it only when the bot user is a Custom Agent. */
+  agent_id: z.string().trim().optional(),
   avatar_url: z.union([z.url(), z.null()]).optional(),
   bot: z.object({
     owner: botOwnerSchema,

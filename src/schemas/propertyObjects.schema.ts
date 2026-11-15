@@ -306,6 +306,8 @@ const statusPropertySchema = z.object({
   status: z.object({
     options: z.array(statusOptionSchema),
     groups: z.array(statusGroupSchema),
+    /** Read-only. The option name that Notion shows when a page has no status, or `null`. */
+    default_option: z.string().trim().nullish(),
   }),
 });
 

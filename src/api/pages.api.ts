@@ -1,5 +1,11 @@
 import type { NotionClient } from '../client';
-import type { MarkdownContentResponse, NotionPage, PageMarkdown } from '../schemas';
+import type {
+  MarkdownContentResponse,
+  MarkdownVersion,
+  NotificationOptions,
+  NotionPage,
+  PageMarkdown,
+} from '../schemas';
 import { markdownContentResponseSchema, pageMarkdownSchema, pageSchema } from '../schemas';
 import { Page } from '../models';
 import { LIMITS, NotionValidationError, validateArrayLength } from '../validation';
@@ -44,6 +50,11 @@ export interface CreatePageOptions {
    */
   markdown?: string;
 
+  /**
+   * The syntax of `markdown`. `v1` is deprecated. Omit it to use the server default.
+   */
+  markdown_version?: MarkdownVersion;
+
   /** Template to apply when creating the page */
   template?: { type: 'none' } | { type: 'default' } | { type: 'template_id'; template_id: string };
 
@@ -52,6 +63,9 @@ export interface CreatePageOptions {
     | { type: 'after_block'; after_block: { id: string } }
     | { type: 'page_start' }
     | { type: 'page_end' };
+
+  /** Set `{ mode: 'silent' }` to skip the notifications for this change */
+  notifications?: NotificationOptions;
 }
 
 /**
@@ -81,6 +95,9 @@ function validateMarkdownExclusivity(options: {
 export interface GetPageMarkdownOptions {
   /** Include meeting-note transcript content in the markdown output */
   include_transcript?: boolean;
+
+  /** The markdown syntax to return. `v1` is deprecated. Omit it to use the server default. */
+  markdown_version?: MarkdownVersion;
 }
 
 /**
@@ -100,7 +117,10 @@ export interface MarkdownContentUpdate {
 /**
  * Options for updating a page's markdown content.
  */
-export type UpdatePageMarkdownOptions =
+export type UpdatePageMarkdownOptions = {
+  /** The markdown syntax of the content. `v1` is deprecated. Omit it to use the server default. */
+  markdown_version?: MarkdownVersion;
+} & (
   | {
       type: 'update_content';
       content_updates: MarkdownContentUpdate[];
@@ -127,7 +147,8 @@ export type UpdatePageMarkdownOptions =
       content_range: unknown;
       allow_deleting_content?: boolean;
       allow_async?: boolean;
-    };
+    }
+);
 
 /**
  * Options for updating a page.
@@ -153,6 +174,9 @@ export interface UpdatePageOptions {
 
   /** Erase all existing content from the page */
   erase_content?: boolean;
+
+  /** Set `{ mode: 'silent' }` to skip the notifications for this change */
+  notifications?: NotificationOptions;
 }
 
 /**
@@ -215,15 +239,18 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    * @see https://developers.notion.com/guides/data-apis/working-with-markdown-content
    */
   async getMarkdown(pageId: string, options?: GetPageMarkdownOptions): Promise<PageMarkdown> {
-    const query =
-      options?.include_transcript !== undefined
-        ? { include_transcript: String(options.include_transcript) }
-        : undefined;
+    const query: Record<string, string> = {};
+    if (options?.include_transcript !== undefined) {
+      query.include_transcript = String(options.include_transcript);
+    }
+    if (options?.markdown_version !== undefined) {
+      query.markdown_version = options.markdown_version;
+    }
 
     const response = await this.client.request<unknown>({
       method: 'GET',
       path: `/pages/${pageId}/markdown`,
-      query,
+      query: Object.keys(query).length > 0 ? query : undefined,
     });
 
     return pageMarkdownSchema.parse(response);
@@ -235,6 +262,10 @@ export class PagesAPI extends BaseAPI<NotionPage, Page> {
    * Set `allow_async: true` to allow asynchronous processing for large writes.
    * In that case, the API returns an `async_task` handle instead of the completed
    * content. Poll the task with `notion.asyncTasks.poll(task.id)`.
+   *
+   * For `update_content`, Notion applies each edit that matches. It reports each edit that
+   * does not match in the `warnings` array of the response. The request fails only when no
+   * edit that changes content matches. An async update does not return warnings.
    *
    * A `504 gateway_timeout` response does not guarantee the write failed. The SDK
    * does not retry this call automatically on a `504`. Verify the page content before

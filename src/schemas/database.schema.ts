@@ -4,6 +4,7 @@ import { iconSchema } from './icon.schema';
 import { parentSchema } from './parent.schema';
 import { richTextSchema } from './richText.schema';
 import { notionDateStringSchema } from './shared.schema';
+import { syncMetadataSchema } from './syncMetadata.schema';
 import { userSchema } from './user.schema';
 
 /**
@@ -23,6 +24,8 @@ import { userSchema } from './user.schema';
 export const dataSourceRefSchema = z.object({
   id: z.uuid(),
   name: z.string().trim(),
+  /** Read-only sync metadata. Notion sends it only for a synced data source. */
+  sync_metadata: syncMetadataSchema.optional(),
 });
 
 /**
@@ -67,6 +70,8 @@ export const databaseSchema = z.object({
   is_locked: z.boolean().optional(),
   public_url: z.nullable(z.url()),
   database_type: z.enum(DATABASE_TYPES).optional(),
+  /** Whether Notion shows the data source title above the database views */
+  show_data_source_title: z.boolean().optional(),
 });
 
 /**

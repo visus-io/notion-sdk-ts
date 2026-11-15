@@ -364,6 +364,35 @@ describe('PagesAPI', () => {
         query: { include_transcript: 'true' },
       });
     });
+
+    it('should send markdown_version as a query param', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockMarkdownResponse);
+
+      await pagesAPI.getMarkdown('123e4567-e89b-12d3-a456-426614174000', {
+        markdown_version: 'v2',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'GET',
+        path: '/pages/123e4567-e89b-12d3-a456-426614174000/markdown',
+        query: { markdown_version: 'v2' },
+      });
+    });
+
+    it('should send include_transcript and markdown_version together', async () => {
+      vi.mocked(mockClient.request).mockResolvedValue(mockMarkdownResponse);
+
+      await pagesAPI.getMarkdown('123e4567-e89b-12d3-a456-426614174000', {
+        include_transcript: false,
+        markdown_version: 'v1',
+      });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'GET',
+        path: '/pages/123e4567-e89b-12d3-a456-426614174000/markdown',
+        query: { include_transcript: 'false', markdown_version: 'v1' },
+      });
+    });
   });
 
   describe('updateMarkdown', () => {

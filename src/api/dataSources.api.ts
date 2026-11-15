@@ -47,7 +47,19 @@ export interface UpdateDataSourceOptions {
   /** Update the data source icon */
   icon?: unknown;
 
-  /** Update the data source properties schema */
+  /**
+   * Update the data source properties schema.
+   *
+   * For `select`, `multi_select`, and `status` properties, Notion merges the options:
+   * - Notion matches option names without regard to case. `high` keeps the existing `High`
+   *   option and its ID.
+   * - A new `color` on an existing option changes the color of that option.
+   * - If you omit `options` on a `select` or `multi_select` property, Notion keeps the
+   *   current options.
+   *
+   * If you omit `description` on a property or option, Notion keeps the current value. Send
+   * `null` to clear it.
+   */
   properties?: Record<string, unknown>;
 
   /** Move to trash or restore from trash */

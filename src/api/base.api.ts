@@ -24,6 +24,25 @@ interface ResourceConfig<TResponse, TModel> {
 }
 
 /**
+ * Validate `filter_properties` and build the matching query parameters.
+ *
+ * @param filterProperties - Property names or IDs (max 100)
+ * @returns `{ filter_properties: [...] }`, or an empty object when `filterProperties` is undefined
+ * @throws {NotionValidationError} If `filterProperties` has more than 100 items
+ */
+export function buildFilterPropertiesQuery(filterProperties?: string[]): Record<string, string[]> {
+  const query: Record<string, string[]> = {};
+
+  if (filterProperties) {
+    validateArrayLength(filterProperties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
+
+    query.filter_properties = filterProperties;
+  }
+
+  return query;
+}
+
+/**
  * Base API class providing common functionality for all Notion API clients.
  *
  * @template TResponse - The raw response type from the API
@@ -107,15 +126,7 @@ export abstract class BaseAPI<TResponse, TModel> {
    * // query will be: { filter_properties: ['Name', 'Status'] }
    */
   protected buildFilterPropertiesQuery(filterProperties?: string[]): Record<string, string[]> {
-    const query: Record<string, string[]> = {};
-
-    if (filterProperties) {
-      validateArrayLength(filterProperties, LIMITS.ARRAY_ELEMENTS, 'filter_properties');
-
-      query.filter_properties = filterProperties;
-    }
-
-    return query;
+    return buildFilterPropertiesQuery(filterProperties);
   }
 
   /**

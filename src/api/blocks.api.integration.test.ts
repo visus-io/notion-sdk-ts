@@ -199,6 +199,40 @@ describe('BlocksAPI integration', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should send notifications when appending children', async () => {
+      const parentId = '923e4567-e89b-12d3-a456-426614174000';
+      server.use(
+        http.patch(
+          `${NOTION_TEST_BASE_URL}/v1/blocks/${parentId}/children`,
+          async ({ request }) => {
+            const body = (await request.json()) as Record<string, unknown>;
+            expect(body.notifications).toEqual({ mode: 'silent' });
+            return HttpResponse.json({
+              object: 'list',
+              results: [buildBlockResponse()],
+              next_cursor: null,
+              has_more: false,
+              type: 'block',
+              block: {},
+            });
+          },
+        ),
+      );
+
+      const result = await notion.blocks.children.append(parentId, {
+        children: [{ type: 'paragraph', paragraph: { rich_text: [] } }],
+        notifications: { mode: 'silent' },
+      });
+
+      expect(result.results[0]).toBeInstanceOf(Block);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------
 

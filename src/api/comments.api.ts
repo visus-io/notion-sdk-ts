@@ -1,6 +1,7 @@
 import type { NotionClient } from '../client';
 import {
   commentSchema,
+  type MarkdownVersion,
   type NotionComment,
   type PaginatedList,
   type PaginationParameters,
@@ -42,6 +43,9 @@ export interface CreateCommentOptions {
   /** The comment content as a markdown string (inline formatting only). Exactly one of `rich_text`/`markdown` must be provided. */
   markdown?: string;
 
+  /** The syntax of `markdown`. `v1` is deprecated. Omit it to use the server default. */
+  markdown_version?: MarkdownVersion;
+
   /** File attachments (max 3 allowed) */
   attachments?: CommentAttachment[];
 
@@ -58,6 +62,9 @@ export interface UpdateCommentOptions {
 
   /** The comment content as a markdown string (inline formatting only). Exactly one of `rich_text`/`markdown` must be provided. */
   markdown?: string;
+
+  /** The syntax of `markdown`. `v1` is deprecated. Omit it to use the server default. */
+  markdown_version?: MarkdownVersion;
 }
 
 /**

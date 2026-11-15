@@ -255,6 +255,102 @@ describe('PagesAPI integration', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Changelog 2026-10 / 2026-11 additions
+  // ---------------------------------------------------------------------------
+
+  describe('changelog additions', () => {
+    it('should send markdown_version as a query param when getting markdown', async () => {
+      server.use(
+        http.get(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/markdown`, ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('markdown_version')).toBe('v2');
+          expect(url.searchParams.has('include_transcript')).toBe(false);
+          return HttpResponse.json({
+            object: 'page_markdown',
+            id: pageId,
+            markdown: '# Title',
+            truncated: false,
+            unknown_block_ids: [],
+          });
+        }),
+      );
+
+      const result = await notion.pages.getMarkdown(pageId, { markdown_version: 'v2' });
+
+      expect(result.markdown).toBe('# Title');
+    });
+
+    it('should send markdown_version and parse warnings on a partial markdown update', async () => {
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}/markdown`, async ({ request }) => {
+          const body = (await request.json()) as { markdown_version?: string; type: string };
+          expect(body.markdown_version).toBe('v2');
+          expect(body.type).toBe('update_content');
+          return HttpResponse.json({
+            object: 'page_markdown',
+            id: pageId,
+            markdown: 'bar',
+            truncated: false,
+            unknown_block_ids: [],
+            warnings: [{ code: 'no_match', message: 'old_str "missing" matched nothing' }],
+          });
+        }),
+      );
+
+      const result = await notion.pages.updateMarkdown(pageId, {
+        markdown_version: 'v2',
+        type: 'update_content',
+        content_updates: [
+          { old_str: 'foo', new_str: 'bar' },
+          { old_str: 'missing', new_str: 'baz' },
+        ],
+      });
+
+      expect(result.object).toBe('page_markdown');
+      expect(result.object === 'page_markdown' && result.warnings).toEqual([
+        { code: 'no_match', message: 'old_str "missing" matched nothing' },
+      ]);
+    });
+
+    it('should send markdown_version and notifications when creating a page', async () => {
+      server.use(
+        http.post(`${NOTION_TEST_BASE_URL}/v1/pages`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.markdown_version).toBe('v2');
+          expect(body.notifications).toEqual({ mode: 'silent' });
+          return HttpResponse.json(buildPageResponse());
+        }),
+      );
+
+      const result = await notion.pages.create({
+        parent: { page_id: 'parent-page-id' },
+        markdown: '# New Page',
+        markdown_version: 'v2',
+        notifications: { mode: 'silent' },
+      });
+
+      expect(result).toBeInstanceOf(Page);
+    });
+
+    it('should send notifications when updating a page', async () => {
+      server.use(
+        http.patch(`${NOTION_TEST_BASE_URL}/v1/pages/${pageId}`, async ({ request }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          expect(body.notifications).toEqual({ mode: 'silent' });
+          return HttpResponse.json(buildPageResponse({ id: pageId }));
+        }),
+      );
+
+      const result = await notion.pages.update(pageId, {
+        properties: { Status: { select: { name: 'Done' } } },
+        notifications: { mode: 'silent' },
+      });
+
+      expect(result.id).toBe(pageId);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Error path
   // ---------------------------------------------------------------------------
 

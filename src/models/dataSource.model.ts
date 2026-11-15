@@ -10,6 +10,7 @@ import {
   type NotionPropertyObject,
   type NotionRichText,
   type NotionUser,
+  type SyncMetadata,
 } from '../schemas';
 
 /**
@@ -149,6 +150,15 @@ export class DataSource extends BaseModel<NotionDataSource> {
    */
   get databaseType(): DatabaseType | undefined {
     return this.data.database_type;
+  }
+
+  /**
+   * Returns the read-only sync metadata. Returns `undefined` when the data source is not
+   * synced. A `health` value of `null` means that Notion could not get the health. It does
+   * not mean that the sync is unhealthy.
+   */
+  get syncMetadata(): SyncMetadata | undefined {
+    return this.data.sync_metadata;
   }
 
   /**

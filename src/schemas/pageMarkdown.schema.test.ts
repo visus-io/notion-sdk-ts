@@ -40,6 +40,46 @@ describe('pageMarkdownSchema', () => {
     const result = pageMarkdownSchema.safeParse(response);
     expect(result.success).toBe(false);
   });
+
+  it('should parse a response with warnings', () => {
+    const response = {
+      object: 'page_markdown' as const,
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      markdown: 'bar',
+      truncated: false,
+      unknown_block_ids: [],
+      warnings: [
+        { code: 'no_match', message: 'old_str matched nothing' },
+        { code: 'indentation_mismatch', message: 'indentation differs' },
+      ],
+    };
+
+    const result = pageMarkdownSchema.parse(response);
+    expect(result.warnings).toEqual(response.warnings);
+  });
+
+  it('should leave warnings undefined when the response omits them', () => {
+    const result = pageMarkdownSchema.parse({
+      object: 'page_markdown',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      markdown: '',
+      truncated: false,
+      unknown_block_ids: [],
+    });
+    expect(result.warnings).toBeUndefined();
+  });
+
+  it('should accept a warning without a message', () => {
+    const result = pageMarkdownSchema.safeParse({
+      object: 'page_markdown',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      markdown: '',
+      truncated: false,
+      unknown_block_ids: [],
+      warnings: [{ code: 'no_match' }],
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('markdownContentResponseSchema', () => {

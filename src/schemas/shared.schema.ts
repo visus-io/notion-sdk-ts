@@ -17,3 +17,28 @@ export const notionDateStringSchema = z.union([
   z.iso.datetime({ offset: true, local: true }),
   z.iso.date(),
 ]);
+
+/**
+ * Notification modes for a write request.
+ *
+ * - `default`: Notion sends the usual notifications.
+ * - `silent`: Notion does not send page update, @mention, or Person property notifications.
+ *   Automations, reminders, and webhooks still run.
+ *
+ * @category Shared Types
+ */
+export const NOTIFICATION_MODES = ['default', 'silent'] as const;
+
+/**
+ * @category Shared Types
+ */
+export type NotificationMode = (typeof NOTIFICATION_MODES)[number];
+
+/**
+ * Notification settings for a write request.
+ *
+ * @category Shared Types
+ */
+export interface NotificationOptions {
+  mode: NotificationMode;
+}

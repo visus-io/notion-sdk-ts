@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Database } from '.';
 import type { NotionDatabase } from '../schemas';
+import { buildDatabaseResponse, buildSyncMetadata } from '../testUtils/fixtures';
 
 describe('Database', () => {
   it('should create a valid database model', () => {
@@ -402,5 +403,35 @@ describe('Database', () => {
     expect(database.title).toEqual(databaseData.title);
     expect(database.description).toEqual(databaseData.description);
     expect(database.parent).toEqual(databaseData.parent);
+  });
+
+  // ---------------------------------------------------------------------------
+  // showDataSourceTitle
+  // ---------------------------------------------------------------------------
+
+  it('should return show_data_source_title when present', () => {
+    const database = new Database(buildDatabaseResponse({ show_data_source_title: false }));
+    expect(database.showDataSourceTitle).toBe(false);
+  });
+
+  it('should return undefined for showDataSourceTitle when absent', () => {
+    const database = new Database(buildDatabaseResponse());
+    expect(database.showDataSourceTitle).toBeUndefined();
+  });
+
+  it('should keep sync_metadata on data source references', () => {
+    const syncMetadata = buildSyncMetadata();
+    const database = new Database(
+      buildDatabaseResponse({
+        data_sources: [
+          {
+            id: '823e4567-e89b-12d3-a456-426614174000',
+            name: 'Issues',
+            sync_metadata: syncMetadata,
+          },
+        ],
+      }),
+    );
+    expect(database.dataSources[0].sync_metadata).toEqual(syncMetadata);
   });
 });
