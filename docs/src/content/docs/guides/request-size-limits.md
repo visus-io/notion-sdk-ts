@@ -25,20 +25,27 @@ data.
 
 ## Size Limits Table
 
-| Limit                        | Value        | Where Enforced                                                                                                   |
-| ---------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `text.content` length        | 2,000 chars  | `richText()`, `block.*()`, `prop.title()`, `prop.richText()`                                                     |
-| `text.link.url` length       | 2,000 chars  | `richText().link()`                                                                                              |
-| `equation.expression` length | 1,000 chars  | `richText.equation()`, `block.equation()`                                                                        |
-| Any URL property             | 2,000 chars  | `prop.url()`, `block.embed()`, `block.bookmark()`, `block.linkPreview()`, `block.image()`, and other URL helpers |
-| Email property               | 200 chars    | `prop.email()`                                                                                                   |
-| Phone number property        | 200 chars    | `prop.phoneNumber()`                                                                                             |
-| Block and rich text arrays   | 100 elements | `blocks.children.append()`, `pages.create()`, `comments.create()`, `databases.create()`, `databases.update()`    |
-| Multi-select options         | 100 options  | `prop.multiSelect()`                                                                                             |
-| Relation pages               | 100 pages    | `prop.relation()`                                                                                                |
-| People users                 | 100 users    | `prop.people()`                                                                                                  |
-| Comment attachments          | 3 files      | `comments.create()`                                                                                              |
-| `filter_properties`          | 100 items    | `pages.retrieve()`, `databases.retrieve/query()`, `dataSources.retrieve/query()`, `search.query()`               |
+| Limit                                       | Value                          | Where Enforced                                                                                                   |
+| ------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `text.content` length                       | 2,000 chars                    | `richText()`, `block.*()`, `prop.title()`, `prop.richText()`                                                     |
+| `text.link.url` length                      | 2,000 chars                    | `richText().link()`                                                                                              |
+| `equation.expression` length                | 1,000 chars                    | `richText.equation()`, `block.equation()`                                                                        |
+| Any URL property                            | 2,000 chars                    | `prop.url()`, `block.embed()`, `block.bookmark()`, `block.linkPreview()`, `block.image()`, and other URL helpers |
+| Email property                              | 200 chars                      | `prop.email()`                                                                                                   |
+| Phone number property                       | 200 chars                      | `prop.phoneNumber()`                                                                                             |
+| Block and rich text arrays                  | 100 elements                   | `blocks.children.append()`, `pages.create()`, `comments.create()`, `databases.create()`, `databases.update()`    |
+| Multi-select options                        | 100 options                    | `prop.multiSelect()`                                                                                             |
+| Relation pages                              | 100 pages                      | `prop.relation()`                                                                                                |
+| People users                                | 100 users                      | `prop.people()`                                                                                                  |
+| Comment attachments                         | 3 files                        | `comments.create()`                                                                                              |
+| `filter_properties`                         | 100 items                      | `pages.retrieve()`, `databases.retrieve/query()`, `dataSources.retrieve/query()`, `search.query()`               |
+| Session `message`, `prompt_context`         | 10,000 chars                   | `sessions.send()`, `sessions.stream()`                                                                           |
+| Session `metadata`                          | 20 keys, 2,000 chars per value | `sessions.send()`, `sessions.stream()`                                                                           |
+| Session `attachments`                       | 100 items                      | `sessions.send()`, `sessions.stream()`                                                                           |
+| Session `actions`, agent batch `operations` | 1 to 100 items                 | `sessions.send()`, `sessions.stream()`, `agents.batch()`                                                         |
+| Agent and session query `query`             | 2,000 chars                    | `agents.query()`, `sessions.query()`                                                                             |
+| Agent and session query `sorts`             | 1 or 2 items                   | `agents.query()`, `sessions.query()`, `sessions.events.query()`                                                  |
+| Skill archive                               | 20 MiB                         | `skills.upload()`                                                                                                |
 
 ---
 
@@ -56,6 +63,8 @@ console.log(LIMITS.PHONE_NUMBER); // 200
 console.log(LIMITS.EQUATION_EXPRESSION); // 1000
 console.log(LIMITS.ARRAY_ELEMENTS); // 100
 console.log(LIMITS.COMMENT_ATTACHMENTS); // 3
+console.log(LIMITS.SESSION_MESSAGE); // 10000
+console.log(LIMITS.SESSION_METADATA_KEYS); // 20
 ```
 
 ---

@@ -19,6 +19,7 @@ import * as z from 'zod';
  * @category Pagination
  */
 export type PaginatedListType =
+  | 'agent'
   | 'block'
   | 'comment'
   | 'custom_emoji'
@@ -27,7 +28,10 @@ export type PaginatedListType =
   | 'page'
   | 'page_or_database'
   | 'page_or_data_source'
+  | 'plugin'
   | 'property_item'
+  | 'session'
+  | 'session_event'
   | 'user'
   | 'view';
 
@@ -73,6 +77,7 @@ export const paginatedListSchema = <T extends z.ZodTypeAny>(resultSchema: T) => 
     next_cursor: z.string().trim().nullable(),
     has_more: z.boolean(),
     type: z.enum([
+      'agent',
       'block',
       'comment',
       'custom_emoji',
@@ -81,7 +86,10 @@ export const paginatedListSchema = <T extends z.ZodTypeAny>(resultSchema: T) => 
       'page',
       'page_or_database',
       'page_or_data_source',
+      'plugin',
       'property_item',
+      'session',
+      'session_event',
       'user',
       'view',
     ]),

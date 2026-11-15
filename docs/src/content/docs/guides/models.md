@@ -1,6 +1,6 @@
 ---
 title: Models
-description: Page, Block, Database, DataSource, User, Comment, FileUpload, and other model classes.
+description: Page, Block, Database, DataSource, User, Comment, FileUpload, Agent, Session, and other model classes.
 sidebar:
   order: 2
 ---
@@ -19,6 +19,8 @@ All API methods return model instances with typed properties and helper methods.
 - [AsyncTask](#asynctask)
 - [CustomEmoji](#customemoji)
 - [View](#view)
+- [Agent](#agent)
+- [Session](#session)
 - [RichText Utility](#richtext-utility)
 
 ---
@@ -645,6 +647,77 @@ for (const page of query.results) {
   console.log(page.getTitle());
 }
 ```
+
+---
+
+## Agent
+
+The `Agent` model represents a Custom Agent or the personal agent (Notion AI). See
+[Agents, Sessions, and Skills](/guides/agents/).
+
+### Properties
+
+```typescript
+const agent = await notion.agents.retrieve('agent-id', { verbose: true });
+
+agent.id; // string: a UUID, or 'notion_ai' for the personal agent
+agent.name; // string
+agent.agentType; // string: 'custom_agent', 'autofill_custom_agent', 'notion_ai', or 'external'
+agent.status; // 'active' | 'disabled' | 'deleted', or a status that Notion adds later
+agent.pauseReason; // string | null | undefined: why Notion paused the agent
+agent.description; // string | null | undefined
+agent.model; // { mode: 'auto' } | { mode: 'pinned', id } | undefined
+agent.instructions; // string | null | undefined: set only with verbose: true
+agent.creditLimit; // number | 'hidden' | null | undefined: null means no limit
+agent.isFavorited; // boolean | null | undefined: null for a connection token
+agent.createdTime; // Date | null: null for the personal agent
+agent.lastEditedTime; // Date | null
+agent.lastRunAt; // Date | 'hidden' | null
+```
+
+Notion returns `'hidden'` for some fields when the token has no edit access to the agent.
+
+### Methods
+
+```typescript
+agent.isPersonalAgent(); // true for Notion AI
+agent.isActive(); // true if status is 'active'
+agent.isDeleted(); // true if the agent is soft-deleted
+```
+
+---
+
+## Session
+
+The `Session` model represents a chat with an agent. `sessions.send()`, `sessions.retrieve()`,
+`sessions.query()`, `sessions.cancel()`, and `sessions.poll()` return it.
+
+### Properties
+
+```typescript
+const session = await notion.sessions.retrieve('session-id');
+
+session.id; // string
+session.agentId; // string
+session.title; // string
+session.status; // 'queued' | 'in_progress' | 'requires_action' | 'completed' | 'failed' | 'canceled' | 'terminated', or a status that Notion adds later
+session.requiredActions; // RequiredAction[]: empty when there are none
+session.error; // { code, message, retryable } | undefined
+session.creditsUsed; // number | null | undefined: not in the send and cancel responses
+session.createdAt; // Date
+session.updatedAt; // Date
+```
+
+### Methods
+
+```typescript
+session.isRunning(); // true for 'queued' and 'in_progress'
+session.requiresAction(); // true for 'requires_action'
+session.isTerminal(); // true for 'completed', 'failed', 'canceled', and 'terminated'
+```
+
+Session events and stream envelopes are not models. They are plain objects with the
+`SessionEvent` and `SessionStreamEnvelope` types.
 
 ---
 

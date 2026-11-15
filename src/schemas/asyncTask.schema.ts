@@ -27,7 +27,8 @@ export const ASYNC_TASK_STATUSES = [
 export type AsyncTaskStatus = (typeof ASYNC_TASK_STATUSES)[number];
 
 const asyncTaskOperationSchema = z.object({
-  surface: z.enum(['rest', 'mcp']),
+  /** Documented values: `rest`, `mcp`. Notion can add new values. */
+  surface: z.string().trim(),
   name: z.string().trim(),
 });
 

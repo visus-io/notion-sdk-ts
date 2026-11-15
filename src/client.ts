@@ -4,6 +4,7 @@ import {
   NotionNetworkError,
   NotionRequestTimeoutError,
 } from './errors';
+import { parseSseStream, type SseFrame } from './sse';
 import { NotionValidationError } from './validation';
 
 /**
@@ -60,6 +61,14 @@ export interface RequestOptions {
 }
 
 /**
+ * Request options for a streaming API call.
+ */
+export interface StreamRequestOptions extends RequestOptions {
+  /** Abort the request and the stream. */
+  signal?: AbortSignal;
+}
+
+/**
  * Base HTTP client for Notion API requests.
  */
 export class NotionClient {
@@ -88,11 +97,44 @@ export class NotionClient {
    * Retry automatically on rate-limited and overloaded responses.
    */
   async request<T>(options: RequestOptions): Promise<T> {
+    return this.withRetries(options, () => this.makeRequest<T>(options));
+  }
+
+  /**
+   * Send a request that returns server-sent events, and yield each event.
+   *
+   * The client sends `Accept: text/event-stream`. It retries the connection the same way as
+   * {@link request}. It does not retry after the first event arrives. The `timeoutMs` timeout
+   * applies until the response headers arrive. It does not apply to the body.
+   *
+   * @param options - The request, and an optional `signal` that stops the stream
+   * @returns An async generator of server-sent events
+   * @throws {NotionAPIError} If the endpoint returns an error response.
+   * @throws {NotionRequestTimeoutError} If the response headers do not arrive within the timeout.
+   * @throws {NotionNetworkError} If a network problem stops the connection or the body.
+   */
+  async *stream(options: StreamRequestOptions): AsyncGenerator<SseFrame> {
+    const response = await this.withRetries(options, () => this.openStream(options));
+
+    if (!response.body) {
+      throw new NotionNetworkError('The stream response has no body');
+    }
+
+    yield* parseSseStream(this.readText(response.body, options.signal));
+  }
+
+  /**
+   * Run `send`, and retry it per {@link NotionAPIError.isRetryable}.
+   * When `options.signal` aborts, stop at once, also during the wait between two attempts.
+   */
+  private async withRetries<T>(options: StreamRequestOptions, send: () => Promise<T>): Promise<T> {
     let lastError: Error | undefined;
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      this.throwIfAborted(options.signal);
+
       try {
-        return await this.makeRequest<T>(options);
+        return await send();
       } catch (error) {
         // Retry per isRetryable(); retryOnRateLimit:false suppresses only HTTP 429
         // (isRateLimited() is status-based, so this holds regardless of a
@@ -109,7 +151,7 @@ export class NotionClient {
           // Prefer the server-supplied Retry-After value (header or body fallback);
           // fall back to exponential backoff when neither is present or valid.
           const retryAfter = error.retryAfterMs ?? this.getRetryAfter(attempt);
-          await this.sleep(retryAfter);
+          await this.sleep(retryAfter, options.signal);
           lastError = error;
           continue;
         }
@@ -121,6 +163,110 @@ export class NotionClient {
 
     // If we exhausted all retries, throw the last error
     throw lastError ?? new Error('Request failed after all retries');
+  }
+
+  /**
+   * Open one streaming connection. Return the response after a success status.
+   */
+  private async openStream(options: StreamRequestOptions): Promise<Response> {
+    const url = this.buildUrl(options.path, options.query);
+
+    try {
+      const response = await this.fetchWithTimeout(
+        url,
+        {
+          method: options.method,
+          headers: { ...this.requestHeaders, Accept: 'text/event-stream' },
+          body: options.body ? JSON.stringify(options.body) : undefined,
+        },
+        options.signal,
+      );
+
+      if (!response.ok) {
+        await this.handleErrorResponse(response);
+      }
+
+      return response;
+    } catch (error) {
+      this.mapTransportError(error, options.signal);
+    }
+  }
+
+  /**
+   * Decode a response body into text chunks. Map a read failure to the matching SDK error.
+   * Cancel the body when the caller stops early.
+   */
+  private async *readText(
+    body: ReadableStream<Uint8Array>,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string> {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let done = false;
+
+    try {
+      for (;;) {
+        let result: Awaited<ReturnType<typeof reader.read>>;
+        try {
+          result = await reader.read();
+        } catch (error) {
+          this.mapTransportError(error, signal);
+        }
+
+        if (result.done) {
+          done = true;
+          const rest = decoder.decode();
+          if (rest !== '') {
+            yield rest;
+          }
+          return;
+        }
+
+        yield decoder.decode(result.value, { stream: true });
+      }
+    } finally {
+      if (!done) {
+        // Do not await the cancel. A source can leave it pending, which would block the
+        // caller's `break` or `return`.
+        reader.cancel().catch(() => undefined);
+      }
+      reader.releaseLock();
+    }
+  }
+
+  /**
+   * Send a `multipart/form-data` `POST` to a Notion API path, and return the JSON response.
+   * Do not set `Content-Type`, so `fetch` adds the multipart boundary. Retry the same way as
+   * {@link request}, except on a `504 gateway_timeout` response.
+   *
+   * @param path - The API path, for example `/ai/skills/{id}/upload`
+   * @param form - The multipart body
+   * @throws {NotionAPIError} If the endpoint returns an error response.
+   * @throws {NotionRequestTimeoutError} If the request exceeds the timeout.
+   * @throws {NotionNetworkError} If a network problem blocks the request.
+   */
+  async requestMultipart<T>(path: string, form: FormData): Promise<T> {
+    const options: RequestOptions = { method: 'POST', path, retryOnGatewayTimeout: false };
+
+    return this.withRetries(options, async () => {
+      const { 'Content-Type': _contentType, ...headers } = this.requestHeaders;
+
+      try {
+        const response = await this.fetchWithTimeout(this.buildUrl(path), {
+          method: 'POST',
+          headers,
+          body: form,
+        });
+
+        if (!response.ok) {
+          await this.handleErrorResponse(response);
+        }
+
+        return (await response.json()) as T;
+      } catch (error) {
+        this.mapTransportError(error);
+      }
+    });
   }
 
   /**
@@ -187,13 +333,21 @@ export class NotionClient {
   /**
    * Call the configured `fetch` with an abort timeout of `timeoutMs`.
    * Clear the timer as soon as the response headers arrive or the request fails.
+   * A caller `signal` also aborts the request, and stays active for the response body.
    */
-  private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  private async fetchWithTimeout(
+    url: string,
+    init: RequestInit,
+    signal?: AbortSignal,
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
     try {
-      return await this.fetchImpl(url, { ...init, signal: controller.signal });
+      return await this.fetchImpl(url, {
+        ...init,
+        signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal,
+      });
     } finally {
       clearTimeout(timeoutId);
     }
@@ -201,12 +355,17 @@ export class NotionClient {
 
   /**
    * Map a transport-layer failure to the matching SDK error and throw it.
-   * Rethrow a `NotionAPIError` unchanged. Map an `AbortError` to
-   * `NotionRequestTimeoutError`. Map any other `Error` to `NotionNetworkError`.
+   * Rethrow a `NotionAPIError` unchanged. Rethrow the abort reason when the caller's
+   * `signal` aborted. Map any other `AbortError` to `NotionRequestTimeoutError`. Map any
+   * other `Error` to `NotionNetworkError`.
    */
-  private mapTransportError(error: unknown): never {
+  private mapTransportError(error: unknown, signal?: AbortSignal): never {
     if (error instanceof NotionAPIError) {
       throw error;
+    }
+
+    if (signal?.aborted) {
+      throw this.abortReason(signal);
     }
 
     if (error instanceof Error) {
@@ -251,8 +410,46 @@ export class NotionClient {
   /**
    * Pause for the given duration, in milliseconds.
    */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    if (!signal) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    return new Promise((resolve, reject) => {
+      const onAbort = (): void => {
+        clearTimeout(timeoutId);
+        reject(this.abortReason(signal));
+      };
+      const timeoutId = setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, ms);
+
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+  }
+
+  /**
+   * Throw the abort reason when `signal` already aborted.
+   */
+  private throwIfAborted(signal?: AbortSignal): void {
+    if (signal?.aborted) {
+      throw this.abortReason(signal);
+    }
+  }
+
+  /**
+   * Return the reason of an aborted signal when it is an `Error`. Otherwise return a standard
+   * `AbortError`.
+   */
+  private abortReason(signal: AbortSignal): Error {
+    return signal.reason instanceof Error
+      ? signal.reason
+      : new DOMException('The operation was aborted.', 'AbortError');
   }
 
   /**

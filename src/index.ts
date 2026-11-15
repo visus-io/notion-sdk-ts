@@ -9,6 +9,10 @@ export * from './api';
 // Export error classes
 export * from './errors';
 
+// Export the server-sent events parser
+export { parseSseStream } from './sse';
+export type { SseFrame } from './sse';
+
 // Export validation utilities
 export * from './validation';
 

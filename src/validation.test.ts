@@ -98,6 +98,13 @@ describe('LIMITS', () => {
     expect(LIMITS.RELATION).toBe(100);
     expect(LIMITS.PEOPLE).toBe(100);
     expect(LIMITS.COMMENT_ATTACHMENTS).toBe(3);
+    expect(LIMITS.SESSION_MESSAGE).toBe(10_000);
+    expect(LIMITS.SESSION_PROMPT_CONTEXT).toBe(10_000);
+    expect(LIMITS.SESSION_METADATA_KEYS).toBe(20);
+    expect(LIMITS.SESSION_METADATA_VALUE).toBe(2_000);
+    expect(LIMITS.AGENT_QUERY).toBe(2_000);
+    expect(LIMITS.AGENT_SORTS).toBe(2);
+    expect(LIMITS.SKILL_ARCHIVE_BYTES).toBe(20 * 1_024 * 1_024);
   });
 });
 

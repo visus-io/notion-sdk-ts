@@ -27,6 +27,7 @@ const CATEGORY_ORDER = [
   'File Uploads',
   'Views',
   'Async Tasks',
+  'Agents',
   'Custom Emoji & Icons',
   'Search',
   'Helpers',

@@ -6,13 +6,12 @@ import {
   type NotionPage,
   pageSchema,
   type PaginatedList,
-  paginatedListSchema,
   type PaginationParameters,
 } from '../schemas';
 import { Database, Page } from '../models';
 import { TRUSTED } from '../models/base.model';
 import { LIMITS, NotionValidationError, validateArrayLength } from '../validation';
-import { BaseAPI } from './base.api';
+import { BaseAPI, parsePaginatedResponse } from './base.api';
 
 /**
  * Options for retrieving a database.
@@ -204,17 +203,7 @@ export class DatabasesAPI extends BaseAPI<NotionDatabase, Database> {
       body: Object.keys(body).length > 0 ? body : undefined,
     });
 
-    const listSchema = paginatedListSchema(pageSchema);
-    const parsed = listSchema.parse(response);
-
-    return {
-      object: 'list',
-      results: parsed.results.map((page) => new Page(page, TRUSTED)),
-      next_cursor: parsed.next_cursor,
-      has_more: parsed.has_more,
-      type: 'page',
-      request_status: parsed.request_status,
-    };
+    return parsePaginatedResponse(pageSchema, response, 'page', (page) => new Page(page, TRUSTED));
   }
 
   /**

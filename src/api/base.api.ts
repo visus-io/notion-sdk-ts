@@ -42,6 +42,43 @@ export function buildFilterPropertiesQuery(filterProperties?: string[]): Record<
   return query;
 }
 
+/** One list schema per item schema. Building a list schema on each call costs time. */
+const listSchemaCache = new WeakMap<z.ZodType, z.ZodType>();
+
+/**
+ * Parse a paginated list response. Optionally map each item, for example into a model.
+ *
+ * @param itemSchema - The schema of one result
+ * @param response - The raw response
+ * @param type - The list type to put in the result
+ * @param mapItem - Converts each parsed item. Omit it to keep the parsed items.
+ * @returns The paginated list, with `request_status` when Notion sends it
+ */
+export function parsePaginatedResponse<TSchema extends z.ZodType, TResult = z.output<TSchema>>(
+  itemSchema: TSchema,
+  response: unknown,
+  type: PaginatedListType,
+  mapItem?: (item: z.output<TSchema>) => TResult,
+): PaginatedList<TResult> {
+  let listSchema = listSchemaCache.get(itemSchema);
+  if (!listSchema) {
+    listSchema = paginatedListSchema(itemSchema);
+    listSchemaCache.set(itemSchema, listSchema);
+  }
+
+  const parsed = listSchema.parse(response) as PaginatedList<z.output<TSchema>>;
+  const results = mapItem ? parsed.results.map(mapItem) : (parsed.results as unknown as TResult[]);
+
+  return {
+    object: 'list',
+    results,
+    next_cursor: parsed.next_cursor,
+    has_more: parsed.has_more,
+    type,
+    request_status: parsed.request_status,
+  };
+}
+
 /**
  * Base API class providing common functionality for all Notion API clients.
  *
@@ -50,10 +87,6 @@ export function buildFilterPropertiesQuery(filterProperties?: string[]): Record<
  */
 export abstract class BaseAPI<TResponse, TModel> {
   protected abstract config: ResourceConfig<TResponse, TModel>;
-
-  private cachedPaginatedListSchema?: ReturnType<
-    typeof paginatedListSchema<z.ZodSchema<TResponse>>
-  >;
 
   protected constructor(protected readonly client: NotionClient) {}
 
@@ -273,17 +306,12 @@ export abstract class BaseAPI<TResponse, TModel> {
    * const response = await this.client.request<PaginatedList<NotionPage>>({ ... });
    * return this.parsePaginatedList(response);
    */
-  private parsePaginatedList(response: PaginatedList<TResponse>): PaginatedList<TModel> {
-    this.cachedPaginatedListSchema ??= paginatedListSchema(this.config.schema);
-    const parsed = this.cachedPaginatedListSchema.parse(response);
-
-    return {
-      object: 'list',
-      results: parsed.results.map((item) => new this.config.ModelClass(item, TRUSTED)),
-      next_cursor: parsed.next_cursor,
-      has_more: parsed.has_more,
-      type: this.config.listType || ('unknown' as PaginatedListType),
-      request_status: parsed.request_status,
-    };
+  protected parsePaginatedList(response: unknown): PaginatedList<TModel> {
+    return parsePaginatedResponse(
+      this.config.schema,
+      response,
+      this.config.listType || ('unknown' as PaginatedListType),
+      (item) => new this.config.ModelClass(item, TRUSTED),
+    );
   }
 }
