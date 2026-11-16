@@ -37,12 +37,14 @@ export type SessionStatus = (typeof SESSION_STATUSES)[number];
 export type ResponseSessionStatus = OpenEnum<SessionStatus>;
 
 /**
- * Statuses that end the current turn without a pending action. You can send a new message to a
- * `completed` session.
+ * Statuses that end the current turn without a pending action. The session stays open. To
+ * continue, send a message with `session_id`. Notion does not document whether a `failed`,
+ * `canceled`, or `terminated` session accepts a new message. If it does not, the send throws
+ * `NotionAPIError`.
  *
  * @category Agents
  */
-export const TERMINAL_SESSION_STATUSES = [
+export const TURN_END_SESSION_STATUSES = [
   'completed',
   'failed',
   'canceled',

@@ -713,7 +713,7 @@ session.updatedAt; // Date
 ```typescript
 session.isRunning(); // true for 'queued' and 'in_progress'
 session.requiresAction(); // true for 'requires_action'
-session.isTerminal(); // true for 'completed', 'failed', 'canceled', and 'terminated'
+session.isTurnOver(); // true for 'completed', 'failed', 'canceled', and 'terminated'
 ```
 
 Session events and stream envelopes are not models. They are plain objects with the

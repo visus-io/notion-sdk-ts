@@ -27,23 +27,23 @@ describe('Session', () => {
     ['canceled', false, false, true],
     ['terminated', false, false, true],
   ] as const)(
-    'should classify %s (running=%s, requiresAction=%s, terminal=%s)',
-    (status, running, requiresAction, terminal) => {
+    'should classify %s (running=%s, requiresAction=%s, turnOver=%s)',
+    (status, running, requiresAction, turnOver) => {
       const session = new Session(buildSessionResponse({ status }));
 
       expect(session.isRunning()).toBe(running);
       expect(session.requiresAction()).toBe(requiresAction);
-      expect(session.isTerminal()).toBe(terminal);
+      expect(session.isTurnOver()).toBe(turnOver);
     },
   );
 
-  it('should treat a status that Notion adds later as not running, not waiting, and not terminal', () => {
+  it('should treat a status that Notion adds later as not running, not waiting, and not turn over', () => {
     const session = new Session(buildSessionResponse({ status: 'paused' }));
 
     expect(session.status).toBe('paused');
     expect(session.isRunning()).toBe(false);
     expect(session.requiresAction()).toBe(false);
-    expect(session.isTerminal()).toBe(false);
+    expect(session.isTurnOver()).toBe(false);
   });
 
   it('should return the required actions', () => {

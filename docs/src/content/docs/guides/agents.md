@@ -101,14 +101,20 @@ not process the request.
 | `queued`          | The agent did not start the turn yet.                   |
 | `in_progress`     | The agent works on the turn.                            |
 | `requires_action` | The agent waits for you to approve or reject an action. |
-| `completed`       | The turn is over. You can send a new message.           |
+| `completed`       | The turn is over.                                       |
 | `failed`          | The turn failed. Read `session.error`.                  |
 | `canceled`        | Someone canceled the turn.                              |
 | `terminated`      | Notion stopped the turn.                                |
 
+Each status describes the current turn. `completed`, `failed`, `canceled`, and `terminated` end
+the turn, and `session.isTurnOver()` returns `true` for them. The session stays open. To
+continue, send a message with `session_id`. Notion does not document whether a `failed`,
+`canceled`, or `terminated` session accepts a new message. If it does not, the send throws
+`NotionAPIError`.
+
 Notion can add new statuses. The SDK accepts any status string, so a new status does not fail
-the parse. A status that the SDK does not know is not running, does not require action, and is
-not terminal. `sessions.poll()` returns as soon as it sees one.
+the parse. A status that the SDK does not know is not running, does not require action, and
+does not end the turn. `sessions.poll()` returns as soon as it sees one.
 
 ### Event Types
 

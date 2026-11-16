@@ -5,10 +5,10 @@ import {
   type ResponseSessionStatus,
   type SessionError,
   sessionSchema,
-  TERMINAL_SESSION_STATUSES,
+  TURN_END_SESSION_STATUSES,
 } from '../schemas';
 
-const TERMINAL_STATUSES: readonly string[] = TERMINAL_SESSION_STATUSES;
+const TURN_END_STATUSES: readonly string[] = TURN_END_SESSION_STATUSES;
 
 /**
  * Session model wrapping a validated Notion agent session with helper methods.
@@ -50,7 +50,7 @@ export class Session extends BaseModel<NotionSession> {
 
   /**
    * Returns the session status. Notion can add new statuses. A status that this SDK does not
-   * know is not running, does not require action, and is not terminal.
+   * know is not running, does not require action, and does not end the turn.
    */
   get status(): ResponseSessionStatus {
     return this.data.status;
@@ -108,9 +108,11 @@ export class Session extends BaseModel<NotionSession> {
 
   /**
    * Check if the current turn is over and the agent waits for no action: `completed`, `failed`,
-   * `canceled`, or `terminated`. You can send a new message to a `completed` session.
+   * `canceled`, or `terminated`. The session stays open. To continue, send a message with
+   * `session_id`. Notion does not document whether a `failed`, `canceled`, or `terminated`
+   * session accepts a new message. If it does not, the send throws `NotionAPIError`.
    */
-  isTerminal(): boolean {
-    return TERMINAL_STATUSES.includes(this.data.status);
+  isTurnOver(): boolean {
+    return TURN_END_STATUSES.includes(this.data.status);
   }
 }
