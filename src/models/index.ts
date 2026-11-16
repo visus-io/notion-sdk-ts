@@ -1,3 +1,4 @@
+export { Agent } from './agent.model';
 export { AsyncTask } from './asyncTask.model';
 export { BaseModel } from './base.model';
 export { Block } from './block.model';
@@ -8,5 +9,6 @@ export { DataSource } from './dataSource.model';
 export { FileUpload } from './fileUpload.model';
 export { Page } from './page.model';
 export { RichText } from './richText.model';
+export { Session } from './session.model';
 export { User } from './user.model';
 export { View } from './view.model';

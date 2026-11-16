@@ -19,6 +19,28 @@ export const notionDateStringSchema = z.union([
 ]);
 
 /**
+ * A string value with documented members. Notion can add new members, so any other string is
+ * also valid. Compare against the documented members to narrow the value.
+ *
+ * @category Shared Types
+ */
+export type OpenEnum<T extends string> = T | (string & Record<never, never>);
+
+/**
+ * Build a schema that accepts the documented `values` and any other string. The output type
+ * keeps the documented values for autocomplete. A new value from Notion does not fail the parse.
+ *
+ * @param _values - The documented values. Only the type uses them.
+ *
+ * @category Shared Types
+ */
+export function openEnumSchema<const T extends readonly [string, ...string[]]>(
+  _values: T,
+): z.ZodType<OpenEnum<T[number]>> {
+  return z.string().trim();
+}
+
+/**
  * Notification modes for a write request.
  *
  * - `default`: Notion sends the usual notifications.

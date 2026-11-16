@@ -214,7 +214,8 @@ const notion = new Notion({
 A `504 gateway_timeout` does not guarantee that a write failed; the request may have already
 applied on Notion's side. `notion.pages.updateMarkdown()` does not retry a `504` automatically, so
 you can check the page content before you retry. This does not change retry behavior for `429` or
-other `5xx` responses on that call.
+other `5xx` responses on that call. The agent session writes do not retry any `5xx` response
+except `529`. See [Agents, Sessions, and Skills](/guides/agents/).
 
 ### Rate Limit Error Handling
 

@@ -1,5 +1,6 @@
 import { NotionClient, type NotionClientOptions } from './client';
 import {
+  AgentsAPI,
   AsyncTasksAPI,
   BlocksAPI,
   CommentsAPI,
@@ -9,6 +10,8 @@ import {
   FileUploadsAPI,
   PagesAPI,
   SearchAPI,
+  SessionsAPI,
+  SkillsAPI,
   UsersAPI,
   ViewsAPI,
 } from './api';
@@ -61,12 +64,20 @@ import {
  * await notion.asyncTasks.poll(task.id);
  *
  * const emojis = await notion.customEmojis.list();
+ *
+ * const agents = await notion.agents.query({ query: 'triage' });
+ * const session = await notion.sessions.send({ agent_id: 'notion_ai', message: 'Hello' });
+ * const finished = await notion.sessions.poll(session.id);
+ * const plugins = await notion.skills.listPlugins();
  * ```
  *
  * @category Client & Core
  */
 export class Notion {
   private readonly client: NotionClient;
+
+  /** Query, retrieve, and manage Custom Agents and the personal agent */
+  public readonly agents: AgentsAPI;
 
   /** Async Tasks API for polling long-running Notion operations */
   public readonly asyncTasks: AsyncTasksAPI;
@@ -95,6 +106,12 @@ export class Notion {
   /** Search API for searching across the workspace */
   public readonly search: SearchAPI;
 
+  /** Chat with agents: send messages, stream replies, and read session events */
+  public readonly sessions: SessionsAPI;
+
+  /** Download and upload Agent Skills */
+  public readonly skills: SkillsAPI;
+
   /** Users API for working with Notion users */
   public readonly users: UsersAPI;
 
@@ -103,6 +120,7 @@ export class Notion {
 
   constructor(options: NotionClientOptions) {
     this.client = new NotionClient(options);
+    this.agents = new AgentsAPI(this.client);
     this.asyncTasks = new AsyncTasksAPI(this.client);
     this.blocks = new BlocksAPI(this.client);
     this.comments = new CommentsAPI(this.client);
@@ -112,6 +130,8 @@ export class Notion {
     this.fileUploads = new FileUploadsAPI(this.client);
     this.pages = new PagesAPI(this.client);
     this.search = new SearchAPI(this.client);
+    this.sessions = new SessionsAPI(this.client);
+    this.skills = new SkillsAPI(this.client);
     this.users = new UsersAPI(this.client);
     this.views = new ViewsAPI(this.client);
   }

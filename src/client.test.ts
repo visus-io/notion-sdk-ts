@@ -786,6 +786,88 @@ describe('NotionClient', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
+    it.each([500, 502, 503, 504])(
+      'should not retry a %i when retryOnServerError is false',
+      async (status) => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          mockResponse(status, {
+            object: 'error',
+            status,
+            code: 'internal_server_error',
+            message: 'x',
+          }),
+        );
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 2 });
+
+        await expect(
+          client.request({ method: 'POST', path: '/sessions', retryOnServerError: false }),
+        ).rejects.toBeInstanceOf(NotionAPIError);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each([500, 504])(
+      'should not retry a %i with a service_overload body when retryOnServerError is false',
+      async (status) => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          mockResponse(status, {
+            object: 'error',
+            status,
+            code: 'service_overload',
+            message: 'x',
+          }),
+        );
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 2 });
+
+        await expect(
+          client.request({ method: 'POST', path: '/sessions', retryOnServerError: false }),
+        ).rejects.toBeInstanceOf(NotionAPIError);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('should not retry a 504 with a service_overload body when retryOnGatewayTimeout is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(504, {
+          object: 'error',
+          status: 504,
+          code: 'service_overload',
+          message: 'x',
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 2 });
+
+      await expect(
+        client.request({
+          method: 'PATCH',
+          path: '/pages/abc/markdown',
+          retryOnGatewayTimeout: false,
+        }),
+      ).rejects.toBeInstanceOf(NotionAPIError);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      [429, rateLimitedBody],
+      [529, { object: 'error', status: 529, code: 'service_overload', message: 'x' }],
+    ])('should still retry a %i when retryOnServerError is false', async (status, body) => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(status, body))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 1 });
+
+      const promise = client.request({
+        method: 'POST',
+        path: '/sessions',
+        retryOnServerError: false,
+      });
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(await promise).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
     it('should not retry a blocked rate-limited request', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockResponse(429, blockedRateLimitedBody));
 
@@ -876,6 +958,360 @@ describe('NotionClient', () => {
       await expect(
         client.sendFileUpload('https://upload.test/send', new FormData()),
       ).rejects.toBeInstanceOf(NotionRequestTimeoutError);
+    });
+  });
+
+  describe('stream', () => {
+    function sseResponse(text: string): Response {
+      return new Response(text, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      });
+    }
+
+    async function collect(client: NotionClient, signal?: AbortSignal): Promise<string[]> {
+      const data: string[] = [];
+      for await (const frame of client.stream({
+        method: 'POST',
+        path: '/sessions',
+        body: {},
+        signal,
+      })) {
+        data.push(frame.data);
+      }
+      return data;
+    }
+
+    it('should send Accept: text/event-stream and yield each frame', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(sseResponse('data: a\n\ndata: b\n\n'));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['a', 'b']);
+      const [, init] = fetchMock.mock.calls[0];
+      expect(init.headers.Accept).toBe('text/event-stream');
+      expect(init.headers['Notion-Version']).toBe(NOTION_VERSION);
+      expect(init.body).toBe('{}');
+    });
+
+    it('should remove only one leading byte order mark from the body', async () => {
+      const bom = [0xef, 0xbb, 0xbf];
+      const text = new TextEncoder().encode('data: x\n\n');
+      const oneBom = new Response(new Uint8Array([...bom, ...text]), { status: 200 });
+      const twoBoms = new Response(new Uint8Array([...bom, ...bom, ...text]), { status: 200 });
+      const fetchMock = vi.fn().mockResolvedValueOnce(oneBom).mockResolvedValueOnce(twoBoms);
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['x']);
+      // The second mark starts the field name, so the line is not a `data` field.
+      expect(await collect(client)).toEqual([]);
+    });
+
+    it('should cancel the body and release the reader when the caller stops early', async () => {
+      const cancel = vi.fn();
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: a\n\ndata: b\n\n'));
+        },
+        cancel,
+      });
+      const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      for await (const frame of client.stream({ method: 'POST', path: '/sessions', body: {} })) {
+        expect(frame.data).toBe('a');
+        break;
+      }
+
+      await vi.waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
+      expect(body.locked).toBe(false);
+    });
+
+    it('should throw NotionNetworkError when no data arrives within idleTimeoutMs', async () => {
+      vi.useFakeTimers();
+      try {
+        const cancel = vi.fn();
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('data: a\n\n'));
+          },
+          cancel,
+        });
+        const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+        const data: string[] = [];
+
+        const done = (async () => {
+          for await (const frame of client.stream({
+            method: 'POST',
+            path: '/sessions',
+            body: {},
+            idleTimeoutMs: 5_000,
+          })) {
+            data.push(frame.data);
+          }
+        })();
+        const assertion = expect(done).rejects.toThrow(
+          new NotionNetworkError('The stream sent no data for 5000ms'),
+        );
+
+        await vi.advanceTimersByTimeAsync(4_999);
+        expect(data).toEqual(['a']);
+        await vi.advanceTimersByTimeAsync(1);
+        await assertion;
+        expect(cancel).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should release the reader after the body ends', async () => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: a\n\n'));
+          controller.close();
+        },
+      });
+      const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['a']);
+      expect(body.locked).toBe(false);
+    });
+
+    it('should decode a multi-byte character that a chunk boundary splits', async () => {
+      const bytes = new TextEncoder().encode('data: café\n\n');
+      const split = bytes.indexOf(0xc3) + 1;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(bytes.slice(0, split));
+          controller.enqueue(bytes.slice(split));
+          controller.close();
+        },
+      });
+      const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['café']);
+    });
+
+    it('should throw NotionValidationError for a success response that is not an event stream', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('<html>proxy</html>', {
+          status: 200,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(collect(client)).rejects.toThrow(
+        new NotionValidationError(
+          'Expected a text/event-stream response, got text/html; charset=utf-8',
+        ),
+      );
+    });
+
+    it('should reject a media type that only starts with text/event-stream', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('data: a\n\n', {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream-v2' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(collect(client)).rejects.toBeInstanceOf(NotionValidationError);
+    });
+
+    it('should accept an event stream Content-Type with parameters in any case', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('data: a\n\n', {
+          status: 200,
+          headers: { 'Content-Type': 'Text/Event-Stream; charset=utf-8' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['a']);
+    });
+
+    it('should retry a 429 on connect, then stream', async () => {
+      vi.useFakeTimers();
+      try {
+        const fetchMock = vi
+          .fn()
+          .mockResolvedValueOnce(mockResponse(429, rateLimitedBody, { 'Retry-After': '1' }))
+          .mockResolvedValueOnce(sseResponse('data: ok\n\n'));
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+        const promise = collect(client);
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        expect(await promise).toEqual(['ok']);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should throw NotionAPIError for an error status', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(404, {
+          object: 'error',
+          status: 404,
+          code: 'object_not_found',
+          message: 'x',
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 0 });
+
+      await expect(collect(client)).rejects.toBeInstanceOf(NotionAPIError);
+    });
+
+    it('should map a body read failure to NotionNetworkError', async () => {
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          controller.error(new TypeError('terminated'));
+        },
+      });
+      const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(collect(client)).rejects.toBeInstanceOf(NotionNetworkError);
+    });
+
+    it("should rethrow the caller's abort reason, not a timeout error", async () => {
+      const controller = new AbortController();
+      const reason = new Error('stopped by caller');
+      const fetchMock = vi.fn((_url: string, init: RequestInit) => {
+        controller.abort(reason);
+        return Promise.reject(init.signal?.reason ?? new DOMException('Aborted', 'AbortError'));
+      });
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(collect(client, controller.signal)).rejects.toBe(reason);
+    });
+
+    it('should pass a signal that combines the timeout and the caller signal', async () => {
+      const controller = new AbortController();
+      const fetchMock = vi.fn().mockResolvedValue(sseResponse('data: a\n\n'));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await collect(client, controller.signal);
+      const [, init] = fetchMock.mock.calls[0];
+      expect(init.signal.aborted).toBe(false);
+      controller.abort();
+      expect(init.signal.aborted).toBe(true);
+    });
+  });
+
+  describe('requestMultipart', () => {
+    it('should POST the form without a JSON Content-Type and return the JSON body', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(200, { status: 'completed' }));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+      const form = new FormData();
+
+      const result = await client.requestMultipart('/ai/skills/s/upload', form);
+
+      expect(result).toEqual({ status: 'completed' });
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('https://api.notion.com/v1/ai/skills/s/upload');
+      expect(init.method).toBe('POST');
+      expect(init.body).toBe(form);
+      expect(init.headers['Content-Type']).toBeUndefined();
+      expect(init.headers['Notion-Version']).toBe(NOTION_VERSION);
+    });
+
+    it('should retry a 429', async () => {
+      vi.useFakeTimers();
+      try {
+        const fetchMock = vi
+          .fn()
+          .mockResolvedValueOnce(mockResponse(429, rateLimitedBody, { 'Retry-After': '1' }))
+          .mockResolvedValueOnce(mockResponse(200, { status: 'completed' }));
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+        const promise = client.requestMultipart('/ai/skills/s/upload', new FormData());
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        await expect(promise).resolves.toEqual({ status: 'completed' });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should not retry a 504', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(504, gatewayTimeoutBody));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(
+        client.requestMultipart('/ai/skills/s/upload', new FormData()),
+      ).rejects.toBeInstanceOf(NotionAPIError);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('abort during a retry wait', () => {
+    it('should stop the retry wait when the caller aborts', async () => {
+      vi.useFakeTimers();
+      try {
+        const fetchMock = vi
+          .fn()
+          .mockResolvedValue(mockResponse(429, rateLimitedBody, { 'Retry-After': '60' }));
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+        const controller = new AbortController();
+        const reason = new Error('stopped by caller');
+
+        const iterator = client.stream({
+          method: 'POST',
+          path: '/sessions',
+          body: {},
+          signal: controller.signal,
+        });
+        const assertion = expect(iterator.next()).rejects.toBe(reason);
+        await vi.advanceTimersByTimeAsync(10);
+        controller.abort(reason);
+        await assertion;
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should stop between frames of one chunk when the caller aborts', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('data: first\n\ndata: second\n\n', {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+      const controller = new AbortController();
+      const reason = new Error('stopped by caller');
+
+      const iterator = client.stream({
+        method: 'POST',
+        path: '/sessions',
+        body: {},
+        signal: controller.signal,
+      });
+      expect((await iterator.next()).value).toEqual({ event: 'message', data: 'first' });
+      controller.abort(reason);
+
+      await expect(iterator.next()).rejects.toBe(reason);
+    });
+
+    it('should not send a request when the signal already aborted', async () => {
+      const fetchMock = vi.fn();
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(
+        client.stream({ method: 'POST', path: '/sessions', signal: controller.signal }).next(),
+      ).rejects.toMatchObject({ name: 'AbortError' });
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
 });

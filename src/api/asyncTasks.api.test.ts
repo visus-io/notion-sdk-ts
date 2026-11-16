@@ -103,6 +103,17 @@ describe('AsyncTasksAPI', () => {
       expect(caughtError).toBeInstanceOf(NotionRequestTimeoutError);
     });
 
+    it('should poll again at the deadline when the full interval fits exactly', async () => {
+      vi.mocked(mockClient.request)
+        .mockResolvedValueOnce({ ...baseTask, status: 'running', poll_after_seconds: 1 })
+        .mockResolvedValueOnce({ ...baseTask, status: 'succeeded' });
+
+      const promise = asyncTasksAPI.poll(baseTask.id, { timeoutMs: 1_000 });
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect((await promise).status).toBe('succeeded');
+    });
+
     it('should not oversleep past timeoutMs when poll_after_seconds is larger than the remaining time (regression)', async () => {
       vi.mocked(mockClient.request).mockResolvedValue({
         ...baseTask,
@@ -125,6 +136,7 @@ describe('AsyncTasksAPI', () => {
       await promise;
 
       expect(caughtError).toBeInstanceOf(NotionRequestTimeoutError);
+      // No second retrieve: it would come sooner than poll_after_seconds.
       expect(mockClient.request).toHaveBeenCalledTimes(1);
     });
   });

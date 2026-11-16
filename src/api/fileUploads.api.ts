@@ -4,6 +4,7 @@ import { FileUpload } from '../models';
 import { TRUSTED } from '../models/base.model';
 import { NotionValidationError } from '../validation';
 import { BaseAPI } from './base.api';
+import { byteLengthOf, type FileData, toBlob } from './fileData';
 
 /**
  * Options for initiating a file upload.
@@ -19,13 +20,7 @@ export interface InitiateFileUploadOptions {
   content_length: number;
 }
 
-/**
- * File data for uploading. Accepts a `Buffer`, `Uint8Array`, `ArrayBuffer`, or
- * `Blob`. The upload endpoint uses `multipart/form-data`, so the SDK cannot
- * stream a `ReadableStream` without buffering it in full. Read a stream into a
- * `Buffer` yourself before you call `upload()`.
- */
-export type FileData = Buffer | Uint8Array | ArrayBuffer | Blob;
+export type { FileData } from './fileData';
 
 /**
  * FileUploads API client for uploading files to Notion.
@@ -82,7 +77,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     partNumber?: number,
   ): Promise<void> {
     const form = new FormData();
-    form.append('file', FileUploadsAPI.toBlob(fileData, contentType));
+    form.append('file', toBlob(fileData, contentType));
 
     if (partNumber !== undefined) {
       if (!Number.isInteger(partNumber) || partNumber < 1) {
@@ -94,17 +89,6 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
     }
 
     await this.client.sendFileUpload(uploadUrl, form);
-  }
-
-  /**
-   * Convert file data into a `Blob` for the multipart request body.
-   */
-  private static toBlob(fileData: FileData, contentType: string): Blob {
-    if (fileData instanceof Blob) {
-      return fileData;
-    }
-
-    return new Blob([new Uint8Array(fileData as ArrayBuffer)], { type: contentType });
   }
 
   /**
@@ -153,20 +137,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
    * @returns The completed file upload object
    */
   async uploadFile(filename: string, fileData: FileData, contentType: string): Promise<FileUpload> {
-    let contentLength: number;
-    if (fileData instanceof Buffer) {
-      contentLength = fileData.length;
-    } else if (fileData instanceof Uint8Array) {
-      contentLength = fileData.byteLength;
-    } else if (fileData instanceof ArrayBuffer) {
-      contentLength = fileData.byteLength;
-    } else if (fileData instanceof Blob) {
-      contentLength = fileData.size;
-    } else {
-      throw new TypeError(
-        'Unsupported file data type. Pass a Buffer, Uint8Array, ArrayBuffer, or Blob.',
-      );
-    }
+    const contentLength = byteLengthOf(fileData);
 
     // Step 1: Initiate upload
     const fileUpload = await this.initiate({

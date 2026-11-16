@@ -14,9 +14,9 @@ Notion (facade) --> *API classes (endpoint logic + Zod parsing) --> NotionClient
 ```
 
 `Notion` is the public entry point. It creates one `NotionClient` for HTTP transport. It creates
-11 API classes. Each API class is a `readonly` property: `pages`, `blocks`, `databases`,
-`dataSources`, `search`, `users`, `comments`, `fileUploads`, `asyncTasks`, `views`, and
-`customEmojis`.
+14 API classes. Each API class is a `readonly` property: `pages`, `blocks`, `databases`,
+`dataSources`, `search`, `users`, `comments`, `fileUploads`, `asyncTasks`, `views`,
+`customEmojis`, `agents`, `sessions`, and `skills`.
 
 ## Project Structure
 
@@ -24,7 +24,9 @@ Notion (facade) --> *API classes (endpoint logic + Zod parsing) --> NotionClient
 src/
   index.ts              -- Barrel re-export of everything
   notion.ts             -- Notion facade class
-  client.ts             -- HTTP client with retry logic
+  client.ts             -- HTTP client with retry logic and server-sent event streaming
+  sse.ts                -- Server-sent events parser (parseSseStream)
+  sleep.ts              -- Internal abort-aware sleep helper
   errors.ts             -- 4 error classes (API, Network, Timeout, Validation)
   validation.ts         -- LIMITS constants and validation functions
   api/                  -- API endpoint modules (one per Notion resource)
@@ -48,12 +50,16 @@ Test files stay in the same directory as their source files. Each test file has 
   file, mentions, and page properties.
 - Use `z.enum([...] as const)` for closed string sets. Examples: colors, code languages, and block
   types.
+- Use `openEnumSchema(VALUES)` from `shared.schema.ts` for a response value that Notion can
+  extend, such as a session status. Its type is `OpenEnum<T>`: the documented values for
+  autocomplete, plus any other string. A new value from Notion does not fail the parse.
 - Use `z.iso.datetime()` for date-time values. Use `z.uuid()` for UUIDs. Use `z.url()` for URLs.
 - Use generic schema factories for patterns that repeat. Example: `paginatedListSchema(resultSchema)`.
 
 ### API Modules (`src/api/`)
 
-- All API classes extend `BaseAPI<TResponse, TModel>` in `base.api.ts`. This base class holds
+- Each API class that wraps responses in a model extends `BaseAPI<TResponse, TModel>` in
+  `base.api.ts`. `SearchAPI` and `SkillsAPI` return plain parsed objects, so they do not. This base class holds
   `protected readonly client: NotionClient`. It provides these methods: `retrieveResource`,
   `createResource`, `updateResource`, `deleteResource`, `listResources`, `parseAndWrap`, and
   `parsePaginatedList`.
@@ -144,8 +150,41 @@ normal result for every other reason, including one the SDK does not yet documen
 
 A write that is not safe to repeat blindly can set `RequestOptions.retryOnGatewayTimeout` to
 `false`. This suppresses the client's automatic retry on a `504 gateway_timeout` response only;
-it does not change retry behavior for other retryable errors. `pages.updateMarkdown()` sets this,
-because a `504` does not guarantee the write failed.
+it does not change retry behavior for other retryable errors. `pages.updateMarkdown()` and
+`skills.upload()` set this, because a `504` does not guarantee the write failed.
+
+A write that must not run twice can set `RequestOptions.retryOnServerError` to `false`. This
+suppresses the retry on every `5xx` response except `529 service_overload`. A `500`, `502`,
+`503`, or `504` can arrive after Notion accepted the write. The client still retries a `429` and
+a `529`, because Notion did not process the request. `sessions.send()`, `sessions.stream()`, and
+`sessions.cancel()` set this. A streamed replay (`continue_from`) is safe to repeat, so it keeps
+the retry. A cancel with an `event_id` targets one turn, so it also keeps the retry. A cancel
+without an `event_id` does not, because a repeat can cancel a later turn.
+
+### Streaming (`src/client.ts`, `src/sse.ts`)
+
+`NotionClient.stream()` sends a request with `Accept: text/event-stream`. It yields each
+server-sent event. It retries the connection with the same rules as `request()`. It does not
+retry after the response starts. The `timeoutMs` timeout applies until the response headers
+arrive. It does not apply to the body. The optional `idleTimeoutMs` limits the wait between two
+body chunks. A caller `signal` aborts the request and the body. The
+client rethrows the abort reason of that signal. It maps a body read failure to
+`NotionNetworkError`. A success response with a media type other than `text/event-stream`
+throws `NotionValidationError`. `sessions.stream()` does not resume after it. `parseSseStream()` in `sse.ts` turns decoded text chunks into
+frames. It discards an incomplete frame at the end of the body, as the WHATWG spec requires.
+
+`NotionClient.requestMultipart()` sends a `multipart/form-data` body to an API path and returns
+the JSON response. It does not retry a `504` response. `skills.upload()` uses it.
+
+`sessions.stream()` parses the `data` of each frame as a `SessionStreamEnvelope`. After a
+`stream.timeout` envelope or a dropped connection, it reconnects with `continue_from`. A body
+that ends with no end, error, or timeout envelope counts as a dropped connection. A network
+error, a request timeout, a retryable `5xx` error, and no data for `idleTimeoutMs` (default: 5
+minutes) also count as a dropped connection. A `429` is thrown, because the client already
+applied its rate-limit policy. The wait before a resume is at least the `Retry-After` delay. It uses the
+ID of the last `event.committed` event. After a dropped connection, it waits before it
+reconnects: `2^n * 1000ms`, to a maximum of 60 seconds. `maxResumes` limits the reconnects in
+a row with no new committed event. A new committed event resets the count and the wait.
 
 The `LIMITS` constant in `validation.ts` defines client-side size limits. The SDK enforces these
 limits before it sends a request. Limit categories:
@@ -156,5 +195,7 @@ limits before it sends a request. Limit categories:
 - Multi-select, relation, and people arrays
 - Comment attachments
 - Payload blocks and bytes
+- Agent session messages, metadata, and query options
+- Skill archive bytes
 
 Read `validation.ts` for the exact values. Do not rely on this document for exact values.

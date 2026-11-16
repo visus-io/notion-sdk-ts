@@ -44,6 +44,27 @@ export const LIMITS = {
 
   /** Maximum payload size in bytes. */
   PAYLOAD_SIZE_BYTES: 500 * 1_024,
+
+  /** Maximum characters in an agent session `message`. */
+  SESSION_MESSAGE: 10_000,
+
+  /** Maximum characters in an agent session `prompt_context`. */
+  SESSION_PROMPT_CONTEXT: 10_000,
+
+  /** Maximum keys in an agent session `metadata` object. */
+  SESSION_METADATA_KEYS: 20,
+
+  /** Maximum characters in one agent session `metadata` value. */
+  SESSION_METADATA_VALUE: 2_000,
+
+  /** Maximum characters in the `query` text of an agent or session query. */
+  AGENT_QUERY: 2_000,
+
+  /** Maximum sort items in an agent, session, or session event query. */
+  AGENT_SORTS: 2,
+
+  /** Maximum size of an uploaded skill archive, in bytes (20 MiB). */
+  SKILL_ARCHIVE_BYTES: 20 * 1_024 * 1_024,
 } as const;
 
 /**
