@@ -391,14 +391,25 @@ type ConnectionEnd =
 
 /**
  * Return `true` for an error after which the stream can resume from a committed event: a
- * network failure, a request timeout, or a retryable API error.
+ * network failure, a request timeout, or a retryable server error. A `429` is not resumable.
+ * The client already applied its rate-limit policy (`retryOnRateLimit` and `maxRetries`).
  */
 function isResumableError(error: unknown): error is Error {
   return (
     error instanceof NotionNetworkError ||
     error instanceof NotionRequestTimeoutError ||
-    (error instanceof NotionAPIError && error.isRetryable())
+    (error instanceof NotionAPIError && error.isRetryable() && !error.isRateLimited())
   );
+}
+
+/**
+ * Return the wait before a resume after a dropped connection. Use exponential backoff, and wait
+ * at least the `Retry-After` delay of an API error.
+ */
+function resumeDelayMs(drops: number, error: Error): number {
+  const backoffMs = Math.min(Math.pow(2, drops) * 1_000, MAX_RESUME_DELAY_MS);
+  const retryAfterMs = error instanceof NotionAPIError ? (error.retryAfterMs ?? 0) : 0;
+  return Math.max(backoffMs, retryAfterMs);
 }
 
 /**
@@ -486,8 +497,9 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    * does not throw. Read `error.retryable` to decide what to do. With `autoResume` (the
    * default), the SDK reconnects after a `stream.timeout` envelope or a dropped connection. A
    * stream that ends with no `stream.end`, `stream.error`, or `stream.timeout` envelope counts
-   * as a dropped connection. A network error, a request timeout, or a retryable API error
-   * (`429` or `5xx`) also counts as a dropped connection.
+   * as a dropped connection. A network error, a request timeout, or a retryable `5xx` error
+   * also counts as a dropped connection. A `429` error is thrown. The wait before a resume is
+   * at least the `Retry-After` delay of the error.
    * It needs the ID of a committed event to resume. If it cannot resume, it yields the
    * `stream.timeout` envelope, or throws the error, and stops.
    * After a `stream.timeout` envelope, it reconnects at once. After a dropped connection, it
@@ -545,10 +557,7 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
       state.resumes++;
       if (end.kind === 'dropped') {
         // Wait before the reconnect, so that a network outage does not use up every resume.
-        await sleep(
-          Math.min(Math.pow(2, state.drops) * 1_000, MAX_RESUME_DELAY_MS),
-          options.signal,
-        );
+        await sleep(resumeDelayMs(state.drops, end.error), options.signal);
         state.drops++;
       }
       body = { session_id: state.sessionId, continue_from: state.lastCommittedId };

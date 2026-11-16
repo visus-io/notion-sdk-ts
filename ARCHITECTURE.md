@@ -179,8 +179,9 @@ the JSON response. It does not retry a `504` response. `skills.upload()` uses it
 `sessions.stream()` parses the `data` of each frame as a `SessionStreamEnvelope`. After a
 `stream.timeout` envelope or a dropped connection, it reconnects with `continue_from`. A body
 that ends with no end, error, or timeout envelope counts as a dropped connection. A network
-error, a request timeout, a retryable API error, and no data for `idleTimeoutMs` (default: 5
-minutes) also count as a dropped connection. It uses the
+error, a request timeout, a retryable `5xx` error, and no data for `idleTimeoutMs` (default: 5
+minutes) also count as a dropped connection. A `429` is thrown, because the client already
+applied its rate-limit policy. The wait before a resume is at least the `Retry-After` delay. It uses the
 ID of the last `event.committed` event. After a dropped connection, it waits before it
 reconnects: `2^n * 1000ms`, to a maximum of 60 seconds. `maxResumes` limits the reconnects in
 a row with no new committed event. A new committed event resets the count and the wait.

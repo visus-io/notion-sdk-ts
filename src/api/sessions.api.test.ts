@@ -390,6 +390,54 @@ describe('SessionsAPI', () => {
         });
       });
 
+      it('should throw a 429 on a reconnect instead of resuming', async () => {
+        async function* failWith(error: Error): AsyncGenerator<SseFrame> {
+          yield* frames();
+          throw error;
+        }
+        const rateLimited = new NotionAPIError({
+          object: 'error',
+          status: 429,
+          code: 'rate_limited',
+          message: 'x',
+        });
+        vi.mocked(mockClient.stream)
+          .mockReturnValueOnce(dropAfter(committed('evt-1')))
+          .mockReturnValueOnce(failWith(rateLimited));
+
+        const done = drain({ agent_id: 'a', message: 'Hi' });
+        const assertion = expect(done).rejects.toBe(rateLimited);
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        await assertion;
+        expect(mockClient.stream).toHaveBeenCalledTimes(2);
+      });
+
+      it('should wait at least the Retry-After delay of a server error before a resume', async () => {
+        async function* failWith(error: Error): AsyncGenerator<SseFrame> {
+          yield* frames();
+          throw error;
+        }
+        const unavailable = new NotionAPIError(
+          { object: 'error', status: 503, code: 'service_unavailable', message: 'x' },
+          30_000,
+        );
+        vi.mocked(mockClient.stream)
+          .mockReturnValueOnce(dropAfter(committed('evt-1')))
+          .mockReturnValueOnce(failWith(unavailable))
+          .mockReturnValueOnce(frames(end));
+
+        const done = drain({ agent_id: 'a', message: 'Hi' });
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(mockClient.stream).toHaveBeenCalledTimes(2);
+        // The backoff is 2 seconds now, but the server asked for 30 seconds.
+        await vi.advanceTimersByTimeAsync(29_999);
+        expect(mockClient.stream).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(mockClient.stream).toHaveBeenCalledTimes(3);
+        await done;
+      });
+
       it('should throw an API error that a retry cannot fix', async () => {
         async function* failWith(error: Error): AsyncGenerator<SseFrame> {
           yield* frames();

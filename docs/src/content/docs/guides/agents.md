@@ -185,7 +185,9 @@ connection. The SDK discards a frame that the connection cuts before its end. Th
 as a dropped connection:
 
 - A success response that is not `text/event-stream`.
-- A network error, a request timeout, or a retryable API error (`429` or `5xx`) on a reconnect.
+- A network error, a request timeout, or a retryable `5xx` error on a reconnect. The SDK waits
+  at least the `Retry-After` delay of the error. A `429` error is thrown, because the client
+  already applied `retryOnRateLimit` and `maxRetries`.
 - No data for `idleTimeoutMs` (default: 5 minutes). This detects a connection that dropped
   with no signal. Set `0` to wait with no limit.
 

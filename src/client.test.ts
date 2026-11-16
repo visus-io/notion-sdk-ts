@@ -806,6 +806,47 @@ describe('NotionClient', () => {
       },
     );
 
+    it.each([500, 504])(
+      'should not retry a %i with a service_overload body when retryOnServerError is false',
+      async (status) => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          mockResponse(status, {
+            object: 'error',
+            status,
+            code: 'service_overload',
+            message: 'x',
+          }),
+        );
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 2 });
+
+        await expect(
+          client.request({ method: 'POST', path: '/sessions', retryOnServerError: false }),
+        ).rejects.toBeInstanceOf(NotionAPIError);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('should not retry a 504 with a service_overload body when retryOnGatewayTimeout is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockResponse(504, {
+          object: 'error',
+          status: 504,
+          code: 'service_overload',
+          message: 'x',
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 2 });
+
+      await expect(
+        client.request({
+          method: 'PATCH',
+          path: '/pages/abc/markdown',
+          retryOnGatewayTimeout: false,
+        }),
+      ).rejects.toBeInstanceOf(NotionAPIError);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
     it.each([
       [429, rateLimitedBody],
       [529, { object: 'error', status: 529, code: 'service_overload', message: 'x' }],

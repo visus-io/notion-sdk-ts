@@ -234,8 +234,9 @@ export class NotionClient {
     if (error.isRateLimited()) {
       return this.retryOnRateLimit;
     }
-    // A 529 means that Notion shed the load and did not process the request.
-    if (error.status === 529 || error.isServiceOverloaded()) {
+    // A 529 means that Notion shed the load and did not process the request. Use the HTTP
+    // status only. A body `code` must not bypass a retry opt-out.
+    if (error.status === 529) {
       return true;
     }
     if (options.retryOnServerError === false) {
