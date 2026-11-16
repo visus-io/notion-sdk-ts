@@ -19,15 +19,6 @@ export const notionDateStringSchema = z.union([
 ]);
 
 /**
- * Notification modes for a write request.
- *
- * - `default`: Notion sends the usual notifications.
- * - `silent`: Notion does not send page update, @mention, or Person property notifications.
- *   Automations, reminders, and webhooks still run.
- *
- * @category Shared Types
- */
-/**
  * A string value with documented members. Notion can add new members, so any other string is
  * also valid. Compare against the documented members to narrow the value.
  *
@@ -49,6 +40,15 @@ export function openEnumSchema<const T extends readonly [string, ...string[]]>(
   return z.string().trim();
 }
 
+/**
+ * Notification modes for a write request.
+ *
+ * - `default`: Notion sends the usual notifications.
+ * - `silent`: Notion does not send page update, @mention, or Person property notifications.
+ *   Automations, reminders, and webhooks still run.
+ *
+ * @category Shared Types
+ */
 export const NOTIFICATION_MODES = ['default', 'silent'] as const;
 
 /**

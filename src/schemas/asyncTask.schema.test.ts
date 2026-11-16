@@ -2,6 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { asyncTaskSchema } from './asyncTask.schema';
 
 describe('asyncTaskSchema', () => {
+  it('should accept a surface that Notion adds later', () => {
+    const result = asyncTaskSchema.parse({
+      object: 'async_task',
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      status: 'queued',
+      status_url: 'https://api.notion.com/v1/async_tasks/123e4567-e89b-12d3-a456-426614174000',
+      created_time: '2026-01-01T00:00:00.000Z',
+      operation: { surface: 'cli', name: 'update_page_markdown' },
+    });
+
+    expect(result.operation.surface).toBe('cli');
+  });
+
   it('should parse a minimal queued task', () => {
     const task = {
       object: 'async_task' as const,

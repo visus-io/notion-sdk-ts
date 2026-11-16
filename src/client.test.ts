@@ -786,6 +786,47 @@ describe('NotionClient', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
+    it.each([500, 502, 503, 504])(
+      'should not retry a %i when retryOnServerError is false',
+      async (status) => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          mockResponse(status, {
+            object: 'error',
+            status,
+            code: 'internal_server_error',
+            message: 'x',
+          }),
+        );
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 2 });
+
+        await expect(
+          client.request({ method: 'POST', path: '/sessions', retryOnServerError: false }),
+        ).rejects.toBeInstanceOf(NotionAPIError);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each([
+      [429, rateLimitedBody],
+      [529, { object: 'error', status: 529, code: 'service_overload', message: 'x' }],
+    ])('should still retry a %i when retryOnServerError is false', async (status, body) => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(mockResponse(status, body))
+        .mockResolvedValueOnce(mockResponse(200, successBody));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock, maxRetries: 1 });
+
+      const promise = client.request({
+        method: 'POST',
+        path: '/sessions',
+        retryOnServerError: false,
+      });
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(await promise).toEqual(successBody);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
     it('should not retry a blocked rate-limited request', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockResponse(429, blockedRateLimitedBody));
 
@@ -909,6 +950,91 @@ describe('NotionClient', () => {
       expect(init.headers.Accept).toBe('text/event-stream');
       expect(init.headers['Notion-Version']).toBe(NOTION_VERSION);
       expect(init.body).toBe('{}');
+    });
+
+    it('should remove only one leading byte order mark from the body', async () => {
+      const bom = [0xef, 0xbb, 0xbf];
+      const text = new TextEncoder().encode('data: x\n\n');
+      const oneBom = new Response(new Uint8Array([...bom, ...text]), { status: 200 });
+      const twoBoms = new Response(new Uint8Array([...bom, ...bom, ...text]), { status: 200 });
+      const fetchMock = vi.fn().mockResolvedValueOnce(oneBom).mockResolvedValueOnce(twoBoms);
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['x']);
+      // The second mark starts the field name, so the line is not a `data` field.
+      expect(await collect(client)).toEqual([]);
+    });
+
+    it('should cancel the body and release the reader when the caller stops early', async () => {
+      const cancel = vi.fn();
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: a\n\ndata: b\n\n'));
+        },
+        cancel,
+      });
+      const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      for await (const frame of client.stream({ method: 'POST', path: '/sessions', body: {} })) {
+        expect(frame.data).toBe('a');
+        break;
+      }
+
+      await vi.waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
+      expect(body.locked).toBe(false);
+    });
+
+    it('should throw NotionNetworkError when no data arrives within idleTimeoutMs', async () => {
+      vi.useFakeTimers();
+      try {
+        const cancel = vi.fn();
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('data: a\n\n'));
+          },
+          cancel,
+        });
+        const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+        const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+        const data: string[] = [];
+
+        const done = (async () => {
+          for await (const frame of client.stream({
+            method: 'POST',
+            path: '/sessions',
+            body: {},
+            idleTimeoutMs: 5_000,
+          })) {
+            data.push(frame.data);
+          }
+        })();
+        const assertion = expect(done).rejects.toThrow(
+          new NotionNetworkError('The stream sent no data for 5000ms'),
+        );
+
+        await vi.advanceTimersByTimeAsync(4_999);
+        expect(data).toEqual(['a']);
+        await vi.advanceTimersByTimeAsync(1);
+        await assertion;
+        expect(cancel).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should release the reader after the body ends', async () => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: a\n\n'));
+          controller.close();
+        },
+      });
+      const fetchMock = vi.fn().mockResolvedValue(new Response(body, { status: 200 }));
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['a']);
+      expect(body.locked).toBe(false);
     });
 
     it('should decode a multi-byte character that a chunk boundary splits', async () => {

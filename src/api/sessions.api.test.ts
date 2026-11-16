@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionsAPI, type StreamSessionRequest } from './sessions.api';
 import type { NotionClient } from '../client';
-import { NotionNetworkError, NotionRequestTimeoutError } from '../errors';
+import { NotionAPIError, NotionNetworkError, NotionRequestTimeoutError } from '../errors';
 import type { SseFrame } from '../sse';
 import { buildSessionEventResponse, buildSessionResponse, SESSION_ID } from '../testUtils/fixtures';
 import { NotionValidationError } from '../validation';
@@ -86,7 +86,7 @@ describe('SessionsAPI', () => {
       ).rejects.toThrow(/actions requires session_id/);
     });
 
-    it('should POST the message without a retry on 504', async () => {
+    it('should POST the message without a retry on 5xx', async () => {
       vi.mocked(mockClient.request).mockResolvedValue(buildSessionResponse({ status: 'queued' }));
 
       await sessionsAPI.send({ agent_id: 'a', message: 'Hi' });
@@ -95,7 +95,7 @@ describe('SessionsAPI', () => {
         method: 'POST',
         path: '/sessions',
         body: { agent_id: 'a', message: 'Hi' },
-        retryOnGatewayTimeout: false,
+        retryOnServerError: false,
       });
     });
 
@@ -115,25 +115,25 @@ describe('SessionsAPI', () => {
       vi.mocked(mockClient.request).mockResolvedValue(buildSessionResponse({ status: 'canceled' }));
     });
 
-    it('should not allow a 504 retry when no event_id is set', async () => {
+    it('should not allow a 5xx retry when no event_id is set', async () => {
       await sessionsAPI.cancel('s');
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'POST',
         path: '/sessions/s/cancel',
         body: {},
-        retryOnGatewayTimeout: false,
+        retryOnServerError: false,
       });
     });
 
-    it('should allow a 504 retry when event_id is set', async () => {
+    it('should allow a 5xx retry when event_id is set', async () => {
       await sessionsAPI.cancel('s', { event_id: 'evt-1' });
 
       expect(mockClient.request).toHaveBeenCalledWith({
         method: 'POST',
         path: '/sessions/s/cancel',
         body: { event_id: 'evt-1' },
-        retryOnGatewayTimeout: true,
+        retryOnServerError: true,
       });
     });
   });
@@ -186,18 +186,51 @@ describe('SessionsAPI', () => {
         path: '/sessions',
         body: { agent_id: 'a', message: 'Hi' },
         signal: controller.signal,
-        retryOnGatewayTimeout: false,
+        retryOnServerError: false,
+        idleTimeoutMs: 300_000,
       });
     });
 
-    it('should allow a 504 retry only for a replay', async () => {
+    it('should reject an idle timeout that is not a finite number', async () => {
+      await expect(
+        sessionsAPI.stream({ agent_id: 'a', message: 'Hi' }, { idleTimeoutMs: Number.NaN }).next(),
+      ).rejects.toThrow(/idleTimeoutMs/);
+      expect(mockClient.stream).not.toHaveBeenCalled();
+    });
+
+    it('should pass a custom idle timeout to the client', async () => {
+      vi.mocked(mockClient.stream).mockReturnValue(
+        frames(JSON.stringify({ type: 'stream.end', session_id: 's', status: 'completed' })),
+      );
+
+      for await (const _envelope of sessionsAPI.stream(
+        { agent_id: 'a', message: 'Hi' },
+        { idleTimeoutMs: 0 },
+      )) {
+        // Consume every envelope.
+      }
+
+      expect(vi.mocked(mockClient.stream).mock.calls[0][0].idleTimeoutMs).toBe(0);
+    });
+
+    it('should not treat a message with continue_from undefined as a replay', async () => {
+      vi.mocked(mockClient.stream).mockReturnValue(
+        frames(JSON.stringify({ type: 'stream.end', session_id: 's', status: 'completed' })),
+      );
+
+      await drain({ agent_id: 'a', message: 'Hi', continue_from: undefined } as never);
+
+      expect(vi.mocked(mockClient.stream).mock.calls[0][0].retryOnServerError).toBe(false);
+    });
+
+    it('should allow a 5xx retry only for a replay', async () => {
       vi.mocked(mockClient.stream).mockReturnValue(
         frames(JSON.stringify({ type: 'stream.end', session_id: 's', status: 'completed' })),
       );
 
       await drain({ session_id: 's', continue_from: 'evt-1' });
 
-      expect(vi.mocked(mockClient.stream).mock.calls[0][0].retryOnGatewayTimeout).toBe(true);
+      expect(vi.mocked(mockClient.stream).mock.calls[0][0].retryOnServerError).toBe(true);
     });
 
     it('should throw NotionNetworkError when the stream ends early with no checkpoint', async () => {
@@ -329,6 +362,56 @@ describe('SessionsAPI', () => {
         await done;
       });
 
+      it('should resume after a request timeout or a retryable API error on a reconnect', async () => {
+        async function* failWith(error: Error): AsyncGenerator<SseFrame> {
+          yield* frames();
+          throw error;
+        }
+        const unavailable = new NotionAPIError({
+          object: 'error',
+          status: 503,
+          code: 'service_unavailable',
+          message: 'x',
+        });
+        vi.mocked(mockClient.stream)
+          .mockReturnValueOnce(dropAfter(committed('evt-1')))
+          .mockReturnValueOnce(failWith(new NotionRequestTimeoutError('slow')))
+          .mockReturnValueOnce(failWith(unavailable))
+          .mockReturnValueOnce(frames(end));
+
+        const done = drain({ agent_id: 'a', message: 'Hi' });
+        await vi.advanceTimersByTimeAsync(1_000 + 2_000 + 4_000);
+
+        await done;
+        expect(mockClient.stream).toHaveBeenCalledTimes(4);
+        expect(vi.mocked(mockClient.stream).mock.calls[3][0].body).toEqual({
+          session_id: SESSION_ID,
+          continue_from: 'evt-1',
+        });
+      });
+
+      it('should throw an API error that a retry cannot fix', async () => {
+        async function* failWith(error: Error): AsyncGenerator<SseFrame> {
+          yield* frames();
+          throw error;
+        }
+        const notFound = new NotionAPIError({
+          object: 'error',
+          status: 404,
+          code: 'object_not_found',
+          message: 'x',
+        });
+        vi.mocked(mockClient.stream)
+          .mockReturnValueOnce(dropAfter(committed('evt-1')))
+          .mockReturnValueOnce(failWith(notFound));
+
+        const done = drain({ agent_id: 'a', message: 'Hi' });
+        const assertion = expect(done).rejects.toBe(notFound);
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        await assertion;
+      });
+
       it('should throw the abort reason when the signal aborts during the wait', async () => {
         vi.mocked(mockClient.stream).mockReturnValueOnce(dropAfter(committed('evt-1')));
         const controller = new AbortController();
@@ -362,6 +445,16 @@ describe('SessionsAPI', () => {
 
     afterEach(() => {
       vi.useRealTimers();
+    });
+
+    it.each([
+      [{ timeoutMs: Number.NaN }, /timeoutMs/],
+      [{ timeoutMs: -1 }, /timeoutMs/],
+      [{ intervalMs: Number.NaN }, /intervalMs/],
+      [{ intervalMs: Number.POSITIVE_INFINITY }, /intervalMs/],
+    ])('should reject %o before any request', async (options, message) => {
+      await expect(sessionsAPI.poll('s', options)).rejects.toThrow(message);
+      expect(mockClient.request).not.toHaveBeenCalled();
     });
 
     it('should return a requires_action session', async () => {

@@ -48,7 +48,13 @@ describe('AgentsAPI integration', () => {
 
       const result = await notion.agents.query({
         query: 'triage',
-        filter: { and: [{ property: 'status', status: { in: ['active'] } }] },
+        filter: {
+          and: [
+            { property: 'status', status: { in: ['active'] } },
+            { property: 'created_by', people: { contains: 'user-1' } },
+            { property: 'last_run_at', date: { after: '2026-11-01T00:00:00.000Z' } },
+          ],
+        },
         sorts: [{ property: 'last_run_at', direction: 'descending' }],
         page_size: 10,
         verbose: true,
@@ -56,7 +62,13 @@ describe('AgentsAPI integration', () => {
 
       expect(body).toEqual({
         query: 'triage',
-        filter: { and: [{ property: 'status', status: { in: ['active'] } }] },
+        filter: {
+          and: [
+            { property: 'status', status: { in: ['active'] } },
+            { property: 'created_by', people: { contains: 'user-1' } },
+            { property: 'last_run_at', date: { after: '2026-11-01T00:00:00.000Z' } },
+          ],
+        },
         sorts: [{ property: 'last_run_at', direction: 'descending' }],
         page_size: 10,
         verbose: true,

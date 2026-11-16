@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { notionDateStringSchema } from './shared.schema';
+import { notionDateStringSchema, openEnumSchema } from './shared.schema';
 
 /**
  * Async task object schema.
@@ -26,9 +26,16 @@ export const ASYNC_TASK_STATUSES = [
  */
 export type AsyncTaskStatus = (typeof ASYNC_TASK_STATUSES)[number];
 
+/**
+ * Documented surfaces of an async task operation. Notion can add new values.
+ *
+ * @category Async Tasks
+ */
+export const ASYNC_TASK_SURFACES = ['rest', 'mcp'] as const;
+
 const asyncTaskOperationSchema = z.object({
-  /** Documented values: `rest`, `mcp`. Notion can add new values. */
-  surface: z.string().trim(),
+  /** Documented values: see {@link ASYNC_TASK_SURFACES}. */
+  surface: openEnumSchema(ASYNC_TASK_SURFACES),
   name: z.string().trim(),
 });
 

@@ -50,12 +50,6 @@ const fileContentSchema = z.looseObject({
   expiry_time: z.string().trim().optional(),
 });
 
-/**
- * One content item of a message event. A content type that Notion adds later has
- * `type: 'unknown'`, and `unknown_type` holds the value from Notion.
- *
- * @category Agents
- */
 const KNOWN_CONTENT_TYPES: ReadonlySet<string> = new Set(['text', 'file']);
 
 /**
@@ -73,6 +67,12 @@ const unknownContentSchema = z
   })
   .transform(({ type, ...rest }) => ({ ...rest, type: 'unknown' as const, unknown_type: type }));
 
+/**
+ * One content item of a message event. A content type that Notion adds later has
+ * `type: 'unknown'`, and `unknown_type` holds the value from Notion.
+ *
+ * @category Agents
+ */
 export const sessionEventContentSchema = z.union([
   z.discriminatedUnion('type', [textContentSchema, fileContentSchema]),
   unknownContentSchema,
@@ -107,7 +107,7 @@ const agentMessageEventSchema = z.looseObject({
 const agentThinkingEventSchema = z.looseObject({
   ...baseEventShape,
   type: z.literal('agent.thinking'),
-  content: z.array(textContentSchema),
+  content: z.array(sessionEventContentSchema),
 });
 
 const agentToolUseEventSchema = z.looseObject({

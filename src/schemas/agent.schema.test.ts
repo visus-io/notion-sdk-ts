@@ -64,6 +64,16 @@ describe('agentSchema', () => {
     );
   });
 
+  it('should accept a model mode that Notion adds later', () => {
+    expect(agentSchema.parse(buildAgentResponse({ model: { mode: 'fallback' } })).model).toEqual({
+      mode: 'fallback',
+    });
+  });
+
+  it('should reject a model mode that is not a string', () => {
+    expect(() => agentSchema.parse(buildAgentResponse({ model: { mode: 1 } }))).toThrow();
+  });
+
   it('should reject a status that is not a string', () => {
     expect(() => agentSchema.parse({ ...buildAgentResponse(), status: 1 })).toThrow();
   });

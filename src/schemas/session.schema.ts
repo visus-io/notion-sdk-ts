@@ -112,9 +112,19 @@ const sessionAgentVersionSchema = z.looseObject({
   published_at: z.string().trim().nullish(),
 });
 
+const KNOWN_MODEL_SELECTIONS: ReadonlySet<string> = new Set(['auto', 'pinned']);
+
+/** A model selection that Notion adds later. A known value never matches this schema. */
+const isNewModelSelection = (value: string): boolean => !KNOWN_MODEL_SELECTIONS.has(value);
+
 const sessionModelsSchema = z.union([
   z.looseObject({ type: z.literal('auto') }),
   z.looseObject({ type: z.literal('pinned'), ids: z.array(z.string().trim().nullable()) }),
+  z.looseObject({
+    type: z.string().trim().refine(isNewModelSelection, {
+      error: 'Known model selections must match their own schema',
+    }),
+  }),
 ]);
 
 const nullableCountSchema = z.int().nonnegative().nullish();

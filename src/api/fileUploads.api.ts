@@ -4,7 +4,7 @@ import { FileUpload } from '../models';
 import { TRUSTED } from '../models/base.model';
 import { NotionValidationError } from '../validation';
 import { BaseAPI } from './base.api';
-import { type FileData, toBlob } from './fileData';
+import { byteLengthOf, type FileData, toBlob } from './fileData';
 
 /**
  * Options for initiating a file upload.
@@ -137,20 +137,7 @@ export class FileUploadsAPI extends BaseAPI<NotionFileUpload, FileUpload> {
    * @returns The completed file upload object
    */
   async uploadFile(filename: string, fileData: FileData, contentType: string): Promise<FileUpload> {
-    let contentLength: number;
-    if (fileData instanceof Buffer) {
-      contentLength = fileData.length;
-    } else if (fileData instanceof Uint8Array) {
-      contentLength = fileData.byteLength;
-    } else if (fileData instanceof ArrayBuffer) {
-      contentLength = fileData.byteLength;
-    } else if (fileData instanceof Blob) {
-      contentLength = fileData.size;
-    } else {
-      throw new TypeError(
-        'Unsupported file data type. Pass a Buffer, Uint8Array, ArrayBuffer, or Blob.',
-      );
-    }
+    const contentLength = byteLengthOf(fileData);
 
     // Step 1: Initiate upload
     const fileUpload = await this.initiate({

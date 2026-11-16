@@ -150,18 +150,24 @@ normal result for every other reason, including one the SDK does not yet documen
 
 A write that is not safe to repeat blindly can set `RequestOptions.retryOnGatewayTimeout` to
 `false`. This suppresses the client's automatic retry on a `504 gateway_timeout` response only;
-it does not change retry behavior for other retryable errors. `pages.updateMarkdown()`,
-`sessions.send()`, `sessions.stream()`, and `sessions.cancel()` set this, because a `504` does
-not guarantee the write failed. A streamed replay (`continue_from`) is safe to repeat, so it
-keeps the retry. A cancel with an `event_id` targets one turn, so it also keeps the retry. A
-cancel without an `event_id` does not, because a repeat can cancel a later turn.
+it does not change retry behavior for other retryable errors. `pages.updateMarkdown()` and
+`skills.upload()` set this, because a `504` does not guarantee the write failed.
+
+A write that must not run twice can set `RequestOptions.retryOnServerError` to `false`. This
+suppresses the retry on every `5xx` response except `529 service_overload`. A `500`, `502`,
+`503`, or `504` can arrive after Notion accepted the write. The client still retries a `429` and
+a `529`, because Notion did not process the request. `sessions.send()`, `sessions.stream()`, and
+`sessions.cancel()` set this. A streamed replay (`continue_from`) is safe to repeat, so it keeps
+the retry. A cancel with an `event_id` targets one turn, so it also keeps the retry. A cancel
+without an `event_id` does not, because a repeat can cancel a later turn.
 
 ### Streaming (`src/client.ts`, `src/sse.ts`)
 
 `NotionClient.stream()` sends a request with `Accept: text/event-stream`. It yields each
 server-sent event. It retries the connection with the same rules as `request()`. It does not
 retry after the response starts. The `timeoutMs` timeout applies until the response headers
-arrive. It does not apply to the body. A caller `signal` aborts the request and the body. The
+arrive. It does not apply to the body. The optional `idleTimeoutMs` limits the wait between two
+body chunks. A caller `signal` aborts the request and the body. The
 client rethrows the abort reason of that signal. It maps a body read failure to
 `NotionNetworkError`. A success response with a `Content-Type` other than `text/event-stream`
 throws `NotionNetworkError`. `parseSseStream()` in `sse.ts` turns decoded text chunks into
@@ -172,7 +178,9 @@ the JSON response. It does not retry a `504` response. `skills.upload()` uses it
 
 `sessions.stream()` parses the `data` of each frame as a `SessionStreamEnvelope`. After a
 `stream.timeout` envelope or a dropped connection, it reconnects with `continue_from`. A body
-that ends with no end, error, or timeout envelope counts as a dropped connection. It uses the
+that ends with no end, error, or timeout envelope counts as a dropped connection. A network
+error, a request timeout, a retryable API error, and no data for `idleTimeoutMs` (default: 5
+minutes) also count as a dropped connection. It uses the
 ID of the last `event.committed` event. After a dropped connection, it waits before it
 reconnects: `2^n * 1000ms`, to a maximum of 60 seconds. `maxResumes` limits the reconnects in
 a row with no new committed event. A new committed event resets the count and the wait.

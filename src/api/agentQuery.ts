@@ -1,6 +1,7 @@
 import {
   LIMITS,
   NotionValidationError,
+  validateArrayLength,
   validateNumberRange,
   validateStringLength,
 } from '../validation';
@@ -91,9 +92,5 @@ export function validateNonEmptyArray(array: unknown[], label: string): void {
   if (array.length === 0) {
     throw new NotionValidationError(`${label} must have at least 1 item`);
   }
-  if (array.length > LIMITS.ARRAY_ELEMENTS) {
-    throw new NotionValidationError(
-      `${label} exceeds the ${LIMITS.ARRAY_ELEMENTS}-element limit (got ${array.length})`,
-    );
-  }
+  validateArrayLength(array, LIMITS.ARRAY_ELEMENTS, label);
 }

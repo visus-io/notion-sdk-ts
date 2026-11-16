@@ -1,5 +1,5 @@
 import type { NotionClient } from '../client';
-import { NotionNetworkError, NotionRequestTimeoutError } from '../errors';
+import { NotionAPIError, NotionNetworkError, NotionRequestTimeoutError } from '../errors';
 import { Session } from '../models';
 import { TRUSTED } from '../models/base.model';
 import {
@@ -113,6 +113,12 @@ export interface SessionStreamOptions {
   autoResume?: boolean;
 
   /**
+   * The longest wait for data from the stream, in milliseconds (default: 300000, 5 minutes).
+   * After this wait, the SDK treats the connection as dropped. Set `0` to wait with no limit.
+   */
+  idleTimeoutMs?: number;
+
+  /**
    * Maximum reconnects in a row with no new `event.committed` event (default: 5). Each new
    * committed event resets the count.
    */
@@ -209,7 +215,7 @@ export interface QuerySessionEventsOptions {
 export interface CancelSessionOptions {
   /**
    * The event of the turn to cancel. Omit it to cancel the current turn. Without it, the SDK
-   * does not retry a `504`, because a repeat can cancel a later turn.
+   * does not retry a `5xx` response, because a repeat can cancel a later turn.
    */
   event_id?: string;
 }
@@ -223,6 +229,15 @@ export interface PollSessionOptions {
 
   /** Wait between two retrieves, in milliseconds (default: 1000, min: 250) */
   intervalMs?: number;
+}
+
+/**
+ * @throws {NotionValidationError} If `value` is set and is not a finite number of 0 or more.
+ */
+function validateDuration(value: number | undefined, label: string): void {
+  if (value !== undefined && !(Number.isFinite(value) && value >= 0)) {
+    throw new NotionValidationError(`${label} must be a finite number of 0 or more`);
+  }
 }
 
 /**
@@ -304,6 +319,9 @@ function validateSessionRequest(options: StreamSessionRequest, allowReplay: bool
 /** The maximum number of `data` characters that a parse error shows. */
 const MAX_SHOWN_DATA = 200;
 
+/** The default longest wait for stream data, in milliseconds. */
+const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000;
+
 /** The maximum wait before a resume after a dropped connection, in milliseconds. */
 const MAX_RESUME_DELAY_MS = 60_000;
 
@@ -325,7 +343,11 @@ function parseEnvelope(data: string): SessionStreamEnvelope {
 
 /** Return `true` for a replay body (`continue_from`), which is safe to send again. */
 function isReplayBody(body: unknown): boolean {
-  return typeof body === 'object' && body !== null && 'continue_from' in body;
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    (body as { continue_from?: unknown }).continue_from !== undefined
+  );
 }
 
 /** The state that a stream needs to resume. */
@@ -365,7 +387,19 @@ function trackEnvelope(state: ResumeState, envelope: SessionStreamEnvelope): voi
 type ConnectionEnd =
   | { kind: 'done' }
   | { kind: 'timeout'; envelope: SessionStreamEnvelope }
-  | { kind: 'dropped'; error: NotionNetworkError };
+  | { kind: 'dropped'; error: Error };
+
+/**
+ * Return `true` for an error after which the stream can resume from a committed event: a
+ * network failure, a request timeout, or a retryable API error.
+ */
+function isResumableError(error: unknown): error is Error {
+  return (
+    error instanceof NotionNetworkError ||
+    error instanceof NotionRequestTimeoutError ||
+    (error instanceof NotionAPIError && error.isRetryable())
+  );
+}
 
 /**
  * Sessions API client for chatting with agents.
@@ -423,8 +457,9 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    * @param options - The message or the actions
    * @returns The session wrapped in a Session model. A new session is `queued`.
    *
-   * The SDK does not retry this call on a `504` response. A `504` does not mean that Notion
-   * rejected the message. Retrieve the session, or query its events, before you send again.
+   * The SDK does not retry this call on a `5xx` response other than `529`. Such a response
+   * does not mean that Notion rejected the message. Retrieve the session, or query its events,
+   * before you send again. The SDK still retries a `429` and a `529`.
    *
    * @throws {NotionValidationError} If the options mix modes or a value exceeds a limit.
    *
@@ -433,12 +468,12 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
   async send(options: SendSessionOptions): Promise<Session> {
     validateSessionRequest(options, false);
 
-    // A 504 does not mean that Notion rejected the turn. A retry can send the message twice.
+    // A 5xx does not mean that Notion rejected the turn. A retry can send the message twice.
     const response = await this.client.request<unknown>({
       method: 'POST',
       path: '/sessions',
       body: options,
-      retryOnGatewayTimeout: false,
+      retryOnServerError: false,
     });
 
     return new Session(sessionSchema.parse(response), TRUSTED);
@@ -451,9 +486,10 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    * does not throw. Read `error.retryable` to decide what to do. With `autoResume` (the
    * default), the SDK reconnects after a `stream.timeout` envelope or a dropped connection. A
    * stream that ends with no `stream.end`, `stream.error`, or `stream.timeout` envelope counts
-   * as a dropped connection.
+   * as a dropped connection. A network error, a request timeout, or a retryable API error
+   * (`429` or `5xx`) also counts as a dropped connection.
    * It needs the ID of a committed event to resume. If it cannot resume, it yields the
-   * `stream.timeout` envelope, or throws the network error, and stops.
+   * `stream.timeout` envelope, or throws the error, and stops.
    * After a `stream.timeout` envelope, it reconnects at once. After a dropped connection, it
    * waits first: 1 second, then 2, 4, and so on, to a maximum of 60 seconds. A new committed
    * event resets this wait and the `maxResumes` count.
@@ -464,8 +500,8 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    * @param options - A `signal` to stop the stream, and the resume behavior
    * @returns An async generator of stream envelopes
    *
-   * @throws {NotionValidationError} If the request is not valid, or the stream sends data that
-   * is not JSON.
+   * @throws {NotionValidationError} If the request or `idleTimeoutMs` is not valid, or the
+   * stream sends data that is not JSON.
    *
    * @see https://developers.notion.com/guides/notion-agent-apis/upgrading-to-public-beta
    */
@@ -474,6 +510,7 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
     options: SessionStreamOptions = {},
   ): AsyncGenerator<SessionStreamEnvelope> {
     validateSessionRequest(request, true);
+    validateDuration(options.idleTimeoutMs, 'idleTimeoutMs');
 
     const autoResume = options.autoResume ?? true;
     const maxResumes = options.maxResumes ?? 5;
@@ -486,7 +523,7 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
     let body: unknown = request;
 
     for (;;) {
-      const end: ConnectionEnd = yield* this.streamConnection(body, state, options.signal);
+      const end: ConnectionEnd = yield* this.streamConnection(body, state, options);
       if (end.kind === 'done') {
         return;
       }
@@ -524,16 +561,17 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
   private async *streamConnection(
     body: unknown,
     state: ResumeState,
-    signal: AbortSignal | undefined,
+    options: SessionStreamOptions,
   ): AsyncGenerator<SessionStreamEnvelope, ConnectionEnd> {
     try {
       for await (const frame of this.client.stream({
+        idleTimeoutMs: options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
         method: 'POST',
         path: '/sessions',
         body,
-        signal,
+        signal: options.signal,
         // Only a replay is safe to repeat. A message or an action can be sent twice.
-        retryOnGatewayTimeout: isReplayBody(body),
+        retryOnServerError: isReplayBody(body),
       })) {
         const envelope = parseEnvelope(frame.data);
         trackEnvelope(state, envelope);
@@ -549,7 +587,8 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
         }
       }
     } catch (error) {
-      if (error instanceof NotionNetworkError) {
+      // The SDK resumes only from a committed event, so a repeat of the turn cannot happen.
+      if (isResumableError(error)) {
         return { kind: 'dropped', error };
       }
       throw error;
@@ -597,9 +636,10 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
   /**
    * Cancel a turn of a session.
    *
-   * Without `event_id`, Notion cancels the turn that runs when the request arrives. A `504`
-   * does not mean that the cancel failed, and a retry can cancel a later turn. So the SDK does
-   * not retry a `504` when `event_id` is not set. Pass `event_id` to cancel one turn exactly.
+   * Without `event_id`, Notion cancels the turn that runs when the request arrives. A `5xx`
+   * response does not mean that the cancel failed, and a retry can cancel a later turn. So the
+   * SDK does not retry a `5xx` response when `event_id` is not set. It still retries a `429`
+   * and a `529`. Pass `event_id` to cancel one turn exactly.
    *
    * @param sessionId - The session ID
    * @param options - The event of the turn to cancel. Omit it to cancel the current turn.
@@ -618,7 +658,7 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
       path: `/sessions/${sessionId}/cancel`,
       body,
       // Only a cancel of one turn is safe to repeat.
-      retryOnGatewayTimeout: options?.event_id !== undefined,
+      retryOnServerError: options?.event_id !== undefined,
     });
 
     return new Session(sessionSchema.parse(response), TRUSTED);
@@ -633,8 +673,12 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    * @returns The session wrapped in a Session model
    *
    * @throws {NotionRequestTimeoutError} If the session still runs after `timeoutMs`.
+   * @throws {NotionValidationError} If `timeoutMs` or `intervalMs` is not a finite number of 0
+   * or more.
    */
   async poll(sessionId: string, options?: PollSessionOptions): Promise<Session> {
+    validateDuration(options?.timeoutMs, 'timeoutMs');
+    validateDuration(options?.intervalMs, 'intervalMs');
     const deadline = Date.now() + (options?.timeoutMs ?? 300_000);
     const intervalMs = Math.max(options?.intervalMs ?? 1_000, 250);
 

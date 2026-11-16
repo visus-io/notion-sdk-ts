@@ -32,22 +32,23 @@ export interface AgentTimeRangeCondition {
 }
 
 /**
- * One property condition of an agent query filter.
+ * One property condition of an agent query filter. The condition key is the type of the
+ * property, not its name. Example: `{ property: 'created_by', people: { contains: userId } }`.
  */
 export type AgentPropertyFilter =
   | { property: 'id'; id: { equals: string } }
   | {
       property: 'agent_type';
-      agent_type: { equals: 'notion_ai' | 'custom_agent' | 'autofill_custom_agent' };
+      string: { equals: 'notion_ai' | 'custom_agent' | 'autofill_custom_agent' };
     }
-  | { property: 'created_by'; created_by: { contains: string } }
-  | { property: 'created_time'; created_time: AgentTimeRangeCondition }
-  | { property: 'favorited'; favorited: { equals: boolean } }
-  | { property: 'connections'; connections: { contains: string } }
+  | { property: 'created_by'; people: { contains: string } }
+  | { property: 'created_time'; date: AgentTimeRangeCondition }
+  | { property: 'favorited'; checkbox: { equals: boolean } }
+  | { property: 'connections'; mcp_server: { contains: string } }
   | { property: 'status'; status: { in: ('active' | 'disabled' | 'deleted')[] } }
-  | { property: 'model_mode'; model_mode: { equals: 'auto' | 'pinned' } }
-  | { property: 'agent_version'; agent_version: { equals: number } }
-  | { property: 'last_run_at'; last_run_at: AgentTimeRangeCondition };
+  | { property: 'model_mode'; select: { equals: 'auto' | 'pinned' } }
+  | { property: 'agent_version'; number: { equals: number } }
+  | { property: 'last_run_at'; date: AgentTimeRangeCondition };
 
 /**
  * Agent query filter: one property condition, or an `and`/`or` compound.
@@ -137,7 +138,7 @@ export interface AgentInsightsOptions {
 }
 
 function toEpochSeconds(value: Date | number, label: string): number {
-  const seconds = value instanceof Date ? Math.floor(value.getTime() / 1000) : value;
+  const seconds = value instanceof Date ? Math.floor(value.getTime() / 1_000) : value;
   if (!Number.isInteger(seconds) || seconds < 0) {
     throw new NotionValidationError(`${label} must be a non-negative integer of epoch seconds`);
   }

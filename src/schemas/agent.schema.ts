@@ -77,6 +77,15 @@ const agentVersionSchema = z.looseObject({
 export const agentModelSchema = z.union([
   z.looseObject({ mode: z.literal('auto') }),
   z.looseObject({ mode: z.literal('pinned'), id: z.string().trim().nullish() }),
+  // A mode that Notion adds later. A known mode never matches this branch.
+  z.looseObject({
+    mode: z
+      .string()
+      .trim()
+      .refine((mode) => mode !== 'auto' && mode !== 'pinned', {
+        error: 'Known model modes must match their own schema',
+      }),
+  }),
 ]);
 /**
  * @category Agents
@@ -104,8 +113,8 @@ export const agentSchema = z.looseObject({
   object: z.literal('agent'),
   /** A UUID, or `notion_ai` for the personal agent. */
   id: z.string().trim(),
-  /** Documented values: see {@link AGENT_TYPES}. */
-  agent_type: z.string().trim(),
+  /** Documented values: see {@link AGENT_TYPES}. Notion can add new values. */
+  agent_type: openEnumSchema(AGENT_TYPES),
   name: z.string().trim(),
   description: z.string().trim().nullish(),
   icon: z.unknown().optional(),

@@ -2,8 +2,10 @@ import { BaseModel, type TRUSTED } from './base.model';
 import {
   type AgentModelSelection,
   agentSchema,
+  type AgentType,
   NOTION_AI_AGENT_ID,
   type NotionAgent,
+  type OpenEnum,
   type ResponseAgentStatus,
 } from '../schemas';
 
@@ -41,7 +43,7 @@ export class Agent extends BaseModel<NotionAgent> {
   /**
    * Returns the agent type, for example `custom_agent` or `notion_ai`.
    */
-  get agentType(): string {
+  get agentType(): OpenEnum<AgentType> {
     return this.data.agent_type;
   }
 

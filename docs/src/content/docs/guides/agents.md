@@ -85,9 +85,10 @@ if (session.status === 'completed') {
 await notion.sessions.send({ session_id: session.id, message: 'Now list the open tasks.' });
 ```
 
-The SDK does not retry `sessions.send()` after a `504` response. A `504` does not mean that
-Notion rejected the message, and a retry can send it twice. Retrieve the session before you send
-again.
+The SDK does not retry `sessions.send()` after a `500`, `502`, `503`, or `504` response. Such a
+response does not mean that Notion rejected the message, and a retry can send it twice. Retrieve
+the session before you send again. The SDK still retries a `429` and a `529`, because Notion did
+not process the request.
 
 `sessions.poll()` also returns when the status is `requires_action`. Check
 `session.requiresAction()` before you read the reply. See
@@ -180,8 +181,13 @@ default, the SDK reconnects. It sends `session_id` and `continue_from` with the 
 `event.committed` event. The stream then continues after that event. The SDK does not yield the
 `stream.timeout` envelope when it resumes. It also resumes after a dropped connection. A stream
 that ends with no `stream.end`, `stream.error`, or `stream.timeout` envelope counts as a dropped
-connection. The SDK discards a frame that the connection cuts before its end. A success response
-that is not `text/event-stream` also counts as a dropped connection.
+connection. The SDK discards a frame that the connection cuts before its end. These also count
+as a dropped connection:
+
+- A success response that is not `text/event-stream`.
+- A network error, a request timeout, or a retryable API error (`429` or `5xx`) on a reconnect.
+- No data for `idleTimeoutMs` (default: 5 minutes). This detects a connection that dropped
+  with no signal. Set `0` to wait with no limit.
 
 After a `stream.timeout` envelope, the SDK reconnects at once. After a dropped connection, it
 waits first: 1 second, then 2 seconds, then 4 seconds, to a maximum of 60 seconds. The
@@ -200,6 +206,7 @@ const stream = notion.sessions.stream(
   {
     signal: controller.signal, // Stop the stream at any time.
     maxResumes: 3, // The default is 5.
+    idleTimeoutMs: 120_000, // The default is 300_000 (5 minutes).
     autoResume: true, // Set `false` to get each `stream.timeout` envelope.
   },
 );
@@ -266,8 +273,8 @@ await notion.sessions.cancel(sessions.results[0].id, { event_id: 'event-id' });
 ```
 
 Without `event_id`, Notion cancels the turn that runs when the request arrives. The SDK does
-not retry a `504` response in that case, because a retry can cancel a later turn. Pass
-`event_id` when you know the turn. The SDK then retries a `504` as usual.
+not retry a `5xx` response other than `529` in that case, because a retry can cancel a later
+turn. Pass `event_id` when you know the turn. The SDK then retries as usual.
 
 A page of results can be empty while `has_more` is `true`. Notion removes the sessions that the
 token cannot read. Continue to the next page in that case. The [pagination](/guides/pagination/)

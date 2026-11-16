@@ -57,6 +57,20 @@ describe('sessionSchema', () => {
     expect(result.models).toEqual({ type: 'pinned', ids: ['m1', null] });
   });
 
+  it('should accept a model selection that Notion adds later', () => {
+    const result = sessionSchema.parse(
+      buildSessionResponse({ models: { type: 'fallback', order: ['m1'] } }),
+    );
+
+    expect(result.models).toEqual({ type: 'fallback', order: ['m1'] });
+  });
+
+  it('should reject a pinned model selection with no ids', () => {
+    expect(() =>
+      sessionSchema.parse(buildSessionResponse({ models: { type: 'pinned' } })),
+    ).toThrow();
+  });
+
   it('should accept a status and an action option that Notion adds later', () => {
     const result = sessionSchema.parse(
       buildSessionResponse({
@@ -146,6 +160,20 @@ describe('sessionEventSchema', () => {
       type: 'unknown',
       unknown_type: 'image',
       url: 'https://x.test/a.png',
+    });
+  });
+
+  it('should accept a thinking content type that Notion adds later', () => {
+    const result = sessionEventSchema.parse(
+      buildSessionEventResponse('agent.thinking', {
+        content: [{ type: 'summary', text: 'Plan' }],
+      }),
+    );
+
+    expect(result.type === 'agent.thinking' && result.content[0]).toEqual({
+      type: 'unknown',
+      unknown_type: 'summary',
+      text: 'Plan',
     });
   });
 
