@@ -169,8 +169,8 @@ retry after the response starts. The `timeoutMs` timeout applies until the respo
 arrive. It does not apply to the body. The optional `idleTimeoutMs` limits the wait between two
 body chunks. A caller `signal` aborts the request and the body. The
 client rethrows the abort reason of that signal. It maps a body read failure to
-`NotionNetworkError`. A success response with a `Content-Type` other than `text/event-stream`
-throws `NotionNetworkError`. `parseSseStream()` in `sse.ts` turns decoded text chunks into
+`NotionNetworkError`. A success response with a media type other than `text/event-stream`
+throws `NotionValidationError`. `sessions.stream()` does not resume after it. `parseSseStream()` in `sse.ts` turns decoded text chunks into
 frames. It discards an incomplete frame at the end of the body, as the WHATWG spec requires.
 
 `NotionClient.requestMultipart()` sends a `multipart/form-data` body to an API path and returns

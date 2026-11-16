@@ -13,6 +13,7 @@ import {
   SESSION_ID,
 } from '../testUtils/fixtures';
 import { useMswServer } from '../testUtils/mswLifecycle';
+import { NotionValidationError } from '../validation';
 import { NOTION_TEST_AUTH_TOKEN, NOTION_TEST_BASE_URL, server } from '../testUtils/mswServer';
 
 useMswServer();
@@ -455,6 +456,38 @@ describe('SessionsAPI integration', () => {
         'event.committed',
         'stream.end',
       ]);
+    });
+
+    it('should throw NotionValidationError for a JSON response and not resume', async () => {
+      let calls = 0;
+      server.use(
+        http.post(SESSIONS_URL, () => {
+          calls++;
+          return HttpResponse.json(sendResponse);
+        }),
+      );
+
+      await expect(
+        collect(notion.sessions.stream({ agent_id: AGENT_ID, message: 'Hi' })),
+      ).rejects.toBeInstanceOf(NotionValidationError);
+      expect(calls).toBe(1);
+    });
+
+    it('should not resume when a reconnect returns a response that is not an event stream', async () => {
+      let calls = 0;
+      server.use(
+        http.post(SESSIONS_URL, () => {
+          calls++;
+          return calls === 1
+            ? sseResponse([snapshot, committed('evt-1'), streamTimeout])
+            : HttpResponse.json(sendResponse);
+        }),
+      );
+
+      await expect(
+        collect(notion.sessions.stream({ agent_id: AGENT_ID, message: 'Hi' })),
+      ).rejects.toBeInstanceOf(NotionValidationError);
+      expect(calls).toBe(2);
     });
 
     it('should resume when the body ends inside a frame', async () => {

@@ -86,6 +86,13 @@ export interface StreamRequestOptions extends RequestOptions {
 }
 
 /**
+ * Return the media type of a `Content-Type` value, without parameters, in lower case.
+ */
+function mediaTypeOf(contentType: string): string {
+  return contentType.split(';')[0].trim().toLowerCase();
+}
+
+/**
  * Read one chunk. Reject with `NotionNetworkError` when no chunk arrives within
  * `idleTimeoutMs`. A missing or `0` value waits with no limit.
  */
@@ -154,7 +161,7 @@ export class NotionClient {
    * timeout applies until the response headers arrive. It does not apply to the body. Use
    * `idleTimeoutMs` to limit the wait between two body chunks. When `signal`
    * aborts, the stream throws the abort reason before it yields the next frame. A response
-   * with a `Content-Type` other than `text/event-stream` throws `NotionNetworkError`. A
+   * with a media type other than `text/event-stream` throws `NotionValidationError`. A
    * response with no `Content-Type` is read as an event stream.
    *
    * @param options - The request, and an optional `signal` that stops the stream
@@ -163,6 +170,7 @@ export class NotionClient {
    * @throws {NotionRequestTimeoutError} If the response headers do not arrive within the timeout.
    * @throws {NotionNetworkError} If a network problem stops the connection or the body, or no
    * data arrives within `idleTimeoutMs`.
+   * @throws {NotionValidationError} If the response is not `text/event-stream`.
    */
   async *stream(options: StreamRequestOptions): AsyncGenerator<SseFrame> {
     const response = await this.withRetries(options, () => this.openStream(options));
@@ -172,10 +180,11 @@ export class NotionClient {
     }
 
     // A proxy can answer with a success status and a page that is not an event stream.
+    // That is not a transient failure, so the error is not a NotionNetworkError.
     const contentType = response.headers.get('Content-Type');
-    if (contentType !== null && !contentType.toLowerCase().startsWith('text/event-stream')) {
+    if (contentType !== null && mediaTypeOf(contentType) !== 'text/event-stream') {
       response.body.cancel().catch(() => undefined);
-      throw new NotionNetworkError(`Expected a text/event-stream response, got ${contentType}`);
+      throw new NotionValidationError(`Expected a text/event-stream response, got ${contentType}`);
     }
 
     for await (const frame of parseSseStream(

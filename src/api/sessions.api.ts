@@ -512,8 +512,9 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    * @param options - A `signal` to stop the stream, and the resume behavior
    * @returns An async generator of stream envelopes
    *
-   * @throws {NotionValidationError} If the request or `idleTimeoutMs` is not valid, or the
-   * stream sends data that is not JSON.
+   * @throws {NotionValidationError} If the request or `idleTimeoutMs` is not valid, the response
+   * is not `text/event-stream`, or the stream sends data that is not JSON. The SDK does not
+   * resume after this error.
    *
    * @see https://developers.notion.com/guides/notion-agent-apis/upgrading-to-public-beta
    */

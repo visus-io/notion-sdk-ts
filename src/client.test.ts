@@ -1094,7 +1094,7 @@ describe('NotionClient', () => {
       expect(await collect(client)).toEqual(['café']);
     });
 
-    it('should throw NotionNetworkError for a success response that is not an event stream', async () => {
+    it('should throw NotionValidationError for a success response that is not an event stream', async () => {
       const fetchMock = vi.fn().mockResolvedValue(
         new Response('<html>proxy</html>', {
           status: 200,
@@ -1104,10 +1104,22 @@ describe('NotionClient', () => {
       const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
 
       await expect(collect(client)).rejects.toThrow(
-        new NotionNetworkError(
+        new NotionValidationError(
           'Expected a text/event-stream response, got text/html; charset=utf-8',
         ),
       );
+    });
+
+    it('should reject a media type that only starts with text/event-stream', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('data: a\n\n', {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream-v2' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(collect(client)).rejects.toBeInstanceOf(NotionValidationError);
     });
 
     it('should accept an event stream Content-Type with parameters in any case', async () => {

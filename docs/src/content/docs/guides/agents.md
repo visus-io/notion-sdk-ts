@@ -184,7 +184,6 @@ that ends with no `stream.end`, `stream.error`, or `stream.timeout` envelope cou
 connection. The SDK discards a frame that the connection cuts before its end. These also count
 as a dropped connection:
 
-- A success response that is not `text/event-stream`.
 - A network error, a request timeout, or a retryable `5xx` error on a reconnect. The SDK waits
   at least the `Retry-After` delay of the error. A `429` error is thrown, because the client
   already applied `retryOnRateLimit` and `maxRetries`.
@@ -195,6 +194,9 @@ After a `stream.timeout` envelope, the SDK reconnects at once. After a dropped c
 waits first: 1 second, then 2 seconds, then 4 seconds, to a maximum of 60 seconds. The
 `maxResumes` option limits the reconnects in a row with no new committed event. Each new
 committed event resets this count and the wait.
+
+A success response that is not `text/event-stream` throws `NotionValidationError`. The SDK
+does not resume after it, because a reconnect gets the same response.
 
 The SDK cannot resume before the first committed event arrives. In that case it yields the
 `stream.timeout` envelope, or throws the `NotionNetworkError`, and stops. Then call
