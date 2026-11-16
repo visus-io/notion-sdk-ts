@@ -207,7 +207,10 @@ export interface QuerySessionEventsOptions {
  * Options for cancelling a session.
  */
 export interface CancelSessionOptions {
-  /** The event of the turn to cancel. Omit it to cancel the current turn. */
+  /**
+   * The event of the turn to cancel. Omit it to cancel the current turn. Without it, the SDK
+   * does not retry a `504`, because a repeat can cancel a later turn.
+   */
   event_id?: string;
 }
 
@@ -594,6 +597,10 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
   /**
    * Cancel a turn of a session.
    *
+   * Without `event_id`, Notion cancels the turn that runs when the request arrives. A `504`
+   * does not mean that the cancel failed, and a retry can cancel a later turn. So the SDK does
+   * not retry a `504` when `event_id` is not set. Pass `event_id` to cancel one turn exactly.
+   *
    * @param sessionId - The session ID
    * @param options - The event of the turn to cancel. Omit it to cancel the current turn.
    * @returns The session wrapped in a Session model
@@ -606,7 +613,15 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
       body.event_id = options.event_id;
     }
 
-    return this.createResource(`/sessions/${sessionId}/cancel`, body);
+    const response = await this.client.request<unknown>({
+      method: 'POST',
+      path: `/sessions/${sessionId}/cancel`,
+      body,
+      // Only a cancel of one turn is safe to repeat.
+      retryOnGatewayTimeout: options?.event_id !== undefined,
+    });
+
+    return new Session(sessionSchema.parse(response), TRUSTED);
   }
 
   /**

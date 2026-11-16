@@ -260,7 +260,14 @@ const sessions = await notion.sessions.query({
 
 // Cancel the current turn.
 await notion.sessions.cancel(sessions.results[0].id);
+
+// Cancel one turn exactly. Use the ID of an event of that turn.
+await notion.sessions.cancel(sessions.results[0].id, { event_id: 'event-id' });
 ```
+
+Without `event_id`, Notion cancels the turn that runs when the request arrives. The SDK does
+not retry a `504` response in that case, because a retry can cancel a later turn. Pass
+`event_id` when you know the turn. The SDK then retries a `504` as usual.
 
 A page of results can be empty while `has_more` is `true`. Notion removes the sessions that the
 token cannot read. Continue to the next page in that case. The [pagination](/guides/pagination/)

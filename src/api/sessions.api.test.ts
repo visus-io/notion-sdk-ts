@@ -107,6 +107,38 @@ describe('SessionsAPI', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // cancel
+  // ---------------------------------------------------------------------------
+
+  describe('cancel', () => {
+    beforeEach(() => {
+      vi.mocked(mockClient.request).mockResolvedValue(buildSessionResponse({ status: 'canceled' }));
+    });
+
+    it('should not allow a 504 retry when no event_id is set', async () => {
+      await sessionsAPI.cancel('s');
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/sessions/s/cancel',
+        body: {},
+        retryOnGatewayTimeout: false,
+      });
+    });
+
+    it('should allow a 504 retry when event_id is set', async () => {
+      await sessionsAPI.cancel('s', { event_id: 'evt-1' });
+
+      expect(mockClient.request).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/sessions/s/cancel',
+        body: { event_id: 'evt-1' },
+        retryOnGatewayTimeout: true,
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // stream validation and parsing
   // ---------------------------------------------------------------------------
 

@@ -151,8 +151,10 @@ normal result for every other reason, including one the SDK does not yet documen
 A write that is not safe to repeat blindly can set `RequestOptions.retryOnGatewayTimeout` to
 `false`. This suppresses the client's automatic retry on a `504 gateway_timeout` response only;
 it does not change retry behavior for other retryable errors. `pages.updateMarkdown()`,
-`sessions.send()`, and `sessions.stream()` set this, because a `504` does not guarantee the write
-failed. A streamed replay (`continue_from`) is safe to repeat, so it keeps the retry.
+`sessions.send()`, `sessions.stream()`, and `sessions.cancel()` set this, because a `504` does
+not guarantee the write failed. A streamed replay (`continue_from`) is safe to repeat, so it
+keeps the retry. A cancel with an `event_id` targets one turn, so it also keeps the retry. A
+cancel without an `event_id` does not, because a repeat can cancel a later turn.
 
 ### Streaming (`src/client.ts`, `src/sse.ts`)
 

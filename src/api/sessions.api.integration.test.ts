@@ -221,6 +221,41 @@ describe('SessionsAPI integration', () => {
 
       expect(body).toEqual({ event_id: 'evt-1' });
     });
+
+    it('should not repeat a cancel without event_id after a 504', async () => {
+      let calls = 0;
+      server.use(
+        http.post(`${SESSIONS_URL}/${SESSION_ID}/cancel`, () => {
+          calls++;
+          return calls === 1
+            ? HttpResponse.json(buildErrorBody(504, 'gateway_timeout', 'Timeout'), { status: 504 })
+            : HttpResponse.json({ ...sendResponse, status: 'canceled' });
+        }),
+      );
+
+      await expect(notion.sessions.cancel(SESSION_ID)).rejects.toBeInstanceOf(NotionAPIError);
+      expect(calls).toBe(1);
+    });
+
+    it('should retry a cancel with event_id after a 504', async () => {
+      let calls = 0;
+      server.use(
+        http.post(`${SESSIONS_URL}/${SESSION_ID}/cancel`, () => {
+          calls++;
+          return calls === 1
+            ? HttpResponse.json(buildErrorBody(504, 'gateway_timeout', 'Timeout'), {
+                status: 504,
+                headers: { 'Retry-After': '0' },
+              })
+            : HttpResponse.json({ ...sendResponse, status: 'canceled' });
+        }),
+      );
+
+      const session = await notion.sessions.cancel(SESSION_ID, { event_id: 'evt-1' });
+
+      expect(calls).toBe(2);
+      expect(session.status).toBe('canceled');
+    });
   });
 
   // ---------------------------------------------------------------------------
