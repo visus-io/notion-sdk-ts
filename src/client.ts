@@ -4,6 +4,7 @@ import {
   NotionNetworkError,
   NotionRequestTimeoutError,
 } from './errors';
+import { abortReason, sleep } from './sleep';
 import { parseSseStream, type SseFrame } from './sse';
 import { NotionValidationError } from './validation';
 
@@ -106,7 +107,9 @@ export class NotionClient {
    * The client sends `Accept: text/event-stream`. It retries the connection the same way as
    * {@link request}. It does not retry after the first event arrives. The `timeoutMs` timeout
    * applies until the response headers arrive. It does not apply to the body. When `signal`
-   * aborts, the stream throws the abort reason before it yields the next frame.
+   * aborts, the stream throws the abort reason before it yields the next frame. A response
+   * with a `Content-Type` other than `text/event-stream` throws `NotionNetworkError`. A
+   * response with no `Content-Type` is read as an event stream.
    *
    * @param options - The request, and an optional `signal` that stops the stream
    * @returns An async generator of server-sent events
@@ -119,6 +122,13 @@ export class NotionClient {
 
     if (!response.body) {
       throw new NotionNetworkError('The stream response has no body');
+    }
+
+    // A proxy can answer with a success status and a page that is not an event stream.
+    const contentType = response.headers.get('Content-Type');
+    if (contentType !== null && !contentType.toLowerCase().startsWith('text/event-stream')) {
+      response.body.cancel().catch(() => undefined);
+      throw new NotionNetworkError(`Expected a text/event-stream response, got ${contentType}`);
     }
 
     for await (const frame of parseSseStream(this.readText(response.body, options.signal))) {
@@ -156,7 +166,7 @@ export class NotionClient {
           // Prefer the server-supplied Retry-After value (header or body fallback);
           // fall back to exponential backoff when neither is present or valid.
           const retryAfter = error.retryAfterMs ?? this.getRetryAfter(attempt);
-          await this.sleep(retryAfter, options.signal);
+          await sleep(retryAfter, options.signal);
           lastError = error;
           continue;
         }
@@ -370,7 +380,7 @@ export class NotionClient {
     }
 
     if (signal?.aborted) {
-      throw this.abortReason(signal);
+      throw abortReason(signal);
     }
 
     if (error instanceof Error) {
@@ -413,48 +423,12 @@ export class NotionClient {
   }
 
   /**
-   * Pause for the given duration, in milliseconds.
-   */
-  private sleep(ms: number, signal?: AbortSignal): Promise<void> {
-    if (!signal) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
-    return new Promise((resolve, reject) => {
-      const onAbort = (): void => {
-        clearTimeout(timeoutId);
-        reject(this.abortReason(signal));
-      };
-      const timeoutId = setTimeout(() => {
-        signal.removeEventListener('abort', onAbort);
-        resolve();
-      }, ms);
-
-      if (signal.aborted) {
-        onAbort();
-        return;
-      }
-      signal.addEventListener('abort', onAbort, { once: true });
-    });
-  }
-
-  /**
    * Throw the abort reason when `signal` already aborted.
    */
   private throwIfAborted(signal?: AbortSignal): void {
     if (signal?.aborted) {
-      throw this.abortReason(signal);
+      throw abortReason(signal);
     }
-  }
-
-  /**
-   * Return the reason of an aborted signal when it is an `Error`. Otherwise return a standard
-   * `AbortError`.
-   */
-  private abortReason(signal: AbortSignal): Error {
-    return signal.reason instanceof Error
-      ? signal.reason
-      : new DOMException('The operation was aborted.', 'AbortError');
   }
 
   /**

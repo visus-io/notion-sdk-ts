@@ -383,12 +383,12 @@ describe('SessionsAPI integration', () => {
       expect(types).toEqual(['session.snapshot', 'event.committed', 'stream.end']);
     });
 
-    it('should yield stream.timeout and stop after maxResumes', async () => {
+    it('should yield stream.timeout and stop after maxResumes with no new committed event', async () => {
       let calls = 0;
       server.use(
         http.post(SESSIONS_URL, () => {
           calls++;
-          return sseResponse([committed(`evt-${calls}`), streamTimeout]);
+          return sseResponse(calls === 1 ? [committed('evt-1'), streamTimeout] : [streamTimeout]);
         }),
       );
 
@@ -397,7 +397,46 @@ describe('SessionsAPI integration', () => {
       );
 
       expect(calls).toBe(2);
-      expect(types).toEqual(['event.committed', 'event.committed', 'stream.timeout']);
+      expect(types).toEqual(['event.committed', 'stream.timeout']);
+    });
+
+    it('should reset the maxResumes count after each new committed event', async () => {
+      let calls = 0;
+      server.use(
+        http.post(SESSIONS_URL, () => {
+          calls++;
+          return sseResponse(calls <= 3 ? [committed(`evt-${calls}`), streamTimeout] : [streamEnd]);
+        }),
+      );
+
+      const types = await collect(
+        notion.sessions.stream({ agent_id: AGENT_ID, message: 'Hi' }, { maxResumes: 1 }),
+      );
+
+      expect(calls).toBe(4);
+      expect(types).toEqual([
+        'event.committed',
+        'event.committed',
+        'event.committed',
+        'stream.end',
+      ]);
+    });
+
+    it('should resume when the body ends inside a frame', async () => {
+      const bodies: unknown[] = [];
+      server.use(
+        http.post(SESSIONS_URL, async ({ request }) => {
+          bodies.push(await request.json());
+          return bodies.length === 1
+            ? sseResponse([snapshot, committed('evt-1'), 'data: {"type":"event.comm'])
+            : sseResponse([streamEnd]);
+        }),
+      );
+
+      const types = await collect(notion.sessions.stream({ agent_id: AGENT_ID, message: 'Hi' }));
+
+      expect(bodies[1]).toEqual({ session_id: SESSION_ID, continue_from: 'evt-1' });
+      expect(types).toEqual(['session.snapshot', 'event.committed', 'stream.end']);
     });
 
     it('should yield stream.timeout without a resume when autoResume is false', async () => {

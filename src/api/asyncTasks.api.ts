@@ -2,6 +2,7 @@ import type { NotionClient } from '../client';
 import { NotionRequestTimeoutError } from '../errors';
 import { AsyncTask } from '../models';
 import { asyncTaskSchema, type NotionAsyncTask } from '../schemas';
+import { sleep } from '../sleep';
 import { BaseAPI } from './base.api';
 
 /**
@@ -10,10 +11,6 @@ import { BaseAPI } from './base.api';
 export interface PollAsyncTaskOptions {
   /** Maximum time to wait for the task to complete, in milliseconds (default: 300000 / 5 minutes) */
   timeoutMs?: number;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

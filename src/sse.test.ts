@@ -70,10 +70,12 @@ describe('parseSseStream', () => {
     expect(frames.map((frame) => frame.data)).toEqual(['no-space', ' two-spaces']);
   });
 
-  it('should dispatch a final frame without a trailing blank line', async () => {
-    const frames = await collect('data: last');
+  it('should discard a final line without a line ending', async () => {
+    expect(await collect('data: a\n\n', 'data: last')).toEqual([{ event: 'message', data: 'a' }]);
+  });
 
-    expect(frames).toEqual([{ event: 'message', data: 'last' }]);
+  it('should discard a final frame without a blank line after it', async () => {
+    expect(await collect('data: a\n\n', 'data: last\n')).toEqual([{ event: 'message', data: 'a' }]);
   });
 
   it('should remove one leading byte order mark and keep a later one', async () => {

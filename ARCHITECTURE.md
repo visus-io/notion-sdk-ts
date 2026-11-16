@@ -26,6 +26,7 @@ src/
   notion.ts             -- Notion facade class
   client.ts             -- HTTP client with retry logic and server-sent event streaming
   sse.ts                -- Server-sent events parser (parseSseStream)
+  sleep.ts              -- Internal abort-aware sleep helper
   errors.ts             -- 4 error classes (API, Network, Timeout, Validation)
   validation.ts         -- LIMITS constants and validation functions
   api/                  -- API endpoint modules (one per Notion resource)
@@ -160,7 +161,9 @@ server-sent event. It retries the connection with the same rules as `request()`.
 retry after the response starts. The `timeoutMs` timeout applies until the response headers
 arrive. It does not apply to the body. A caller `signal` aborts the request and the body. The
 client rethrows the abort reason of that signal. It maps a body read failure to
-`NotionNetworkError`. `parseSseStream()` in `sse.ts` turns decoded text chunks into frames.
+`NotionNetworkError`. A success response with a `Content-Type` other than `text/event-stream`
+throws `NotionNetworkError`. `parseSseStream()` in `sse.ts` turns decoded text chunks into
+frames. It discards an incomplete frame at the end of the body, as the WHATWG spec requires.
 
 `NotionClient.requestMultipart()` sends a `multipart/form-data` body to an API path and returns
 the JSON response. It does not retry a `504` response. `skills.upload()` uses it.
@@ -168,7 +171,9 @@ the JSON response. It does not retry a `504` response. `skills.upload()` uses it
 `sessions.stream()` parses the `data` of each frame as a `SessionStreamEnvelope`. After a
 `stream.timeout` envelope or a dropped connection, it reconnects with `continue_from`. A body
 that ends with no end, error, or timeout envelope counts as a dropped connection. It uses the
-ID of the last `event.committed` event. `maxResumes` limits the reconnects.
+ID of the last `event.committed` event. After a dropped connection, it waits before it
+reconnects: `2^n * 1000ms`, to a maximum of 60 seconds. `maxResumes` limits the reconnects in
+a row with no new committed event. A new committed event resets the count and the wait.
 
 The `LIMITS` constant in `validation.ts` defines client-side size limits. The SDK enforces these
 limits before it sends a request. Limit categories:

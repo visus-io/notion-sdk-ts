@@ -214,6 +214,109 @@ describe('SessionsAPI', () => {
         continue_from: 'evt-5',
       });
     });
+
+    it('should show at most 200 characters of data that is not JSON', async () => {
+      vi.mocked(mockClient.stream).mockReturnValue(frames('x'.repeat(500)));
+
+      await expect(drain({ agent_id: 'a', message: 'Hi' })).rejects.toThrow(
+        `Session stream sent data that is not JSON: ${'x'.repeat(200)}…`,
+      );
+    });
+
+    describe('wait before a resume', () => {
+      const end = JSON.stringify({ type: 'stream.end', session_id: 's', status: 'completed' });
+
+      function committed(id: string): string {
+        return JSON.stringify({
+          type: 'event.committed',
+          event: buildSessionEventResponse('agent.message', { id }),
+        });
+      }
+
+      async function* dropAfter(...data: string[]): AsyncGenerator<SseFrame> {
+        yield* frames(...data);
+        throw new NotionNetworkError('socket hang up');
+      }
+
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('should wait 1 second, then 2 seconds, between drops with no new committed event', async () => {
+        vi.mocked(mockClient.stream)
+          .mockReturnValueOnce(dropAfter(committed('evt-1')))
+          .mockReturnValueOnce(dropAfter())
+          .mockReturnValueOnce(frames(end));
+
+        const done = drain({ agent_id: 'a', message: 'Hi' });
+
+        await vi.advanceTimersByTimeAsync(999);
+        expect(mockClient.stream).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(mockClient.stream).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(1_999);
+        expect(mockClient.stream).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(mockClient.stream).toHaveBeenCalledTimes(3);
+        await done;
+      });
+
+      it('should reset the wait after a new committed event', async () => {
+        vi.mocked(mockClient.stream)
+          .mockReturnValueOnce(dropAfter(committed('evt-1')))
+          .mockReturnValueOnce(dropAfter(committed('evt-2')))
+          .mockReturnValueOnce(frames(end));
+
+        const done = drain({ agent_id: 'a', message: 'Hi' });
+
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(mockClient.stream).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(mockClient.stream).toHaveBeenCalledTimes(3);
+        await done;
+      });
+
+      it('should not wait before a resume after stream.timeout', async () => {
+        vi.mocked(mockClient.stream)
+          .mockReturnValueOnce(
+            frames(
+              committed('evt-1'),
+              JSON.stringify({ type: 'stream.timeout', session_id: 's', message: 'x' }),
+            ),
+          )
+          .mockReturnValueOnce(frames(end));
+
+        const done = drain({ agent_id: 'a', message: 'Hi' });
+
+        await vi.advanceTimersByTimeAsync(0);
+        expect(mockClient.stream).toHaveBeenCalledTimes(2);
+        await done;
+      });
+
+      it('should throw the abort reason when the signal aborts during the wait', async () => {
+        vi.mocked(mockClient.stream).mockReturnValueOnce(dropAfter(committed('evt-1')));
+        const controller = new AbortController();
+
+        const done = (async () => {
+          for await (const _envelope of sessionsAPI.stream(
+            { agent_id: 'a', message: 'Hi' },
+            { signal: controller.signal },
+          )) {
+            // Consume every envelope.
+          }
+        })();
+        const assertion = expect(done).rejects.toThrow('stop');
+
+        await vi.advanceTimersByTimeAsync(500);
+        controller.abort(new Error('stop'));
+        await assertion;
+        expect(mockClient.stream).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   // ---------------------------------------------------------------------------

@@ -21,6 +21,7 @@ import {
   validateStringLength,
 } from '../validation';
 import { buildAgentQueryBody, validateNonEmptyArray } from './agentQuery';
+import { sleep } from '../sleep';
 import { BaseAPI, parsePaginatedResponse } from './base.api';
 
 /**
@@ -111,7 +112,10 @@ export interface SessionStreamOptions {
    */
   autoResume?: boolean;
 
-  /** Maximum reconnects for one call (default: 5) */
+  /**
+   * Maximum reconnects in a row with no new `event.committed` event (default: 5). Each new
+   * committed event resets the count.
+   */
   maxResumes?: number;
 }
 
@@ -218,10 +222,6 @@ export interface PollSessionOptions {
   intervalMs?: number;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * @throws {NotionValidationError} If `metadata` has too many keys or a value is too long.
  */
@@ -298,6 +298,12 @@ function validateSessionRequest(options: StreamSessionRequest, allowReplay: bool
   validateMessage(options as SendSessionMessageOptions);
 }
 
+/** The maximum number of `data` characters that a parse error shows. */
+const MAX_SHOWN_DATA = 200;
+
+/** The maximum wait before a resume after a dropped connection, in milliseconds. */
+const MAX_RESUME_DELAY_MS = 60_000;
+
 /**
  * Parse the `data` of one server-sent event.
  *
@@ -308,7 +314,8 @@ function parseEnvelope(data: string): SessionStreamEnvelope {
   try {
     json = JSON.parse(data);
   } catch {
-    throw new NotionValidationError(`Session stream sent data that is not JSON: ${data}`);
+    const shown = data.length > MAX_SHOWN_DATA ? `${data.slice(0, MAX_SHOWN_DATA)}…` : data;
+    throw new NotionValidationError(`Session stream sent data that is not JSON: ${shown}`);
   }
   return sessionStreamEnvelopeSchema.parse(json);
 }
@@ -322,7 +329,10 @@ function isReplayBody(body: unknown): boolean {
 interface ResumeState {
   sessionId?: string;
   lastCommittedId?: string;
+  /** Reconnects in a row with no new committed event */
   resumes: number;
+  /** Dropped connections in a row with no new committed event */
+  drops: number;
 }
 
 function trackEnvelope(state: ResumeState, envelope: SessionStreamEnvelope): void {
@@ -331,6 +341,11 @@ function trackEnvelope(state: ResumeState, envelope: SessionStreamEnvelope): voi
       state.sessionId = envelope.session.id;
       break;
     case 'event.committed':
+      if (envelope.event.id !== state.lastCommittedId) {
+        // The turn made progress. Count the reconnects again from zero.
+        state.resumes = 0;
+        state.drops = 0;
+      }
       state.lastCommittedId = envelope.event.id;
       state.sessionId = envelope.event.session_id;
       break;
@@ -436,6 +451,9 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
    * as a dropped connection.
    * It needs the ID of a committed event to resume. If it cannot resume, it yields the
    * `stream.timeout` envelope, or throws the network error, and stops.
+   * After a `stream.timeout` envelope, it reconnects at once. After a dropped connection, it
+   * waits first: 1 second, then 2, 4, and so on, to a maximum of 60 seconds. A new committed
+   * event resets this wait and the `maxResumes` count.
    *
    * Do not store `event.provisional` events. A later envelope replaces them.
    *
@@ -460,6 +478,7 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
       sessionId: request.session_id,
       lastCommittedId: 'continue_from' in request ? request.continue_from : undefined,
       resumes: 0,
+      drops: 0,
     };
     let body: unknown = request;
 
@@ -484,6 +503,14 @@ export class SessionsAPI extends BaseAPI<NotionSession, Session> {
       }
 
       state.resumes++;
+      if (end.kind === 'dropped') {
+        // Wait before the reconnect, so that a network outage does not use up every resume.
+        await sleep(
+          Math.min(Math.pow(2, state.drops) * 1_000, MAX_RESUME_DELAY_MS),
+          options.signal,
+        );
+        state.drops++;
+      }
       body = { session_id: state.sessionId, continue_from: state.lastCommittedId };
     }
   }

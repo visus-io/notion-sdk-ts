@@ -927,6 +927,34 @@ describe('NotionClient', () => {
       expect(await collect(client)).toEqual(['café']);
     });
 
+    it('should throw NotionNetworkError for a success response that is not an event stream', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('<html>proxy</html>', {
+          status: 200,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      await expect(collect(client)).rejects.toThrow(
+        new NotionNetworkError(
+          'Expected a text/event-stream response, got text/html; charset=utf-8',
+        ),
+      );
+    });
+
+    it('should accept an event stream Content-Type with parameters in any case', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('data: a\n\n', {
+          status: 200,
+          headers: { 'Content-Type': 'Text/Event-Stream; charset=utf-8' },
+        }),
+      );
+      const client = new NotionClient({ auth: 'test-token', fetch: fetchMock });
+
+      expect(await collect(client)).toEqual(['a']);
+    });
+
     it('should retry a 429 on connect, then stream', async () => {
       vi.useFakeTimers();
       try {

@@ -180,7 +180,13 @@ default, the SDK reconnects. It sends `session_id` and `continue_from` with the 
 `event.committed` event. The stream then continues after that event. The SDK does not yield the
 `stream.timeout` envelope when it resumes. It also resumes after a dropped connection. A stream
 that ends with no `stream.end`, `stream.error`, or `stream.timeout` envelope counts as a dropped
-connection.
+connection. The SDK discards a frame that the connection cuts before its end. A success response
+that is not `text/event-stream` also counts as a dropped connection.
+
+After a `stream.timeout` envelope, the SDK reconnects at once. After a dropped connection, it
+waits first: 1 second, then 2 seconds, then 4 seconds, to a maximum of 60 seconds. The
+`maxResumes` option limits the reconnects in a row with no new committed event. Each new
+committed event resets this count and the wait.
 
 The SDK cannot resume before the first committed event arrives. In that case it yields the
 `stream.timeout` envelope, or throws the `NotionNetworkError`, and stops. Then call

@@ -100,7 +100,7 @@ function takeLines(buffer: string): { lines: string[]; rest: string; endsWithCr:
 }
 
 /**
- * Turn text chunks into lines. Yield the text after the last line ending when the input ends.
+ * Turn text chunks into lines. Discard the text after the last line ending when the input ends.
  */
 async function* splitLines(chunks: AsyncIterable<string>): AsyncGenerator<string> {
   let buffer = '';
@@ -127,16 +127,13 @@ async function* splitLines(chunks: AsyncIterable<string>): AsyncGenerator<string
     skipLeadingLf = endsWithCr;
     yield* lines;
   }
-
-  if (buffer !== '') {
-    yield buffer;
-  }
+  // The text after the last line ending is an incomplete line. The spec discards it.
 }
 
 /**
  * Parse a stream of text chunks into server-sent events.
- * A frame with no `data` field is not dispatched. A final frame without a trailing blank line
- * is dispatched when the input ends.
+ * A frame with no `data` field is not dispatched. A frame needs a blank line after it. At the
+ * end of the input, the parser discards an incomplete frame, as the spec requires.
  *
  * @param chunks - Decoded text chunks, in order
  * @returns An async generator of frames
@@ -157,9 +154,5 @@ export async function* parseSseStream(chunks: AsyncIterable<string>): AsyncGener
       yield frame;
     }
   }
-
-  const last = toFrame(state);
-  if (last) {
-    yield last;
-  }
+  // A frame with no blank line after it is incomplete. The spec discards it at the end.
 }
